@@ -13,16 +13,16 @@ const Header = () => {
       <header className="w-full py-6 shadow-md bg-white">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           {/* 왼쪽: 로고 */}
-          <Link href="/" className="text-3xl font-bold" style={{ color: "#D5BAA3" }}>
+          <Link href="/bookbook" className="text-3xl font-bold" style={{ color: "#D5BAA3" }}>
             북북
           </Link>
 
           {/* 중앙: 메뉴 */}
           <nav className="flex items-center text-lg font-semibold text-gray-800">
-            <Link href="/" className="mr-10 hover:text-blue-600">
+            <Link href="/bookbook" className="mr-10 hover:text-blue-600">
               홈
             </Link>
-            <Link href="/rent" className="mx-4 hover:text-blue-600">
+            <Link href="/bookbook/rent" className="mx-4 hover:text-blue-600">
               책 빌리러 가기
             </Link>
             <Link href="/bookbook/register" className="ml-8 hover:text-blue-600">
