@@ -1,11 +1,10 @@
 package com.bookbook.domain.wishList.controller;
 
-import com.bookbook.domain.wishList.entity.WishList;
+import com.bookbook.domain.wishList.dto.WishListResponseDto;
 import com.bookbook.domain.wishList.service.WishListService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
@@ -15,4 +14,12 @@ import java.util.List;
 public class WishListController {
 
     private final WishListService wishListService;
+
+    @GetMapping
+    public ResponseEntity<List<WishListResponseDto>> getWishList(
+            @RequestParam Long userId
+    ) {
+        List<WishListResponseDto> wishList = wishListService.getWishListByUserId(userId);
+        return ResponseEntity.ok(wishList);
+    }
 }
