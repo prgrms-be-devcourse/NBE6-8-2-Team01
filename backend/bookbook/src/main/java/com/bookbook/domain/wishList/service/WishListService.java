@@ -49,4 +49,14 @@ public class WishListService {
         WishList savedWishlist = wishListRepository.save(wishlist);
         return WishListResponseDto.from(savedWishlist);
     }
+
+    public void deleteWishList(Long userId, Long rentId) {
+        // TODO: Rent 엔티티 구현 후 활성화
+        // WishList wishList = wishListRepository.findByUserIdAndRentId(userId, rentId)
+        //         .orElseThrow(() -> new IllegalArgumentException("찜하지 않은 게시글입니다."));
+        // wishListRepository.delete(wishList);
+
+        // 임시 구현: ID로 직접 삭제
+        throw new UnsupportedOperationException("Rent 엔티티 구현 필요");
+    }
 }
