@@ -26,7 +26,7 @@ public class WishListService {
                 .toList();
     }
 
-    public WishListResponseDto addToWishList(Long userId, WishListCreateRequestDto request) {
+    public WishListResponseDto addWishList(Long userId, WishListCreateRequestDto request) {
         // TODO: Rent 엔티티 구현 후 중복 체크 로직 추가
         // if (wishListRepository.findByUserIdAndRentId(userId, request.rentId()).isPresent()) {
         //     throw new IllegalArgumentException("이미 찜한 게시글입니다.");

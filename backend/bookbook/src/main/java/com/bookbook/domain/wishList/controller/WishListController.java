@@ -25,11 +25,11 @@ public class WishListController {
     }
 
     @PostMapping
-    public ResponseEntity<WishListResponseDto> addToWishList(
+    public ResponseEntity<WishListResponseDto> addWishList(
             @RequestParam Long userId,
             @RequestBody WishListCreateRequestDto request
     ) {
-        WishListResponseDto response = wishListService.addToWishList(userId, request);
+        WishListResponseDto response = wishListService.addWishList(userId, request);
         return ResponseEntity.ok(response);
     }
 }
