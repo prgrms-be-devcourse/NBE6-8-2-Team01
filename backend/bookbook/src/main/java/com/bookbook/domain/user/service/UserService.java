@@ -14,6 +14,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Optional;
+import java.util.Random;
 
 @Service
 @RequiredArgsConstructor
@@ -87,6 +88,22 @@ public class UserService {
 
         System.out.println("사용자명" + loginRequestDto.getUsername() + "에 대한 개발자 로그인에 실패 하였습니다.");
         return Optional.empty(); // 인증 실패
+    }
+
+    private String generateUniqueNickname(String baseNickname) {
+        String uniqueNickname = baseNickname;
+        Random random = new Random();
+        int attempt = 0;
+
+        while(userRepository.existsByNickname(uniqueNickname)){
+            if(attempt >= 999) {
+                throw new RuntimeException("고유한 닉네임을 생성할 수 없습니다.");
+            }
+
+            uniqueNickname = baseNickname + "#" + String.format("%04d", random.nextInt(1000));
+        }
+
+        return uniqueNickname;
     }
 
 }
