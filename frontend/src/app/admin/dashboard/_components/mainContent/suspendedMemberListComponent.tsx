@@ -57,7 +57,7 @@ function ManagementButton({ member, onClick }: ManagementButtonProps) {
 export function SuspendedMemberListComponent({ responseData }: BaseContentComponentProps) {
   const handleManageClick = (memberId: number) => {
     console.log(`관리 버튼 클릭: 멤버 ID - ${memberId}`);
-    // TODO: 멤버 관리 로직 구현 (예: 정지 해제 API 호출)// 여기에 모달을 열거나 상세 페이지로 이동하는 로직을 추가할 수 있습니다.
+    // TODO: 멤버 관리 로직 구현 (예: 정지 해제 API 호출)
   };
 
   // 데이터를 호출한 이후 useState를 이용해 변환하기
