@@ -17,6 +17,7 @@ public class UserService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
 
+
     @PostConstruct
     @Transactional
     public void createAdminUser(){
@@ -40,6 +41,7 @@ public class UserService {
         } else {
             System.out.println("관리자 계정이 이미 존재합니다: " + adminUsername);
         }
-
     }
+
+
 }
