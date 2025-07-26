@@ -1,5 +1,6 @@
 package com.bookbook.domain.wishList.controller;
 
+import com.bookbook.domain.wishList.dto.WishListCreateRequestDto;
 import com.bookbook.domain.wishList.dto.WishListResponseDto;
 import com.bookbook.domain.wishList.service.WishListService;
 import lombok.RequiredArgsConstructor;
@@ -21,5 +22,14 @@ public class WishListController {
     ) {
         List<WishListResponseDto> wishList = wishListService.getWishListByUserId(userId);
         return ResponseEntity.ok(wishList);
+    }
+
+    @PostMapping
+    public ResponseEntity<WishListResponseDto> addToWishList(
+            @RequestParam Long userId,
+            @RequestBody WishListCreateRequestDto request
+    ) {
+        WishListResponseDto response = wishListService.addToWishList(userId, request);
+        return ResponseEntity.ok(response);
     }
 }
