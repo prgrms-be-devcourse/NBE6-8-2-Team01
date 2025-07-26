@@ -106,4 +106,22 @@ public class UserService {
         return uniqueNickname;
     }
 
+    public UserResponseDto socialSignupOrLogin(String socialUsername, String socialEmail, String socialNickname, String address) {
+        return userRepository.findByUsername(socialUsername)// 고유한 소셜 사용자명을 이용하여 사용자가 이미 존재하는지 확인
+                .map(UserResponseDto::new)
+                .orElseGet(() -> { // 사용자가 존재하지 않으면 새로 생성
+                    User newUser = User.builder()
+                            .username(socialUsername)
+                            .email(socialEmail)
+                            .nickname(socialNickname)
+                            .address(address)
+                            .rating(0.0f) // 초기 별점
+                            .role(Role.USER) // 일반 사용자 역할
+                            .userStatus(UserStatus.ACTIVE) // 활성화 상태
+                            .build();
+                    userRepository.save(newUser);
+                    return new UserResponseDto(newUser);
+                });
+    }
+
 }
