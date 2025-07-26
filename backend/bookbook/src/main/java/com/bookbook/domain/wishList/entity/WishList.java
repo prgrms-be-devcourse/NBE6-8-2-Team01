@@ -22,8 +22,9 @@ public class WishList {
     @ManyToOne
     private User user;
 
-    @ManyToOne
-    private Rent rent;
+    // TODO: Rent 엔티티 구현 후 주석 해제
+    // @ManyToOne
+    // private Rent rent;
 
     @CreatedDate
     private LocalDateTime createDate;
