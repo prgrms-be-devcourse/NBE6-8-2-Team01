@@ -63,13 +63,13 @@ public class User extends BaseEntity {
     private LocalDateTime updateAt;
 
     @Builder
-    public User(String username, String password, String nickname, String email, String address, Role role, UserStatus userStatus) {
+    public User(String username, String password, String nickname, String email, String address, Float rating, Role role, UserStatus userStatus) {
         this.username = username;
         this.password = password;
         this.nickname = nickname;
         this.email = email;
         this.address = address;
-        this.rating = 0.0f;
+        this.rating = rating != null ? rating : 0.0f; // 기본값은 0.0f
         this.role = role != null ? role : Role.USER; // 기본값은 USER
         this.userStatus = userStatus != null ? userStatus : UserStatus.ACTIVE; // 기본값은 ACTIVE
     }

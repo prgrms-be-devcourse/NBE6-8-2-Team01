@@ -6,4 +6,4 @@ spring:
     driver-class-name: org.h2.Driver
   autoconfigure:
     exclude:
-      - org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration
+      org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration
