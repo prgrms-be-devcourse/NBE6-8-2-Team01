@@ -9,17 +9,22 @@ public record WishListResponseDto(
         Long rentId,
         String bookTitle,
         String bookAuthor,
+        String bookPublisher,
         String bookCondition,
-        String bookStatus,
+        String rentStatus,
+        Long lenderUserId,
         LocalDateTime createDate
 ) {
     public static WishListResponseDto from(WishList wishList) {
         return new WishListResponseDto(
                 wishList.getId(),
                 wishList.getRent().getId(),
-                wishList.getRent().getBookTitle(),
-                wishList.getRent().getBookAuthor(),
-                wishList.getRent().getUser().getName(),
+                wishList.getRent().getTitle(),
+                wishList.getRent().getAuthor(),
+                wishList.getRent().getPublisher(),
+                wishList.getRent().getBookCondition(),
+                wishList.getRent().getBookStatus(),
+                wishList.getRent().getUser().getId(),
                 wishList.getCreateDate()
         );
     }
