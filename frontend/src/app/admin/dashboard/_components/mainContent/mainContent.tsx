@@ -1,10 +1,12 @@
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { MenuItem } from "../../_types/menuItem";
 import { menuItems } from "../sidebar/consts";
 
 import { SuspendedMemberListComponent } from "./suspendedMemberListComponent";
 import { DashBoardComponent } from "./dashBoardComponent";
 import { MemberListComponent} from "./memberListComponent";
+import { MemberRentPostComponent } from "./memberRentPostComponent";
+import { ReportHistoryComponent } from "./reportHistoryComponent";
 
 interface MainContentProps {
   activeItem: string;
@@ -21,7 +23,9 @@ interface ResponseDataProps {
 const componentMap: { [key: string]: React.ComponentType<ResponseDataProps> } = {
   'suspended-member-list': SuspendedMemberListComponent,
   'dashboard' : DashBoardComponent,
-  'member-list' : MemberListComponent
+  'member-list' : MemberListComponent,
+  'post-management': MemberRentPostComponent,
+  'reports' : ReportHistoryComponent
 };
 
 export function MainContent(props: MainContentProps) {
@@ -41,7 +45,7 @@ export function MainContent(props: MainContentProps) {
 
     const item = findMenuItem(menuItems, activeItem);
     setCurrentItem(item);
-  }, [activeItem]);
+  }, [activeItem, setCurrentItem]);
 
   const ContentComponent = componentMap[activeItem] ?? null;
 
