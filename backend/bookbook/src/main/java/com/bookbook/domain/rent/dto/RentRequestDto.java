@@ -14,7 +14,7 @@ public record RentRequestDto(
         @NotBlank(message = "내용을 입력해주세요.")
         String contents,
         @NotBlank(message = "대여 상태를 입력해주세요.")
-        String rentStatus, // Enum으로 관리(AVAILABLE, RENTED, COMPLETED)
+        String rentStatus, // Enum으로 관리(Available, Loaned, Finished)
 
         @NotBlank(message = "책 제목을 입력해주세요.")
         String title,
