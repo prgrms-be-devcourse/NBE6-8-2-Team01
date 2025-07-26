@@ -1,14 +1,19 @@
 package com.bookbook.domain.user.service;
 
+import com.bookbook.domain.user.dto.UserLoginRequestDto;
+import com.bookbook.domain.user.dto.UserResponseDto;
 import com.bookbook.domain.user.entity.User;
 import com.bookbook.domain.user.enums.Role;
 import com.bookbook.domain.user.enums.UserStatus;
 import com.bookbook.domain.user.repository.UserRepository;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -17,6 +22,14 @@ public class UserService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
 
+    @Value("${app.dev-login.enable:false}")
+    private boolean devLoginEnabled;
+    @Value("${app.dev-login.username:}")
+    private String devUsername;
+    @Value("${app.dev-login.password:}")
+    private String devPassword;
+    @Value("${app.dev-login.email:}")
+    private String devEmail;
 
     @PostConstruct
     @Transactional
@@ -43,5 +56,37 @@ public class UserService {
         }
     }
 
+    public Optional<UserResponseDto> authenticateDevUser(UserLoginRequestDto loginRequestDto){ //개발 환경에서만 사용 가능
+        if (!devLoginEnabled) {
+            System.out.println("개발자 로그인 기능이 비활성화되어 있습니다.");
+            return Optional.empty(); // 개발자 로그인 기능이 비활성화된 경우
+        }
+        if (loginRequestDto.getUsername().equals(devUsername) &&
+            passwordEncoder.matches(loginRequestDto.getPassword(), passwordEncoder.encode(devPassword))) {
+            System.out.println("개발자 사용자 인증 성공:" + devUsername);
+
+            return userRepository.findByUsername(devUsername) // 개발자가 db에 없으면 생성
+                    .map(UserResponseDto::new)
+                    .or(() -> {
+                        String uniqueNickname = generateUniqueNickname("개발자 테스트");
+                        User devUser = User.builder()
+                                .username(devUsername)
+                                .password(passwordEncoder.encode(devPassword))
+                                .email(devEmail)
+                                .nickname("개발자")
+                                .address("개발자 주소")
+                                .rating(5.0f) // 초기 별점
+                                .role(Role.USER) // 개발자 역할
+                                .userStatus(UserStatus.ACTIVE) // 활성화 상태
+                                .build();
+                        userRepository.save(devUser);
+                        System.out.println("개발자 사용자 생성: " + devUsername);
+                        return Optional.of(new UserResponseDto(devUser));
+                    });
+        }
+
+        System.out.println("사용자명" + loginRequestDto.getUsername() + "에 대한 개발자 로그인에 실패 하였습니다.");
+        return Optional.empty(); // 인증 실패
+    }
 
 }
