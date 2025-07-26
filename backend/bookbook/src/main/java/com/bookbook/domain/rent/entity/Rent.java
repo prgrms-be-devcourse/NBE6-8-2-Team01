@@ -1,17 +1,17 @@
 package com.bookbook.domain.rent.entity;
-
 import com.bookbook.global.jpa.entity.BaseEntity;
 import jakarta.persistence.Entity;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 
 @Entity
 @Getter
 @Setter
-@NoArgsConstructor // 매개변수가 없는 기본 생성자를 제공하는 Lombok 어노테이션
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class Rent extends BaseEntity {
-    private int lender_user_id; // 대여자 ID
+
+    private Long lender_user_id; // 대여자 ID
     private String bookCondition; // 책 상태
     private String bookImage; // 책 이미지 URL
     private String address; // 사용자 주소
