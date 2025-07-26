@@ -32,4 +32,14 @@ public class WishListController {
         WishListResponseDto response = wishListService.addWishList(userId, request);
         return ResponseEntity.ok(response);
     }
+
+    // TODO: Rent 엔티티 구현 후 활성화
+    // @DeleteMapping("/{rentId}")
+    // public ResponseEntity<Void> deleteWishList(
+    //         @RequestParam Long userId,
+    //         @PathVariable Long rentId
+    // ) {
+    //     wishListService.deleteWishList(userId, rentId);
+    //     return ResponseEntity.noContent().build();
+    // }
 }
