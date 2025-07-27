@@ -35,11 +35,17 @@ function SidebarMenuItem(props: SidebarMenuItemProps) {
   const isExpanded = expandedItems.has(item.id);
   const isActive = activeItem === item.id;
 
+  const baseClasses = 'w-full flex items-center justify-between px-4 py-3 text-left text-white transition-colors hover:bg-slate-500';
+  const hoverClasses = level > 0 ? 'pl-8' : '';
+  const activeClasses = isActive ? 'bg-slate-600 text-white' : '';
+  const expandedClasses = hasChildren && isExpanded ? 'bg-slate-800' : '';
+  const finalClassName = `${baseClasses} ${hoverClasses} ${activeClasses} ${expandedClasses}`
+
   const handleClick = () => {
     if (hasChildren) {
       onToggle(item.id);
     } else {
-      onItemClick(item.id, item.apiPath);
+      onItemClick(item.id);
     }
   };
 
@@ -47,9 +53,7 @@ function SidebarMenuItem(props: SidebarMenuItemProps) {
     <div className="w-full">
       <button
         onClick={handleClick}
-        className={`w-full flex items-center justify-between px-4 py-3 text-left text-white transition-colors
-              ${level > 0 ? "hover:bg-slate-500 pl-8" : "hover:bg-slate-600"}
-              ${isActive ? "bg-slate-600" : ""}`}
+        className={finalClassName}
       >
         <div className="flex items-center space-x-3">
           {item.icon && <item.icon size={20} />}
@@ -67,7 +71,7 @@ function SidebarMenuItem(props: SidebarMenuItemProps) {
       </button>
 
       {hasChildren && isExpanded && (
-        <div className="bg-slate-600">
+        <div className="bg-slate-800">
           {item.children?.map((child) => (
             <SidebarMenuItem
               key={child.id}
@@ -89,7 +93,7 @@ export function SideBar(props: SidebarProps) {
   const { expandedItems, onToggle, activeItem, onItemClick, onLogout } = props;
 
   return (
-    <div className="w-64 bg-slate-700 min-h-screen flex flex-col">
+    <div className="min-w-50 w-64 bg-slate-700 min-h-screen flex flex-col">
       {/* 헤더 영역 */}
       <div className="p-6">
         <h1 className="flex justify-between text-xl font-bold text-white">

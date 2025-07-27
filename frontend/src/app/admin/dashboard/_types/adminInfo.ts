@@ -8,9 +8,9 @@
  * @property {string} apiPath - API 경로
  */
 export interface AdminInfo {
-    id: string;
-    name: string;
-    email: string;
-    avatar?: string;
-    role: string;
+  id: string;
+  name: string;
+  email: string;
+  avatar?: string;
+  role: string;
 }

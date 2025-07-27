@@ -15,7 +15,7 @@ export const menuItems: MenuItem[] = [
     icon: Users,
     children: [
       { id: "member-list", label: "전체 멤버", apiPath: "/api/admin/members" },
-      { id: "suspended-member-list", label: "정지 멤버", apiPath: "/api/admin/members/suspended" },
+      { id: "suspended-member-list", label: "정지 멤버 이력", apiPath: "/api/admin/members/suspended" },
     ],
   },
   {
