@@ -17,21 +17,23 @@ public class RentService {
     // Rent POST 요청
     @Transactional
     public void createRentPage(RentRequestDto dto, long userId) {
-        // 유저 정보 조회
+        // 유저 정보 조회(추후 인증 기능 추가 필요)
 //        User user = userRepository.findById(userId)
 //                .orElseThrow(()->new IllegalIdentifierException("로그인 또는 회원가입을 해 주세요"));
 
         // Rent 엔티티 생성 (Builder 패턴 활용)
         Rent rent = Rent.builder()
                 .lender_user_id(userId)
+                .title(dto.title())
                 .bookCondition(dto.bookCondition())
                 .bookImage(dto.bookImage())
                 .address(dto.address())
                 .contents(dto.contents())
                 .rent_status(dto.rentStatus())
-                .title(dto.title())
+                .bookTitle(dto.bookTitle())
                 .author(dto.author())
                 .publisher(dto.publisher())
+                .category(dto.category())
                 .build();
 
         // Rent에 추가
