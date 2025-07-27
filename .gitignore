@@ -1,0 +1,20 @@
+# IDE 설정 파일들
+.idea/
+*.iml
+*.iws
+
+# 데이터베이스 파일들
+*.mv.db
+*.trace.db
+db_dev.mv.db
+db_dev.trace.db
+
+# OS 생성 파일들
+.DS_Store
+Thumbs.db
+
+# 로그 파일들
+*.log
+
+# 환경 설정 파일들
+.env
