@@ -101,6 +101,7 @@ public class UserService {
             }
 
             uniqueNickname = baseNickname + "#" + String.format("%04d", random.nextInt(1000));
+            attempt++;
         }
 
         return uniqueNickname;
