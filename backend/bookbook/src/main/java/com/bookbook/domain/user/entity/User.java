@@ -7,6 +7,7 @@ import jakarta.persistence.*;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import lombok.Builder;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
@@ -15,6 +16,7 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 import java.time.LocalDateTime;
 
 @Entity
+@Getter
 @Table(name = "users") // 예약어 충돌 방지
 @EntityListeners(AuditingEntityListener.class)
 @NoArgsConstructor(access = lombok.AccessLevel.PROTECTED)
@@ -61,13 +63,13 @@ public class User extends BaseEntity {
     private LocalDateTime updateAt;
 
     @Builder
-    public User(String username, String password, String nickname, String email, String address, Role role, UserStatus userStatus) {
+    public User(String username, String password, String nickname, String email, String address, Float rating, Role role, UserStatus userStatus) {
         this.username = username;
         this.password = password;
         this.nickname = nickname;
         this.email = email;
         this.address = address;
-        this.rating = 0.0f;
+        this.rating = rating != null ? rating : 0.0f; // 기본값은 0.0f
         this.role = role != null ? role : Role.USER; // 기본값은 USER
         this.userStatus = userStatus != null ? userStatus : UserStatus.ACTIVE; // 기본값은 ACTIVE
     }
