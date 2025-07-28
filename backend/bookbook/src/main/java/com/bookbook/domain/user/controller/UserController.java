@@ -13,12 +13,12 @@ import java.util.Optional;
 
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/api/v1/users")
+@RequestMapping("/bookbook/users")
 public class UserController {
     private final UserService userService;
 
     @Profile("dev")
-    @PostMapping("/dev/login")
+    @PostMapping("/login/dev")
     public ResponseEntity<?> devLogin(@RequestBody UserLoginRequestDto requestDto) {
        Optional<UserResponseDto> userResponse = userService.authenticateDevUser(requestDto);
         if (userResponse.isPresent()) {
