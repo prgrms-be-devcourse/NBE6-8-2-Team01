@@ -10,18 +10,22 @@ import java.time.LocalDateTime;
 public record UserSuspendResponseDto(
         @NonNull Long id,
         @NonNull Long userId,
+        @NonNull String name,
+        @NonNull String email,
         @NonNull String reason,
-        @NonNull LocalDateTime startAt,
-        @NonNull LocalDateTime endAt
+        @NonNull LocalDateTime suspendedAt,
+        @NonNull LocalDateTime resumedAt
 ) {
 
     public static UserSuspendResponseDto from(SuspendedUser suspendedUser) {
         return UserSuspendResponseDto.builder()
                 .id(suspendedUser.getId())
                 .userId(suspendedUser.getUser().getId())
+                .name(suspendedUser.getUser().getUsername())
+                .email(suspendedUser.getUser().getEmail())
                 .reason(suspendedUser.getReason())
-                .startAt(suspendedUser.getCreateDate())
-                .endAt(suspendedUser.getReleaseDate())
+                .suspendedAt(suspendedUser.getSuspendedAt())
+                .resumedAt(suspendedUser.getResumedAt())
                 .build();
     }
 }
