@@ -23,12 +23,6 @@ public class securityConfig {
     private final CustomOAuth2UserService customOAuth2UserService;
 
     @Bean
-    public PasswordEncoder passwordEncoder() {
-        // 비밀번호 암호화를 위해 BCryptPasswordEncoder를 사용
-        return new BCryptPasswordEncoder();
-    }
-
-    @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
                 .csrf(csrf -> csrf.disable()) // REST API에서는 CSRF 비활성화 (토큰 기반 인증 시)

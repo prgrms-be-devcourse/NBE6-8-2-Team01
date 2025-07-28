@@ -5,6 +5,7 @@ import com.bookbook.domain.user.enums.Role;
 import com.bookbook.domain.user.enums.UserStatus;
 import com.bookbook.domain.user.repository.UserRepository;
 import com.bookbook.domain.user.service.UserService;
+import com.bookbook.global.util.NicknameGenerator;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -25,39 +26,38 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class CustomOAuth2UserService implements OAuth2UserService<OAuth2UserRequest, OAuth2User>{
     private final UserRepository userRepository;
-    private final UserService userService;
+    private final PasswordEncoder passwordEncoder;
+    private final NicknameGenerator nicknameGenerator;
 
     @Override
     @Transactional
     public OAuth2User loadUser(OAuth2UserRequest userRequest) throws OAuth2AuthenticationException {
         OAuth2UserService<OAuth2UserRequest, OAuth2User> delegate = new DefaultOAuth2UserService();
-        OAuth2User oAuth2User = delegate.loadUser(userRequest); // 소셜 서비스로부터 사용자 정보 로드
+        OAuth2User oAuth2User = delegate.loadUser(userRequest);
 
-        String registrationId = userRequest.getClientRegistration().getRegistrationId(); // 소셜 서비스 ID
-        String userNameAttributeName = userRequest.getClientRegistration().getProviderDetails().getUserInfoEndpoint().getUserNameAttributeName(); // 사용자 이름 속성
+        String registrationId = userRequest.getClientRegistration().getRegistrationId();
+        String userNameAttributeName = userRequest.getClientRegistration().getProviderDetails().getUserInfoEndpoint().getUserNameAttributeName();
 
-        // 소셜 로그인 서비스별로 사용자 정보를 가져오는 메서드 호출
         OAuth2UserAttributes attributes =  OAuth2UserAttributes.of(registrationId, userNameAttributeName, oAuth2User.getAttributes());
 
         User user;
-        String username = registrationId + "_" + attributes.id(); // 소셜 서비스 ID와 사용자 ID를 조합하여 고유한 사용자 탐색 ex)kakao_1234567890
+        String username = registrationId + "_" + attributes.id();
 
         Optional<User> existingUser = userRepository.findByUsername(username);
 
         if(existingUser.isPresent()) {
             user = existingUser.get();
         } else {
-            String uniqueNickname = userService.generateUniqueNickname(attributes.getNickname()); // 사용자 이름을 기반으로 고유한 닉네임 생성
-            // 새로운 사용자 생성
+            String uniqueNickname = nicknameGenerator.generateUniqueNickname(attributes.getNickname()); // 변경
             user = User.builder()
                     .username(username)
                     .email(attributes.email())
                     .nickname(uniqueNickname)
-                    .address("기본 주소") // 기본 주소 설정
-                    .password(passwordEncoder.encode(UUID.randomUUID().toString())) // 소셜 로그인 사용자에게 임의의 비밀번호 할당
-                    .rating(0.0f) // 초기 별점
-                    .role(Role.USER) // 일반 사용자 역할
-                    .userStatus(UserStatus.ACTIVE) // 활성화 상태
+                    .address("기본 주소")
+                    .password(passwordEncoder.encode(UUID.randomUUID().toString()))
+                    .rating(0.0f)
+                    .role(Role.USER)
+                    .userStatus(UserStatus.ACTIVE)
                     .build();
             userRepository.save(user);
         }
@@ -69,5 +69,4 @@ public class CustomOAuth2UserService implements OAuth2UserService<OAuth2UserRequ
         );
     }
 
-    private final PasswordEncoder passwordEncoder;
 }
