@@ -4,7 +4,6 @@ import com.bookbook.domain.user.entity.User;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.time.LocalDateTime;
@@ -17,29 +16,27 @@ import java.time.LocalDateTime;
 public class SuspendedUser {
 
     @Id
+    @Column(name = "suspend_id")
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id")
     private User user;
 
     @Column(name = "suspend_reason", nullable = false)
     private String reason;
 
-    @CreatedDate
-    @Column(name = "start_at")
-    private LocalDateTime createDate;
+    @Column(name = "suspended_at", nullable = false)
+    private LocalDateTime suspendedAt;
 
-    private LocalDateTime releaseDate;
+    @Column(name = "resumed_at", nullable = false)
+    private LocalDateTime resumedAt;
 
     public SuspendedUser(User user, String reason) {
         this.user = user;
         this.reason = reason;
-    }
-
-    public SuspendedUser setSuspendPeriod(Integer period) {
-        releaseDate = createDate.plusDays(period);
-        return this;
+        this.suspendedAt = user.getSuspendedAt();
+        this.resumedAt = user.getResumedAt();
     }
 }
