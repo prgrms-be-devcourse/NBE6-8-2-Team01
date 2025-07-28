@@ -15,6 +15,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Optional;
 import java.util.Random;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -74,7 +75,7 @@ public class UserService {
                                 .username(devUsername)
                                 .password(passwordEncoder.encode(devPassword))
                                 .email(devEmail)
-                                .nickname("개발자")
+                                .nickname(uniqueNickname) // 고유한 닉네임 생성
                                 .address("개발자 주소")
                                 .rating(5.0f) // 초기 별점
                                 .role(Role.USER) // 개발자 역할
@@ -90,7 +91,7 @@ public class UserService {
         return Optional.empty(); // 인증 실패
     }
 
-    private String generateUniqueNickname(String baseNickname) {
+    public String generateUniqueNickname(String baseNickname) {
         String uniqueNickname = baseNickname;
         Random random = new Random();
         int attempt = 0;
@@ -117,6 +118,7 @@ public class UserService {
                             .nickname(socialNickname)
                             .address(address)
                             .rating(0.0f) // 초기 별점
+                            .password(passwordEncoder.encode(UUID.randomUUID().toString())) // 소셜 로그인 사용자에게 임의의 비밀번호 할당
                             .role(Role.USER) // 일반 사용자 역할
                             .userStatus(UserStatus.ACTIVE) // 활성화 상태
                             .build();

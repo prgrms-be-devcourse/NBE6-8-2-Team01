@@ -7,6 +7,7 @@ import com.bookbook.domain.user.repository.UserRepository;
 import com.bookbook.domain.user.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.client.userinfo.DefaultOAuth2UserService;
 import org.springframework.security.oauth2.client.userinfo.OAuth2UserRequest;
 import org.springframework.security.oauth2.client.userinfo.OAuth2UserService;
@@ -18,6 +19,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Collections;
 import java.util.Optional;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -38,7 +40,7 @@ public class CustomOAuth2UserService implements OAuth2UserService<OAuth2UserRequ
         OAuth2UserAttributes attributes =  OAuth2UserAttributes.of(registrationId, userNameAttributeName, oAuth2User.getAttributes());
 
         User user;
-        String username = registrationId + "_" + attributes.getId(); // 소셜 서비스 ID와 사용자 ID를 조합하여 고유한 사용자 탐색 ex)kakao_1234567890
+        String username = registrationId + "_" + attributes.id(); // 소셜 서비스 ID와 사용자 ID를 조합하여 고유한 사용자 탐색 ex)kakao_1234567890
 
         Optional<User> existingUser = userRepository.findByUsername(username);
 
@@ -49,9 +51,10 @@ public class CustomOAuth2UserService implements OAuth2UserService<OAuth2UserRequ
             // 새로운 사용자 생성
             user = User.builder()
                     .username(username)
-                    .email(attributes.getEmail())
+                    .email(attributes.email())
                     .nickname(uniqueNickname)
                     .address("기본 주소") // 기본 주소 설정
+                    .password(passwordEncoder.encode(UUID.randomUUID().toString())) // 소셜 로그인 사용자에게 임의의 비밀번호 할당
                     .rating(0.0f) // 초기 별점
                     .role(Role.USER) // 일반 사용자 역할
                     .userStatus(UserStatus.ACTIVE) // 활성화 상태
@@ -65,4 +68,6 @@ public class CustomOAuth2UserService implements OAuth2UserService<OAuth2UserRequ
                 userNameAttributeName
         );
     }
+
+    private final PasswordEncoder passwordEncoder;
 }
