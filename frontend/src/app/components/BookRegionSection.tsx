@@ -19,7 +19,7 @@ const fetchHomeData = async (): Promise<HomeApiResponse> => {
   try {
     console.log('API 호출 시작: http://localhost:8080/bookbook/home');
     
-    const response = await fetch('http://localhost:8080/bookbook/home', {
+    const response = await fetch('http://localhost:8080/api/v1/bookbook/home', {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
