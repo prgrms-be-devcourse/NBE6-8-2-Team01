@@ -6,6 +6,7 @@ import com.bookbook.domain.user.entity.User;
 import com.bookbook.domain.user.enums.Role;
 import com.bookbook.domain.user.enums.UserStatus;
 import com.bookbook.domain.user.repository.UserRepository;
+import com.bookbook.global.util.NicknameGenerator;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
@@ -15,6 +16,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Optional;
 import java.util.Random;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -22,6 +24,7 @@ import java.util.Random;
 public class UserService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private final NicknameGenerator nicknameGenerator;
 
     @Value("${app.dev-login.enable:false}")
     private boolean devLoginEnabled;
@@ -57,28 +60,28 @@ public class UserService {
         }
     }
 
-    public Optional<UserResponseDto> authenticateDevUser(UserLoginRequestDto loginRequestDto){ //개발 환경에서만 사용 가능
+    public Optional<UserResponseDto> authenticateDevUser(UserLoginRequestDto loginRequestDto){
         if (!devLoginEnabled) {
             System.out.println("개발자 로그인 기능이 비활성화되어 있습니다.");
-            return Optional.empty(); // 개발자 로그인 기능이 비활성화된 경우
+            return Optional.empty();
         }
         if (loginRequestDto.getUsername().equals(devUsername) &&
-            passwordEncoder.matches(loginRequestDto.getPassword(), passwordEncoder.encode(devPassword))) {
+                passwordEncoder.matches(loginRequestDto.getPassword(), passwordEncoder.encode(devPassword))) {
             System.out.println("개발자 사용자 인증 성공:" + devUsername);
 
-            return userRepository.findByUsername(devUsername) // 개발자가 db에 없으면 생성
+            return userRepository.findByUsername(devUsername)
                     .map(UserResponseDto::new)
                     .or(() -> {
-                        String uniqueNickname = generateUniqueNickname("개발자 테스트");
+                        String uniqueNickname = nicknameGenerator.generateUniqueNickname("개발자 테스트"); // 변경
                         User devUser = User.builder()
                                 .username(devUsername)
                                 .password(passwordEncoder.encode(devPassword))
                                 .email(devEmail)
-                                .nickname("개발자")
+                                .nickname(uniqueNickname)
                                 .address("개발자 주소")
-                                .rating(5.0f) // 초기 별점
-                                .role(Role.USER) // 개발자 역할
-                                .userStatus(UserStatus.ACTIVE) // 활성화 상태
+                                .rating(5.0f)
+                                .role(Role.USER)
+                                .userStatus(UserStatus.ACTIVE)
                                 .build();
                         userRepository.save(devUser);
                         System.out.println("개발자 사용자 생성: " + devUsername);
@@ -87,24 +90,7 @@ public class UserService {
         }
 
         System.out.println("사용자명" + loginRequestDto.getUsername() + "에 대한 개발자 로그인에 실패 하였습니다.");
-        return Optional.empty(); // 인증 실패
-    }
-
-    private String generateUniqueNickname(String baseNickname) {
-        String uniqueNickname = baseNickname;
-        Random random = new Random();
-        int attempt = 0;
-
-        while(userRepository.existsByNickname(uniqueNickname)){
-            if(attempt >= 999) {
-                throw new RuntimeException("고유한 닉네임을 생성할 수 없습니다.");
-            }
-
-            uniqueNickname = baseNickname + "#" + String.format("%04d", random.nextInt(1000));
-            attempt++;
-        }
-
-        return uniqueNickname;
+        return Optional.empty();
     }
 
     public UserResponseDto socialSignupOrLogin(String socialUsername, String socialEmail, String socialNickname, String address) {
@@ -117,6 +103,7 @@ public class UserService {
                             .nickname(socialNickname)
                             .address(address)
                             .rating(0.0f) // 초기 별점
+                            .password(passwordEncoder.encode(UUID.randomUUID().toString())) // 소셜 로그인 사용자에게 임의의 비밀번호 할당
                             .role(Role.USER) // 일반 사용자 역할
                             .userStatus(UserStatus.ACTIVE) // 활성화 상태
                             .build();
@@ -124,5 +111,4 @@ public class UserService {
                     return new UserResponseDto(newUser);
                 });
     }
-
 }

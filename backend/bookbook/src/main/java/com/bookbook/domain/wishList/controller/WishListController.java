@@ -10,7 +10,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/bookbook/wishList")
+@RequestMapping("/api/v1/bookbook/wishlists")
 @RequiredArgsConstructor
 public class WishListController {
 
@@ -33,13 +33,12 @@ public class WishListController {
         return ResponseEntity.ok(response);
     }
 
-    // TODO: Rent 엔티티 구현 후 활성화
-    // @DeleteMapping("/{rentId}")
-    // public ResponseEntity<Void> deleteWishList(
-    //         @RequestParam Long userId,
-    //         @PathVariable Long rentId
-    // ) {
-    //     wishListService.deleteWishList(userId, rentId);
-    //     return ResponseEntity.noContent().build();
-    // }
+    @DeleteMapping("/{rentId}")
+    public ResponseEntity<Void> deleteWishList(
+            @RequestParam Long userId,
+            @PathVariable Integer rentId
+    ) {
+        wishListService.deleteWishList(userId, rentId);
+        return ResponseEntity.noContent().build();
+    }
 }
