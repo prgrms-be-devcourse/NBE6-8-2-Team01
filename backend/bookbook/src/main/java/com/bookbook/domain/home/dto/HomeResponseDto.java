@@ -28,9 +28,13 @@ public class HomeResponseDto {
     private Long totalBooksInRegion;
     
     /**
-     * 응답 메시지
+     * 응답 메시지 (지역에 따라 동적 생성)
      */
     public String getMessage() {
-        return "최근 등록된 도서";
+        if ("전체".equals(region)) {
+            return "최근 등록된 도서";
+        } else {
+            return region + "의 최근 등록된 도서";
+        }
     }
 }
