@@ -38,9 +38,11 @@ const Header = () => {
             >
               Login
             </button>
-            <Bell className="w-6 h-6 text-gray-700 hover:text-blue-600" />
-            <Heart className="w-6 h-6 text-gray-700 hover:text-blue-600" />
-            <User className="w-6 h-6 text-gray-700 hover:text-blue-600" />
+            <Bell className="w-6 h-6 text-gray-700 hover:text-blue-600 cursor-pointer" />
+            <Link href="/bookbook/wishlist">
+              <Heart className="w-6 h-6 text-gray-700 hover:text-blue-600 cursor-pointer" />
+            </Link>
+            <User className="w-6 h-6 text-gray-700 hover:text-blue-600 cursor-pointer" />
           </div>
         </div>
       </header>
