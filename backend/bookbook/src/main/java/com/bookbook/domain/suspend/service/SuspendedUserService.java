@@ -1,43 +1,55 @@
 package com.bookbook.domain.suspend.service;
 
 import com.bookbook.domain.suspend.dto.request.UserSuspendRequestDto;
-import com.bookbook.domain.admin.repository.SuspendedUserRepository;
+import com.bookbook.domain.suspend.dto.response.UserSuspendResponseDto;
 import com.bookbook.domain.suspend.entity.SuspendedUser;
+import com.bookbook.domain.suspend.repository.SuspendedUserRepository;
 import com.bookbook.domain.user.entity.User;
-import com.bookbook.domain.user.enums.UserStatus;
+import com.bookbook.domain.user.service.AdminService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
 public class SuspendedUserService {
     private final SuspendedUserRepository suspendedUserRepository;
+    private final AdminService adminService;
 
     @Transactional
-    public SuspendedUser addSuspendUser(User user, UserSuspendRequestDto requestDto) {
+    public SuspendedUser addUserAsSuspended(UserSuspendRequestDto requestDto) {
+        User user = adminService.findByUserId(requestDto.userId());
+
         // 현재 정지 중인지 확인하고 정지 중이면 중단
-        checkUserIsSuspended(requestDto);
+        checkUserIsSuspended(user);
 
         // 정지 상태로 전환 후 이력에 추가
-        user.changeUserStatus(UserStatus.SUSPENDED);
+        user.suspend(requestDto.period());
 
-        SuspendedUser suspendedUser = new SuspendedUser(user, requestDto.reason())
-                .setSuspendPeriod(requestDto.period());
+        SuspendedUser suspendedUser = new SuspendedUser(user, requestDto.reason());
 
         return suspendedUserRepository.save(suspendedUser);
     }
 
-    private void checkUserIsSuspended(UserSuspendRequestDto requestDto) {
-        suspendedUserRepository
-                .findByUserIdAndReleaseDateAfter(requestDto.userId(), LocalDateTime.now())
-                .ifPresent((_suspendedUser) -> {
-                    String dtFormat = _suspendedUser.getReleaseDate()
-                            .format(DateTimeFormatter.ofPattern("yyyy년 MM월 dd일 a h시"));
-                    throw new RuntimeException("현재 이 멤버는 정지 상태입니다. %s에 정지 상태가 해제됩니다".formatted(dtFormat));
-                });
+    @Transactional(readOnly = true)
+    public List<UserSuspendResponseDto> getAllSuspendedHistory() {
+        return suspendedUserRepository.findAll().stream()
+                .map(UserSuspendResponseDto::from)
+                .toList();
+    }
+
+    @Transactional
+    public User resumeUser(Long userId) {
+        User user = adminService.findByUserId(userId);
+        user.resume();
+        return user;
+    }
+
+    private void checkUserIsSuspended(User user) {
+        if (user.isSuspended()) {
+            throw new RuntimeException("이 유저는 이미 정지 중입니다.");
+        }
     }
 }
