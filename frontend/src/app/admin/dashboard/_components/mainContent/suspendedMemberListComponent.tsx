@@ -1,42 +1,10 @@
-'use client';
+"use client";
 
 import React, { useEffect, useState } from "react";
 import { DataTable, ColumnDefinition } from "../common/Table";
 import { SuspendedMember } from "../../_types/suspendedMember";
 import { BaseContentComponentProps } from "./baseContentComponentProps";
-
-// --- Mock Data ---
-const mockSuspendedMembers: SuspendedMember[] = [
-  {
-    id: 1,
-    userId: "coffee01",
-    name: "매니저",
-    email: "coffee01@xxx.com",
-    suspendedDate: "25-05-01",
-    releaseDate: "25-06-02",
-    reason: "먹튀",
-  },
-  {
-    id: 2,
-    userId: "coffee02",
-    name: "김커피",
-    email: "coffee02@xxx.com",
-    suspendedDate: "25-05-01",
-    releaseDate: "25-06-02",
-    reason: "자체 검토",
-  },
-  {
-    id: 3,
-    userId: "user03",
-    name: "박회원",
-    email: "user03@test.com",
-    suspendedDate: "25-04-20",
-    releaseDate: "25-05-20",
-    reason: "광고성 게시물",
-  },
-];
-
-// --- Management Button Component ---
+import { formatDate } from "@/app/admin/dashboard/_components/common/dateFormatter";
 
 interface ManagementButtonProps {
   member: SuspendedMember;
@@ -64,12 +32,10 @@ export function SuspendedMemberListComponent({ responseData }: BaseContentCompon
   const [suspendedMembers, setSuspendedMembers] = useState<SuspendedMember[]>([]);
 
   useEffect(() => {
-
     if (responseData) {
-      // setSuspendedMembers(responseData);
+      const data = responseData as SuspendedMember[];
+      setSuspendedMembers(data.reverse());
     }
-    // 테스트 목적으로 추가했습니다
-    setSuspendedMembers(mockSuspendedMembers);
   }, [responseData]);
 
   const columns: ColumnDefinition<SuspendedMember>[] = [
@@ -77,16 +43,17 @@ export function SuspendedMemberListComponent({ responseData }: BaseContentCompon
     { key: "userId", label: "아이디" },
     { key: "name", label: "이름" },
     { key: "email", label: "이메일" },
-    { key: "suspendedDate", label: "정지일" },
-    { key: "releaseDate", label: "정지 해제일" },
-    { key: "reason", label: "사유" },
     {
-      key: "actions",
-      label: "관리",
-      render: (member) => (
-        <ManagementButton member={member} onClick={handleManageClick} />
-      ),
+      key: "suspendedAt",
+      label: "정지일",
+      render: (member) => <span>{formatDate(member.suspendedAt)}</span>,
     },
+    {
+      key: "resumedAt",
+      label: "정지 해제일",
+      render: (member) => <span>{formatDate(member.resumedAt)}</span>,
+    },
+    { key: "reason", label: "사유" },
   ];
 
   return (
