@@ -10,6 +10,10 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
 import org.springframework.security.web.authentication.SimpleUrlAuthenticationSuccessHandler;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+import java.util.Arrays;
+import java.util.List;
 
 @Configuration
 @EnableWebSecurity
@@ -30,9 +34,10 @@ public class securityConfig {
                 .csrf(csrf -> csrf.disable()) // REST API에서는 CSRF 비활성화 (토큰 기반 인증 시)
                 .authorizeHttpRequests(authorize -> authorize
                         // 로그인 관련 경로는 모두 허용
-                        .requestMatchers("/api/admin/login", "/bookbook/users/login/dev", "/bookbook/users/social/callback", "/login/**").permitAll()
-                        // H2 Console (개발 시에만 활성화)
+                        .requestMatchers("/api/admin/login", "/bookbook/users/login/dev", "/bookbook/users/social/callback", "/login/**", "/bookbook/home").permitAll()
+                        .requestMatchers("/favicon.ico").permitAll() // 파비콘 접근 허용
                         .requestMatchers("/h2-console/**").permitAll()
+                        .requestMatchers("/bookbook/rent/create").permitAll() // Rent 페이지 생성은 인증 필요, (임시)               
                         .anyRequest().authenticated() // 나머지 모든 요청은 인증 필요
                 )
                 .oauth2Login(oauth2 -> oauth2
@@ -42,7 +47,6 @@ public class securityConfig {
                         .successHandler(oauth2AuthenticationSuccessHandler()) // OAuth2 로그인 성공 후 처리할 핸들러 지정
                 )
                 .headers(headers -> headers.frameOptions(frameOptions -> frameOptions.sameOrigin())); // H2 Console 사용을 위함
-
         return http.build();
     }
 
@@ -53,5 +57,33 @@ public class securityConfig {
         handler.setDefaultTargetUrl("/"); // 로그인 성공 후 리다이렉트할 URL 설정
         handler.setAlwaysUseDefaultTargetUrl(true);
         return handler;
+    }
+    // --- CORS 설정을 위한 Bean을 추가합니다 ---
+    @Bean
+    public UrlBasedCorsConfigurationSource corsConfigurationSource() {
+        CorsConfiguration configuration = new CorsConfiguration();
+
+        // 허용할 오리진 설정: 당신의 프론트엔드 URL과 cdpn.io (필요하다면)
+        configuration.setAllowedOrigins(List.of("http://localhost:3000", "https://cdpn.io")); // Java 9 이상 사용 가능
+
+        // 허용할 HTTP 메서드 설정 (OPTIONS는 Preflight 요청에 필수)
+        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
+
+        // 자격 증명 (쿠키 등) 허용 설정
+        configuration.setAllowCredentials(true);
+
+        // 허용할 헤더 설정 (모든 헤더 허용)
+        configuration.setAllowedHeaders(Arrays.asList("*")); // 모든 헤더 허용
+
+        // Preflight 요청 캐싱 시간 (초)
+        configuration.setMaxAge(3600L); // Long 타입으로 명시
+
+        // CORS 설정을 소스에 등록
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/bookbook/**", configuration);
+        source.registerCorsConfiguration("/api", configuration);
+
+        return source;
+
     }
 }
