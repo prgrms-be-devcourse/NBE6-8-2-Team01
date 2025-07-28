@@ -1,6 +1,6 @@
 package com.bookbook.global.globalExceptionHandler;
 
-import com.bookbook.global.rsData.RsData;
+import com.bookbook.global.rsdata.RsData;
 import com.bookbook.global.exception.ServiceException;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.ConstraintViolationException;
