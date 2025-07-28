@@ -23,7 +23,7 @@ public class securityConfig {
         http
                 .csrf(csrf -> csrf.disable()) // CSRF 보호 비활성화 (REST API에서는 토큰 방식 사용 시 비활성화 권장)
                 .authorizeHttpRequests(authorize -> authorize
-                        .requestMatchers("/api/admin/login", "/api/dev/login", "/api/social/callback").permitAll() // 로그인 관련 경로는 모두 허용
+                        .requestMatchers("/api/admin/login", "/api/dev/login", "/api/social/callback", "/bookbook/home").permitAll() // 로그인 관련 경로와 메인페이지는 모두 허용
                         .anyRequest().authenticated() // 나머지 모든 요청은 인증 필요
                 );
 
