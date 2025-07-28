@@ -1,4 +1,4 @@
-package com.bookbook.global.rsData;
+package com.bookbook.global.rsdata;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
