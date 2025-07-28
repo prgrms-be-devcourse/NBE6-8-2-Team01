@@ -1,5 +1,6 @@
 package com.bookbook.domain.wishList.entity;
 
+import com.bookbook.domain.rent.entity.Rent;
 import com.bookbook.domain.user.entity.User;
 import jakarta.persistence.*;
 import lombok.Getter;
@@ -22,9 +23,8 @@ public class WishList {
     @ManyToOne
     private User user;
 
-    // TODO: Rent 엔티티 구현 후 주석 해제
-    // @ManyToOne
-    // private Rent rent;
+    @ManyToOne
+    private Rent rent;
 
     @CreatedDate
     private LocalDateTime createDate;
