@@ -42,3 +42,7 @@ out/
 ### Custom ###
 db_dev.mv.db
 db_dev.trace.db
+
+# H2 Database files
+*.mv.db
+*.trace.db
