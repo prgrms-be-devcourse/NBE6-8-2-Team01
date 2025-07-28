@@ -1,6 +1,6 @@
 package com.bookbook.global.globalExceptionHandler;
 
-import com.bookbook.global.rsData.RsData;
+import com.bookbook.global.rsdata.RsData;
 import com.bookbook.global.exception.ServiceException;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.ConstraintViolationException;
@@ -29,7 +29,8 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(
                 new RsData<>(
                         "404-1",
-                        "해당 데이터가 존재하지 않습니다."
+                        "해당 데이터가 존재하지 않습니다.",
+                        null
                 ),
                 NOT_FOUND
         );
@@ -54,7 +55,8 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(
                 new RsData<>(
                         "400-1",
-                        message
+                        message,
+                        null
                 ),
                 BAD_REQUEST
         );
@@ -75,6 +77,7 @@ public class GlobalExceptionHandler {
                 new RsData<>(
                         "400-1",
                         message
+                        , null
                 ),
                 BAD_REQUEST
         );
@@ -86,6 +89,7 @@ public class GlobalExceptionHandler {
                 new RsData<>(
                         "400-1",
                         "요청 본문이 올바르지 않습니다."
+                        ,null
                 ),
                 BAD_REQUEST
         );
@@ -100,7 +104,8 @@ public class GlobalExceptionHandler {
                                 ex.getHeaderName(),
                                 "NotBlank",
                                 ex.getLocalizedMessage()
-                        )
+                        ),
+                        null
                 ),
                 BAD_REQUEST
         );
@@ -110,7 +115,7 @@ public class GlobalExceptionHandler {
     public RsData<Void> handle(ServiceException ex, HttpServletResponse response) {
         RsData<Void> rsData = ex.getRsData();
 
-        response.setStatus(rsData.statusCode());
+        response.setStatus(rsData.getStatusCode());
 
         return rsData;
     }

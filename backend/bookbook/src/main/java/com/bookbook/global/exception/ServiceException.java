@@ -1,6 +1,6 @@
 package com.bookbook.global.exception;
 
-import com.bookbook.global.rsData.RsData;
+import com.bookbook.global.rsdata.RsData;
 
 public class ServiceException extends RuntimeException {
     private final String resultCode;
