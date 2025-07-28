@@ -11,7 +11,6 @@ import org.springframework.web.bind.annotation.*;
 @RestController // @Controller와 @ResponseBody를 합친 형태, RESTful 웹 서비스 컨트롤러
 @RequestMapping("/bookbook/rent") // HTTP 요청의 특정 경로를 메서드나 클래스에 매핑
 @RequiredArgsConstructor // final 필드에 대한 생성자를 자동으로 생성
-@CrossOrigin(origins = "http://localhost:3000", methods = {RequestMethod.GET, RequestMethod.POST, RequestMethod.PUT, RequestMethod.DELETE, RequestMethod.OPTIONS}, allowCredentials = "true") // 컨트롤러 전체에 적용
 public class RentController {
     private final RentService rentService;
 
