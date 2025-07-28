@@ -14,33 +14,43 @@ interface HomeApiResponse {
   success: boolean;
 }
 
-// 기본 메인페이지 API 호출 (비로그인)
+// 메인페이지 API 호출
 const fetchHomeData = async (): Promise<HomeApiResponse> => {
-  const response = await fetch('http://localhost:8080/api/v1/home');
-  
-  if (!response.ok) {
-    throw new Error('API 호출 실패');
-  }
-  
-  return response.json();
-};
-
-// 테스트용 API 호출
-const fetchTestData = async (userId?: number): Promise<HomeApiResponse> => {
-  const url = userId 
-    ? `http://localhost:8080/api/v1/home/test?userId=${userId}`
-    : 'http://localhost:8080/api/v1/home/test';
+  try {
+    console.log('API 호출 시작: http://localhost:8080/bookbook/home');
     
-  const response = await fetch(url);
-  return response.json();
+    const response = await fetch('http://localhost:8080/bookbook/home', {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+      },
+      // CORS 이슈를 위한 설정
+      mode: 'cors',
+      credentials: 'include'
+    });
+    
+    console.log('응답 상태:', response.status, response.statusText);
+    console.log('응답 헤더:', Object.fromEntries(response.headers.entries()));
+    
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    }
+    
+    const data = await response.json();
+    console.log('파싱된 응답 데이터:', data);
+    
+    return data;
+  } catch (error) {
+    console.error('fetchHomeData 에러 상세:', error);
+    throw error;
+  }
 };
 
 const BookRegionSection = () => {
   const [homeData, setHomeData] = useState<HomeApiResponse['data'] | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [testMode, setTestMode] = useState(false);
-  const [testUserId, setTestUserId] = useState<number | undefined>(undefined);
 
   useEffect(() => {
     const loadHomeData = async () => {
@@ -48,28 +58,36 @@ const BookRegionSection = () => {
         setLoading(true);
         setError(null);
         
-        // 테스트 모드 또는 일반 모드
-        const response = testMode 
-          ? await fetchTestData(testUserId)
-          : await fetchHomeData();
+        const response = await fetchHomeData();
         
-        console.log('API 응답:', response); // 디버깅용
+        console.log('API 응답 전체:', response);
         
-        if (response.success || response.resultCode === "200-1") {
+        // 응답 구조 확인 및 데이터 설정
+        if (response && (response.success || response.resultCode === "200-1")) {
           setHomeData(response.data);
+          console.log('데이터 설정 완료:', response.data);
         } else {
+          console.warn('API 응답이 성공이 아님:', response);
           setError('데이터를 불러오는데 실패했습니다.');
         }
       } catch (err) {
-        console.error('API 호출 에러:', err);
-        setError('서버와 연결할 수 없습니다. 백엔드 서버가 실행 중인지 확인해주세요.');
+        console.error('API 호출 에러 상세:', err);
+        
+        // 에러 유형에 따른 다른 메시지 표시
+        if (err instanceof TypeError && err.message.includes('Failed to fetch')) {
+          setError('백엔드 서버에 연결할 수 없습니다. 서버가 실행 중인지 확인해주세요.');
+        } else if (err instanceof Error && err.message.includes('HTTP')) {
+          setError(`서버 오류: ${err.message}`);
+        } else {
+          setError('알 수 없는 오류가 발생했습니다.');
+        }
       } finally {
         setLoading(false);
       }
     };
 
     loadHomeData();
-  }, [testMode, testUserId]);
+  }, []);
 
   if (loading) {
     return (
@@ -84,14 +102,41 @@ const BookRegionSection = () => {
   if (error) {
     return (
       <section className="w-full max-w-7xl mx-auto px-4 mt-12 mb-16">
-        <div className="flex flex-col justify-center items-center h-64">
-          <div className="text-lg text-red-600 mb-4">{error}</div>
-          <button 
-            onClick={() => window.location.reload()} 
-            className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
-          >
-            새로고침
-          </button>
+        <div className="flex flex-col justify-center items-center h-64 space-y-4">
+          <div className="text-lg text-red-600 text-center">{error}</div>
+          <div className="flex space-x-4">
+            <button 
+              onClick={() => window.location.reload()} 
+              className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
+            >
+              새로고침
+            </button>
+            <button 
+              onClick={() => {
+                setError(null);
+                setLoading(true);
+                // 컴포넌트 재마운트를 위한 강제 리렌더링
+                setTimeout(() => window.location.reload(), 100);
+              }}
+              className="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600 transition-colors"
+            >
+              다시 시도
+            </button>
+          </div>
+          {/* 개발용 백엔드 상태 확인 링크 */}
+          {process.env.NODE_ENV === 'development' && (
+            <div className="text-sm text-gray-500 text-center">
+              <div className="mb-2">백엔드 상태 확인:</div>
+              <a 
+                href="http://localhost:8080/bookbook/home" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="text-blue-500 hover:underline"
+              >
+                http://localhost:8080/bookbook/home
+              </a>
+            </div>
+          )}
         </div>
       </section>
     );
@@ -104,47 +149,19 @@ const BookRegionSection = () => {
           {homeData?.message || '최근 등록된 도서'}
         </h2>
         
-        {/* 개발/테스트용 컨트롤 */}
-        <div className="flex gap-4 items-center">
-          <label className="flex items-center gap-2 text-sm">
-            <input
-              type="checkbox"
-              checked={testMode}
-              onChange={(e) => setTestMode(e.target.checked)}
-            />
-            테스트 모드
-          </label>
-          
-          {testMode && (
-            <select
-              className="border border-gray-300 rounded-md px-3 py-2 text-sm"
-              value={testUserId || 'none'}
-              onChange={(e) => {
-                const value = e.target.value;
-                setTestUserId(value === 'none' ? undefined : Number(value));
-              }}
-            >
-              <option value="none">전체 (비로그인)</option>
-              <option value={1}>성북구 사용자</option>
-              <option value={2}>강남구 사용자</option>
-              <option value={3}>마포구 사용자</option>
-            </select>
-          )}
-          
-          <div className="text-sm text-gray-600">
-            총 {homeData?.totalBooksInRegion || 0}권
-          </div>
+        <div className="text-sm text-gray-600">
+          총 {homeData?.totalBooksInRegion || 0}권
         </div>
       </div>
 
       {/* 도서 이미지 그리드 */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-6">
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-6">
         {homeData?.bookImages && homeData.bookImages.length > 0 ? (
           homeData.bookImages.map((imageUrl, index) => (
             <div key={index} className="w-full h-[250px] relative overflow-hidden rounded-md shadow-lg hover:shadow-xl transition-shadow duration-300">
               <img
                 src={imageUrl}
-                alt={`${homeData.region} 추천 도서 ${index + 1}`}
+                alt={`추천 도서 ${index + 1}`}
                 className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
                 onError={(e) => {
                   console.log('이미지 로드 실패:', imageUrl);
@@ -158,7 +175,7 @@ const BookRegionSection = () => {
             <div className="text-lg mb-2">📖</div>
             <div>등록된 도서가 없습니다.</div>
             <div className="text-sm text-gray-400 mt-2">
-              백엔드 서버의 더미 데이터를 확인해주세요.
+              도서를 등록해주세요.
             </div>
           </div>
         )}
