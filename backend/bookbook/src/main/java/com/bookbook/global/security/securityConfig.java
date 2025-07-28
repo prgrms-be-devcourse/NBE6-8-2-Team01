@@ -31,9 +31,9 @@ public class securityConfig {
                                 "/api/admin/login",
                                 "/api/dev/login",
                                 "/api/social/callback",
-                                "/api/v1/users/dev/login", // 개발용 로그인 추가
                                 "/bookbook/home",
-                                "/api/v1/bookbook/home" // 메인페이지 접근 허용
+                                "/api/v1/bookbook/home", // 메인페이지 접근 허용
+                                "/api/v1/users/dev/login" // 개발용 로그인 추가
                         ).permitAll()
                         .requestMatchers("/favicon.ico").permitAll()
                         .requestMatchers("/h2-console/**").permitAll()
