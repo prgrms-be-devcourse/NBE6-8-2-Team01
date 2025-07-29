@@ -14,10 +14,10 @@ interface HomeApiResponse {
   success: boolean;
 }
 
-// 메인페이지 API 호출
+// 메인페이지 API 호출 (인증 불필요)
 const fetchHomeData = async (): Promise<HomeApiResponse> => {
   try {
-    console.log('API 호출 시작: http://localhost:8080/bookbook/home');
+    console.log('API 호출 시작: http://localhost:8080/api/v1/bookbook/home');
     
     const response = await fetch('http://localhost:8080/api/v1/bookbook/home', {
       method: 'GET',
@@ -76,6 +76,10 @@ const BookRegionSection = () => {
         // 에러 유형에 따른 다른 메시지 표시
         if (err instanceof TypeError && err.message.includes('Failed to fetch')) {
           setError('백엔드 서버에 연결할 수 없습니다. 서버가 실행 중인지 확인해주세요.');
+        } else if (err instanceof Error && err.message.includes('HTTP 403')) {
+          setError('서버 접근 권한 오류가 발생했습니다. 관리자에게 문의해주세요.');
+        } else if (err instanceof Error && err.message.includes('HTTP 404')) {
+          setError('API 경로를 찾을 수 없습니다. 백엔드 서버 설정을 확인해주세요.');
         } else if (err instanceof Error && err.message.includes('HTTP')) {
           setError(`서버 오류: ${err.message}`);
         } else {
@@ -88,6 +92,13 @@ const BookRegionSection = () => {
 
     loadHomeData();
   }, []);
+
+  const handleRetry = () => {
+    setError(null);
+    setLoading(true);
+    // 단순 재시도
+    setTimeout(() => window.location.reload(), 100);
+  };
 
   if (loading) {
     return (
@@ -112,12 +123,7 @@ const BookRegionSection = () => {
               새로고침
             </button>
             <button 
-              onClick={() => {
-                setError(null);
-                setLoading(true);
-                // 컴포넌트 재마운트를 위한 강제 리렌더링
-                setTimeout(() => window.location.reload(), 100);
-              }}
+              onClick={handleRetry}
               className="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600 transition-colors"
             >
               다시 시도
@@ -128,12 +134,12 @@ const BookRegionSection = () => {
             <div className="text-sm text-gray-500 text-center">
               <div className="mb-2">백엔드 상태 확인:</div>
               <a 
-                href="http://localhost:8080/bookbook/home" 
+                href="http://localhost:8080/api/v1/bookbook/home" 
                 target="_blank" 
                 rel="noopener noreferrer"
                 className="text-blue-500 hover:underline"
               >
-                http://localhost:8080/bookbook/home
+                http://localhost:8080/api/v1/bookbook/home
               </a>
             </div>
           )}
@@ -150,6 +156,11 @@ const BookRegionSection = () => {
         </h2>
         
         <div className="text-sm text-gray-600">
+          {homeData?.region && (
+            <span className="mr-4 px-2 py-1 bg-blue-100 text-blue-800 rounded-md text-xs">
+              📍 {homeData.region}
+            </span>
+          )}
           총 {homeData?.totalBooksInRegion || 0}권
         </div>
       </div>
@@ -175,11 +186,26 @@ const BookRegionSection = () => {
             <div className="text-lg mb-2">📖</div>
             <div>등록된 도서가 없습니다.</div>
             <div className="text-sm text-gray-400 mt-2">
-              도서를 등록해주세요.
+              {homeData?.region 
+                ? `${homeData.region}에 등록된 도서가 없습니다.` 
+                : '도서를 등록해주세요.'
+              }
             </div>
           </div>
         )}
       </div>
+
+      {/* 지역 정보 표시 (나중에 주소 입력 기능으로 확장 예정) */}
+      {homeData?.region && (
+        <div className="mt-8 p-4 bg-gray-50 rounded-md">
+          <div className="text-sm text-gray-600 text-center">
+            💡 현재 <strong>{homeData.region}</strong> 지역의 도서를 보고 계십니다.
+            <div className="text-xs text-gray-500 mt-1">
+              나중에 다른 지역의 도서도 검색할 수 있어요!
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* 개발용 디버깅 정보 */}
       {process.env.NODE_ENV === 'development' && homeData && (
