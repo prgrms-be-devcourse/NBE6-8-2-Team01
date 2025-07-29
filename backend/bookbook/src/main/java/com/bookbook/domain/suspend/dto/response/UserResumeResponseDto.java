@@ -11,7 +11,6 @@ public record UserResumeResponseDto(
         @NonNull Long userId,
         @NonNull String username,
         @NonNull String nickname,
-        @NonNull String email,
         @NonNull String status,
         @NonNull LocalDateTime resumedAt
 ) {
@@ -21,7 +20,6 @@ public record UserResumeResponseDto(
                 .userId(user.getId())
                 .username(user.getUsername())
                 .nickname(user.getNickname())
-                .email(user.getEmail())
                 .status(user.getUserStatus().toString())
                 .resumedAt(LocalDateTime.now())
                 .build();

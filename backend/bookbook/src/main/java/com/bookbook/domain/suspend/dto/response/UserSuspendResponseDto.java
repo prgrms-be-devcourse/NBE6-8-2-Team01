@@ -11,7 +11,6 @@ public record UserSuspendResponseDto(
         @NonNull Long id,
         @NonNull Long userId,
         @NonNull String name,
-        @NonNull String email,
         @NonNull String reason,
         @NonNull LocalDateTime suspendedAt,
         @NonNull LocalDateTime resumedAt
@@ -22,7 +21,6 @@ public record UserSuspendResponseDto(
                 .id(suspendedUser.getId())
                 .userId(suspendedUser.getUser().getId())
                 .name(suspendedUser.getUser().getUsername())
-                .email(suspendedUser.getUser().getEmail())
                 .reason(suspendedUser.getReason())
                 .suspendedAt(suspendedUser.getSuspendedAt())
                 .resumedAt(suspendedUser.getResumedAt())
