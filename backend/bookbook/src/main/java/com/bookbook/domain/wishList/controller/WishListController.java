@@ -10,7 +10,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/v1/bookbook/wishlists")
+@RequestMapping("/api/v1/user/{userId}/wishlist")
 @RequiredArgsConstructor
 public class WishListController {
 
@@ -18,7 +18,7 @@ public class WishListController {
 
     @GetMapping
     public ResponseEntity<List<WishListResponseDto>> getWishList(
-            @RequestParam Long userId
+            @PathVariable Long userId
     ) {
         List<WishListResponseDto> wishList = wishListService.getWishListByUserId(userId);
         return ResponseEntity.ok(wishList);
@@ -26,7 +26,7 @@ public class WishListController {
 
     @PostMapping
     public ResponseEntity<WishListResponseDto> addWishList(
-            @RequestParam Long userId,
+            @PathVariable Long userId,
             @RequestBody WishListCreateRequestDto request
     ) {
         WishListResponseDto response = wishListService.addWishList(userId, request);
@@ -35,7 +35,7 @@ public class WishListController {
 
     @DeleteMapping("/{rentId}")
     public ResponseEntity<Void> deleteWishList(
-            @RequestParam Long userId,
+            @PathVariable Long userId,
             @PathVariable Integer rentId
     ) {
         wishListService.deleteWishList(userId, rentId);
