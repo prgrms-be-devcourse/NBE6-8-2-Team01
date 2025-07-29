@@ -26,4 +26,12 @@ public class LendListController {
         Page<LendListResponseDto> lendList = lendListService.getLendListByUserId(userId, pageable);
         return ResponseEntity.ok(lendList);
     }
+    
+    @DeleteMapping("/{rentId}")
+    public ResponseEntity<Void> deleteLendList(
+            @PathVariable Long userId,
+            @PathVariable Integer rentId) {
+        lendListService.deleteLendList(userId, rentId);
+        return ResponseEntity.noContent().build();
+    }
 }
