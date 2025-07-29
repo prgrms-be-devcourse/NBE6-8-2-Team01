@@ -1,6 +1,5 @@
 import { MenuItem } from "../../_types/menuItem";
 import { Home, Users, NotebookText, MailWarning } from "lucide-react";
-import { AdminInfo } from "../../_types/adminInfo";
 
 // 사이드바 메뉴 데이터
 export const menuItems: MenuItem[] = [
@@ -31,10 +30,3 @@ export const menuItems: MenuItem[] = [
     apiPath: "/api/v1/admin/reports",
   },
 ];
-
-export const adminInfo: AdminInfo = {
-  id: "admin001",
-  name: "관리자",
-  email: "admin@bookbook.com",
-  role: "시스템 관리자",
-};

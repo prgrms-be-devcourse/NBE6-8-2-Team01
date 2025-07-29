@@ -1,10 +1,10 @@
-import { AdminInfo } from "../_types/adminInfo";
 import { useState } from "react";
 import Image from "next/image";
 import { User, ChevronDown, LogOut } from "lucide-react";
+import { UserLoginResponseDto } from "@/app/admin/_hook/useAuth";
 
 interface AdminProfileProps {
-  admin: AdminInfo;
+  admin: UserLoginResponseDto;
   onLogout: () => void;
 }
   
@@ -25,7 +25,7 @@ export function AdminProfile(props: AdminProfileProps) {
             {admin.avatar ? (
               <Image
                 src={admin.avatar}
-                alt={admin.name}
+                alt={admin.nickname}
                 className="w-full h-full rounded-full object-cover"
               />
             ) : (
@@ -35,7 +35,7 @@ export function AdminProfile(props: AdminProfileProps) {
 
           {/* 관리자 정보 */}
           <div className="flex-1 text-left">
-            <p className="text-sm font-medium text-white">{admin.name}</p>
+            <p className="text-sm font-medium text-white">{admin.nickname}</p>
             <p className="text-xs text-slate-300">{admin.role}</p>
           </div>
 
@@ -52,8 +52,8 @@ export function AdminProfile(props: AdminProfileProps) {
         {showDropdown && (
           <div className="absolute bottom-full left-0 right-0 mb-2 bg-white rounded-lg shadow-lg border border-gray-200 py-2">
             <div className="px-4 py-2 border-b border-gray-100">
-              <p className="text-sm font-medium text-gray-900">{admin.name}</p>
-              <p className="text-xs text-gray-500">{admin.email}</p>
+              <p className="text-sm font-medium text-gray-900">{admin.nickname}</p>
+              <p className="text-xs text-gray-500">{admin.username}</p>
             </div>
 
             <button

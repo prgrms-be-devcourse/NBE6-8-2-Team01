@@ -1,9 +1,10 @@
 import { AdminProfile } from "../adminProfile";
 import { MenuItem } from "../../_types/menuItem";
 import { ChevronDown, ChevronRight } from "lucide-react";
-import { menuItems, adminInfo } from "./consts";
+import { menuItems } from "./consts";
 import { GoBook } from "react-icons/go";
 import Link from "next/link";
+import { UserLoginResponseDto } from "@/app/admin/_hook/useAuth";
 
 interface SidebarMenuItemProps {
   item: MenuItem;
@@ -20,6 +21,7 @@ interface SidebarProps {
   activeItem: string;
   onItemClick: (id: string, apiPath?: string) => void;
   onLogout: () => void;
+  loginMember: UserLoginResponseDto;
 }
 
 function SidebarMenuItem(props: SidebarMenuItemProps) {
@@ -90,7 +92,7 @@ function SidebarMenuItem(props: SidebarMenuItemProps) {
 }
 
 export function SideBar(props: SidebarProps) {
-  const { expandedItems, onToggle, activeItem, onItemClick, onLogout } = props;
+  const { expandedItems, onToggle, activeItem, onItemClick, onLogout, loginMember } = props;
 
   return (
     <div className="min-w-50 w-64 bg-slate-700 min-h-screen flex flex-col">
@@ -120,7 +122,7 @@ export function SideBar(props: SidebarProps) {
       </nav>
 
       {/* 관리자 프로필 영역 - 하단 고정 */}
-      <AdminProfile admin={adminInfo} onLogout={onLogout} />
+      <AdminProfile admin={loginMember} onLogout={onLogout} />
     </div>
   );
 }
