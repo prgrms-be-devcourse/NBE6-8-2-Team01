@@ -35,13 +35,13 @@ public class User extends BaseEntity {
     @Column(name = "password", nullable = false)
     private String password;
 
-    @Column(name = "nickname", unique = true, nullable = false)
+    @Column(name = "nickname", unique = true, nullable = true)
     private String nickname;
 
     @Column(name = "email", unique = true, nullable = true)
     private String email;
 
-    @Column(name = "address", nullable = false)
+    @Column(name = "address", nullable = true)
     private String address;
 
     // 별점 = (리뷰를 남긴 사람들의 별점들의 합) / (리뷰를 남긴 사람의 수)

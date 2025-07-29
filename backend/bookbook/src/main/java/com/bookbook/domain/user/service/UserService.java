@@ -91,4 +91,7 @@ public class UserService {
         return Optional.empty();
     }
 
+    public boolean checkNicknameAvailability(String nickname) {
+        return !userRepository.existsByNickname(nickname);
+    }
 }
