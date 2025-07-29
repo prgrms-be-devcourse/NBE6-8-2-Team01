@@ -97,7 +97,7 @@ public class UserService {
 
     @Transactional
     public User registerAddUserInfo(Long userId, String nickname, String address){
-        User user = userRepository.findByUsername(nickname)
+        User user = userRepository.findById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
 
         if(userRepository.existsByNickname(nickname) && !user.getNickname().equals(nickname)) {
