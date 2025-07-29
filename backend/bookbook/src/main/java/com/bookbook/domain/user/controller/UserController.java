@@ -35,7 +35,7 @@ public class UserController {
 
     }
 
-    @GetMapping("check-username")
+    @GetMapping("/check-nickname")
     public ResponseEntity<Map<String, Boolean>> checkNickname(@RequestParam String nickname) {
         if(nickname == null || nickname.trim().isEmpty()){
             Map<String, Boolean> errorResponse = new HashMap<>();
