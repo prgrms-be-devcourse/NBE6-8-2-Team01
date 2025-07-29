@@ -2,6 +2,7 @@ package com.bookbook.domain.user.controller;
 
 import com.bookbook.domain.user.dto.UserLoginRequestDto;
 import com.bookbook.domain.user.dto.UserResponseDto;
+import com.bookbook.domain.user.dto.UserSignupRequestDto;
 import com.bookbook.domain.user.service.UserService;
 import com.bookbook.global.security.CustomOAuth2User;
 import lombok.RequiredArgsConstructor;
@@ -50,7 +51,7 @@ public class UserController {
 
     @PostMapping("/signup")
     public ResponseEntity<String> completeSignup(
-            @RequestBody SignupRequest signupRequest,
+            @RequestBody UserSignupRequestDto signupRequest,
             @AuthenticationPrincipal CustomOAuth2User customOAuth2User
     ){
         Long userId = Objects.requireNonNullElse(customOAuth2User.getUserId(), -1L);
