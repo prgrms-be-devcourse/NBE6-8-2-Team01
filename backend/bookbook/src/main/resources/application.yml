@@ -28,23 +28,23 @@ spring:
           kakao:
             client-id: ${KAKAO_API_KEY}
             client-secret: ${KAKAO_CLIENT_SECRET}
-            scope: profile, account_email
-            redirect-uri: "http://localhost:8080/api/v1/bookbook/login/oauth2/code/kakao"
+            scope: profile_nickname
+            redirect-uri: "{baseUrl}/login/oauth2/code/{registrationId}"
             client-name: KAKAO
-            client-authentication-method: post
+            client-authentication-method: client_secret_post
             authorization-grant-type: authorization_code
           naver:
             client-id: ${NAVER_API_KEY}
             client-secret: ${NAVER_CLIENT_SECRET}
             scope: profile
-            redirect-uri: "http://localhost:8080/api/v1/bookbook/login/oauth2/code/naver"
+            redirect-uri: "{baseUrl}/login/oauth2/code/{registrationId}"
             client-name: Naver
             authorization-grant-type: authorization_code
           google:
             client-id: ${GOOGLE_API_KEY}
             client-secret: ${GOOGLE_CLIENT_SECRET}
             scope: profile, email
-            redirect-uri: "http://localhost:8080/api/v1/bookbook/login/oauth2/code/google"
+            redirect-uri: "{baseUrl}/login/oauth2/code/{registrationId}"
             client-name: Google
             authorization-grant-type: authorization_code
         provider:

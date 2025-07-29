@@ -47,15 +47,19 @@ public record OAuth2UserAttributes(
         Map<String, Object> kakaoAccount = (Map<String, Object>) attributes.get("kakao_account");
         Map<String, Object> profile = (Map<String, Object>) kakaoAccount.get("profile");
 
-        String email = (String) kakaoAccount.get("email");
+        // 카카오는 이메일 정보는 받아올 수 없으므로 null 또는 빈 문자열을 사용합니다.
+        String email = null;
+
         String nickname = (String) profile.get("nickname");
+
+        String id = String.valueOf(attributes.get("id"));
 
         return new OAuth2UserAttributes(
                 attributes,
                 userNameAttributeName,
                 nickname,
-                email,
-                String.valueOf(attributes.get(userNameAttributeName))
+                email, // 이메일 필드에 null 또는 빈 문자열 전달
+                id
         );
     }
 
