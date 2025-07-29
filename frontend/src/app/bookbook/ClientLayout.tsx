@@ -5,7 +5,7 @@ import UserSidebar from '../components/UserSidebar';
 
 export default function ClientLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const isUserPage = pathname.startsWith('/bookbook/user'); // ✅ 조건 수정!
+  const isUserPage = pathname.startsWith('/bookbook/user') && pathname !== '/bookbook/user/signup'; // ✅ 조건 수정!
 
   if (isUserPage) {
     return (
