@@ -94,4 +94,19 @@ public class UserService {
     public boolean checkNicknameAvailability(String nickname) {
         return !userRepository.existsByNickname(nickname);
     }
+
+    @Transactional
+    public User registerAddUserInfo(Long userId, String nickname, String address){
+        User user = userRepository.findByUsername(nickname)
+                .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
+
+        if(userRepository.existsByNickname(nickname) && !user.getNickname().equals(nickname)) {
+            throw new IllegalArgumentException("이미 사용 중인 닉네임입니다.");
+        }
+
+        user.changeNickname(nickname);
+        user.changeAddress(address);
+
+        return userRepository.save(user);
+    }
 }
