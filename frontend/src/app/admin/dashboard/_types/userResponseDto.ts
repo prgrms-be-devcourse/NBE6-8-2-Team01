@@ -33,7 +33,6 @@ export interface UserDetailResponseDto {
 export interface UserBaseResponseDto {
   id: number;
   username: string;
-  email: string;
   nickname: string;
   rating: number;
   createdAt: string;
