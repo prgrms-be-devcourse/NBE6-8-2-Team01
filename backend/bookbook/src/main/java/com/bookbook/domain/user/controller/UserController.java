@@ -76,4 +76,26 @@ public class UserController {
         }
     }
 
+    @GetMapping("/me")
+    public ResponseEntity<?> getCurrentUser(@AuthenticationPrincipal CustomOAuth2User customOAuth2User) {
+        if (customOAuth2User == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("로그인된 사용자가 없습니다.");
+        }
+
+        Map<String, Object> userInfo = new HashMap<>();
+        userInfo.put("userId", customOAuth2User.getUserId());
+        userInfo.put("username", customOAuth2User.getUsername());
+        userInfo.put("nickname", customOAuth2User.getNickname());
+        userInfo.put("email", customOAuth2User.getEmail());
+        userInfo.put("isNewUser", customOAuth2User.isNewUser());
+        userInfo.put("role", customOAuth2User.getAuthorities().iterator().next().getAuthority());
+
+        return ResponseEntity.ok(userInfo);
+    }
+
+    @GetMapping("/isAuthenticated") // 간단한 로그인 여부 확인
+    public ResponseEntity<Boolean> isAuthenticated(@AuthenticationPrincipal CustomOAuth2User customOAuth2User) {
+        return ResponseEntity.ok(customOAuth2User != null);
+    }
+
 }
