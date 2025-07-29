@@ -25,10 +25,17 @@ public class securityConfig {
                 .csrf(csrf -> csrf.disable()) // REST API에서는 CSRF 비활성화 (토큰 기반 인증 시)
                 .authorizeHttpRequests(authorize -> authorize
                         // 로그인 관련 경로는 모두 허용
-
-                        .requestMatchers("/api/admin/login", "api/v1/bookbook/users/login/dev", "api/v1/bookbook/users/social/callback", "/login/**", "/bookbook/home", "/api/v1/bookbook/login/oauth2/code/**","/api/v1/users/dev/login", "/api/v1/bookbook/home", "/api/v1/bookbook/user/**").permitAll()
-
-                        
+                        .requestMatchers(
+                                "/api/*/admin/login", "/api/*/admin/logout",
+                                "api/v1/bookbook/users/login/dev",
+                                "api/v1/bookbook/users/social/callback",
+                                "/login/**",
+                                "/bookbook/home",
+                                "/api/v1/bookbook/login/oauth2/code/**",
+                                "/api/v1/users/dev/login",
+                                "/api/v1/bookbook/home",
+                                "/api/v1/bookbook/user/**").permitAll()
+                        .requestMatchers("api/*/admin/**").hasRole("ADMIN")
                         .requestMatchers("/favicon.ico").permitAll() // 파비콘 접근 허용
                         .requestMatchers("/h2-console/**").permitAll() // H2 콘솔 접근 허용
                         .requestMatchers("/bookbook/rent/create").permitAll() // Rent 페이지 생성은 인증 필요, (임시)
