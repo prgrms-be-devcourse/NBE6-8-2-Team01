@@ -1,0 +1,59 @@
+package com.bookbook.domain.user.service;
+
+import com.bookbook.domain.user.dto.UserBaseDto;
+import com.bookbook.domain.user.dto.UserLoginRequestDto;
+import com.bookbook.domain.user.dto.response.UserDetailResponseDto;
+import com.bookbook.domain.user.entity.User;
+import com.bookbook.domain.user.repository.UserRepository;
+import lombok.RequiredArgsConstructor;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
+import java.util.Optional;
+
+@Service
+@RequiredArgsConstructor
+public class AdminService {
+    private final UserRepository userRepository;
+    private final PasswordEncoder passwordEncoder;
+
+    @Transactional(readOnly = true)
+    public User login(UserLoginRequestDto reqBody) {
+        User user = findByUsername(reqBody.getUsername())
+                .orElseThrow(() -> new RuntimeException("존재하지 않는 계정입니다"));
+
+        checkPassword(user, reqBody.getPassword());
+
+        return user;
+    }
+
+    @Transactional(readOnly = true)
+    public List<UserBaseDto> getAllUsers() {
+        return userRepository.findAll().stream()
+                .map(UserBaseDto::from)
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public UserDetailResponseDto getSpecificUserInfo(Long userId) {
+        User user = findByUserId(userId);
+        return UserDetailResponseDto.from(user);
+    }
+
+    public User findByUserId(Long userId) {
+        return userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("존재하지 않는 유저입니다."));
+    }
+
+    private Optional<User> findByUsername(String username) {
+        return userRepository.findByUsername(username);
+    }
+
+    private void checkPassword(User user, String password) {
+        if (!passwordEncoder.matches(password, user.getPassword())) {
+            throw new RuntimeException("존재하지 않는 계정입니다");
+        }
+    }
+}
