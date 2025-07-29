@@ -10,25 +10,25 @@ export const menuItems: MenuItem[] = [
     icon: Home,
   },
   {
-    id: "member-management",
+    id: "user-management",
     label: "멤버 관리",
     icon: Users,
     children: [
-      { id: "member-list", label: "전체 멤버", apiPath: "/api/admin/members" },
-      { id: "suspended-member-list", label: "정지 멤버 이력", apiPath: "/api/admin/members/suspended" },
+      { id: "user-list", label: "전체 멤버", apiPath: "/api/v1/admin/users" },
+      { id: "suspended-user-list", label: "정지 멤버 이력", apiPath: "/api/v1/admin/users/suspend" },
     ],
   },
   {
     id: "post-management",
     label: "게시글 관리",
     icon: NotebookText,
-    apiPath: "/api/admin/posts"
+    apiPath: "/api/v1/admin/posts"
   },
   {
     id: "reports",
     label: "신고 목록",
     icon: MailWarning,
-    apiPath: "/api/admin/reports",
+    apiPath: "/api/v1/admin/reports",
   },
 ];
 

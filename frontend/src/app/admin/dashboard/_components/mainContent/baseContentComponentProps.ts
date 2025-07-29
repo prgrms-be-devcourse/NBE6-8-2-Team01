@@ -1,3 +1,4 @@
 export interface BaseContentComponentProps {
-    responseData: unknown;
+    responseData: unknown | null;
+    onRefresh?: () => void;
 }

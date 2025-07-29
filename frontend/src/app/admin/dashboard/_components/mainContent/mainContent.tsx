@@ -2,34 +2,42 @@ import { useEffect } from "react";
 import { MenuItem } from "../../_types/menuItem";
 import { menuItems } from "../sidebar/consts";
 
-import { SuspendedMemberListComponent } from "./suspendedMemberListComponent";
+import { SuspendedUserListComponent } from "./suspendedUserListComponent";
 import { DashBoardComponent } from "./dashBoardComponent";
-import { MemberListComponent} from "./memberListComponent";
-import { MemberRentPostComponent } from "./memberRentPostComponent";
+import { UserListComponent } from "./userListComponent";
+import { UserRentPostComponent } from "./userRentPostComponent";
 import { ReportHistoryComponent } from "./reportHistoryComponent";
+import { BaseContentComponentProps } from "./baseContentComponentProps";
 
 interface MainContentProps {
   activeItem: string;
-  responseData: unknown;
+  responseData: unknown | null;
   currentItem: MenuItem | null;
   setCurrentItem: (item: MenuItem | null) => void;
-}
-
-interface ResponseDataProps {
-  responseData: unknown;
+  loading: boolean;
+  onRefresh?: () => void;
 }
 
 // 메뉴 ID와 렌더링할 컴포넌트를 매핑
-const componentMap: { [key: string]: React.ComponentType<ResponseDataProps> } = {
-  'suspended-member-list': SuspendedMemberListComponent,
-  'dashboard' : DashBoardComponent,
-  'member-list' : MemberListComponent,
-  'post-management': MemberRentPostComponent,
-  'reports' : ReportHistoryComponent
+const componentMap: {
+  [key: string]: React.ComponentType<BaseContentComponentProps>;
+} = {
+  "suspended-user-list": SuspendedUserListComponent,
+  "dashboard": DashBoardComponent,
+  "user-list": UserListComponent,
+  "post-management": UserRentPostComponent,
+  "reports": ReportHistoryComponent,
 };
 
 export function MainContent(props: MainContentProps) {
-  const { activeItem, responseData, currentItem, setCurrentItem } = props;
+  const {
+    activeItem,
+    responseData,
+    currentItem,
+    setCurrentItem,
+    loading,
+    onRefresh,
+  } = props;
 
   useEffect(() => {
     const findMenuItem = (items: MenuItem[], id: string): MenuItem | null => {
@@ -61,10 +69,13 @@ export function MainContent(props: MainContentProps) {
 
       <main className="p-5">
         <div className="bg-white rounded-lg shadow-sm p-8">
-          {ContentComponent
-              ? <ContentComponent responseData={responseData} />
-              : <p>정보를 가져오는 중입니다.</p>
-          }
+          {loading && <p>정보를 가져오는 중입니다.</p>}
+          {!loading && ContentComponent && (
+            <ContentComponent
+              responseData={responseData}
+              onRefresh={onRefresh}
+            />
+          )}
         </div>
       </main>
     </div>
