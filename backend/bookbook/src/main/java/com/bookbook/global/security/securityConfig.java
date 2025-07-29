@@ -5,13 +5,10 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
-import org.springframework.security.web.authentication.SimpleUrlAuthenticationSuccessHandler;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+
 import java.util.Arrays;
 import java.util.List;
 
@@ -23,12 +20,12 @@ public class securityConfig {
     private final CustomOAuth2UserService customOAuth2UserService;
 
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+    public SecurityFilterChain securityFilterChain(HttpSecurity http, LoginSuccessHandler loginSuccessHandler) throws Exception {
         http
                 .csrf(csrf -> csrf.disable()) // REST API에서는 CSRF 비활성화 (토큰 기반 인증 시)
                 .authorizeHttpRequests(authorize -> authorize
                         // 로그인 관련 경로는 모두 허용
-                        .requestMatchers("/api/admin/login", "/bookbook/users/login/dev", "/bookbook/users/social/callback", "/login/**", "/bookbook/home", "/api/v1/users/dev/login", "/api/v1/bookbook/home", "/api/v1/bookbook/user/**").permitAll()
+                        .requestMatchers("/api/admin/login", "api/v1/bookbook/users/login/dev", "api/v1/bookbook/users/social/callback", "/login/**", "/bookbook/home", "/api/v1/bookbook/login/oauth2/code/**","/api/v1/users/dev/login", "/api/v1/bookbook/home", "/api/v1/bookbook/user/**").permitAll()
                         .requestMatchers("/favicon.ico").permitAll() // 파비콘 접근 허용
                         .requestMatchers("/h2-console/**").permitAll()
                         .requestMatchers("/bookbook/rent/create").permitAll() // Rent 페이지 생성은 인증 필요, (임시)               
@@ -38,20 +35,12 @@ public class securityConfig {
                         .userInfoEndpoint(userInfo -> userInfo
                                 .userService(customOAuth2UserService) // 사용자 정보를 가져온 후 처리할 서비스 지정
                         )
-                        .successHandler(oauth2AuthenticationSuccessHandler()) // OAuth2 로그인 성공 후 처리할 핸들러 지정
+                        .successHandler(loginSuccessHandler) // OAuth2 로그인 성공 후 처리할 핸들러 지정
                 )
                 .headers(headers -> headers.frameOptions(frameOptions -> frameOptions.sameOrigin())); // H2 Console 사용을 위함
         return http.build();
     }
 
-    // OAuth2 로그인 성공 후 리다이렉트할 URL을 설정하는 핸들러
-    @Bean
-    public AuthenticationSuccessHandler oauth2AuthenticationSuccessHandler() {
-        SimpleUrlAuthenticationSuccessHandler handler = new SimpleUrlAuthenticationSuccessHandler();
-        handler.setDefaultTargetUrl("/"); // 로그인 성공 후 리다이렉트할 URL 설정
-        handler.setAlwaysUseDefaultTargetUrl(true);
-        return handler;
-    }
     // --- CORS 설정을 위한 Bean을 추가합니다 ---
     @Bean
     public UrlBasedCorsConfigurationSource corsConfigurationSource() {
