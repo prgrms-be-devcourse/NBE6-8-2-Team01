@@ -1,8 +1,8 @@
 "use client";
 
 import React from "react";
-import { MemberStatusFilter } from "./memberStatusFilter";
-import { MemberSearchBox, SearchType } from "./memberSearchBox";
+import { UserStatusFilter } from "./userStatusFilter";
+import { UserSearchBox, SearchType } from "./userSearchBox";
 import { userStatus } from "../../../_types/userResponseDto";
 
 interface FilterState {
@@ -11,7 +11,7 @@ interface FilterState {
   searchTerm: string;
 }
 
-interface MemberFilterContainerProps {
+interface UserFilterContainerProps {
   filters: FilterState;
   onStatusToggle: (status: userStatus) => void;
   onSelectAll: () => void;
@@ -20,25 +20,25 @@ interface MemberFilterContainerProps {
   onReset: () => void;
 }
 
-export function MemberFilterContainer({
+export function UserFilterContainer({
   filters,
   onStatusToggle,
   onSelectAll,
   onSearchTypeChange,
   onSearchTermChange,
   onReset,
-}: MemberFilterContainerProps) {
+}: UserFilterContainerProps) {
   return (
     <div className="bg-white border border-gray-200 rounded-lg p-4 space-y-4">
       {/* 상태 필터 */}
-      <MemberStatusFilter
+      <UserStatusFilter
         selectedStatuses={filters.userStatuses}
         onStatusToggle={onStatusToggle}
         onSelectAll={onSelectAll}
       />
 
       {/* 검색 */}
-      <MemberSearchBox
+      <UserSearchBox
         searchType={filters.searchType}
         searchTerm={filters.searchTerm}
         onSearchTypeChange={onSearchTypeChange}

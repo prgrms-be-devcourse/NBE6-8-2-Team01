@@ -5,11 +5,11 @@ import {
 } from "../../../_types/userResponseDto";
 import { formatDate } from "../../common/dateFormatter";
 
-interface MemberStatusInfoProps {
-  member: UserDetailResponseDto;
+interface UserStatusInfoProps {
+  user: UserDetailResponseDto;
 }
 
-const MemberStatusInfo: React.FC<MemberStatusInfoProps> = ({ member }) => {
+const UserStatusInfo: React.FC<UserStatusInfoProps> = ({ user }) => {
   const getStatusColor = (status: userStatus) => {
     switch (status) {
       case "ACTIVE":
@@ -39,10 +39,10 @@ const MemberStatusInfo: React.FC<MemberStatusInfoProps> = ({ member }) => {
           </label>
           <span
             className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(
-              member.baseResponseDto.userStatus
+              user.baseResponseDto.userStatus
             )}`}
           >
-            {getStatus(member.baseResponseDto.userStatus)}
+            {getStatus(user.baseResponseDto.userStatus)}
           </span>
         </div>
         <div>
@@ -50,17 +50,17 @@ const MemberStatusInfo: React.FC<MemberStatusInfoProps> = ({ member }) => {
           <div className="flex items-center space-x-1">
             <span
               className={`text-sm font-semibold ${getRatingColor(
-                member.baseResponseDto.rating
+                user.baseResponseDto.rating
               )}`}
             >
-              {member.baseResponseDto.rating.toFixed(1)}
+              {user.baseResponseDto.rating.toFixed(1)}
             </span>
             <div className="flex">
               {[1, 2, 3, 4, 5].map((star) => (
                 <svg
                   key={star}
                   className={`w-3 h-3 ${
-                    star <= member.baseResponseDto.rating
+                    star <= user.baseResponseDto.rating
                       ? "text-yellow-400"
                       : "text-gray-300"
                   }`}
@@ -79,16 +79,16 @@ const MemberStatusInfo: React.FC<MemberStatusInfoProps> = ({ member }) => {
           </label>
           <span
             className={`text-sm font-semibold ${
-              member.suspendCount > 0 ? "text-red-600" : "text-green-600"
+              user.suspendCount > 0 ? "text-red-600" : "text-green-600"
             }`}
           >
-            {member.suspendCount}회
+            {user.suspendCount}회
           </span>
         </div>
       </div>
 
       {/* 정지 상태일 때만 표시되는 정지 정보 */}
-      {member.baseResponseDto.userStatus === "SUSPENDED" && (
+      {user.baseResponseDto.userStatus === "SUSPENDED" && (
         <div className="mt-3 pt-3 border-t border-gray-200">
           <div className="grid grid-cols-2 gap-3 text-sm">
             <div>
@@ -96,8 +96,8 @@ const MemberStatusInfo: React.FC<MemberStatusInfoProps> = ({ member }) => {
                 정지일시
               </label>
               <p className="text-red-900">
-                {member.suspendedAt
-                  ? formatDate(member.suspendedAt)
+                {user.suspendedAt
+                  ? formatDate(user.suspendedAt)
                   : "정보 없음"}
               </p>
             </div>
@@ -106,7 +106,7 @@ const MemberStatusInfo: React.FC<MemberStatusInfoProps> = ({ member }) => {
                 정지 해제 예정일
               </label>
               <p className="text-red-900">
-                {member.resumedAt ? formatDate(member.resumedAt) : "영구 정지"}
+                {user.resumedAt ? formatDate(user.resumedAt) : "영구 정지"}
               </p>
             </div>
           </div>
@@ -116,4 +116,4 @@ const MemberStatusInfo: React.FC<MemberStatusInfoProps> = ({ member }) => {
   );
 };
 
-export default MemberStatusInfo;
+export default UserStatusInfo;

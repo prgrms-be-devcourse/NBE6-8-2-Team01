@@ -1,7 +1,7 @@
 import { UserDetailResponseDto } from "../../../_types/userResponseDto";
 
 interface SuspendFormProps {
-  member: UserDetailResponseDto;
+  user: UserDetailResponseDto;
   suspendPeriod: string;
   setSuspendPeriod: (period: string) => void;
   suspendReason: string;
@@ -10,7 +10,7 @@ interface SuspendFormProps {
 }
 
 const SuspendForm: React.FC<SuspendFormProps> = ({
-  member,
+  user,
   suspendPeriod,
   setSuspendPeriod,
   suspendReason,
@@ -21,7 +21,7 @@ const SuspendForm: React.FC<SuspendFormProps> = ({
     <div className="p-6 space-y-4">
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-2">
-          정지 대상 | {member.baseResponseDto.nickname}
+          정지 대상 | {user.baseResponseDto.nickname}
         </label>
         <div className="relative">
           <select

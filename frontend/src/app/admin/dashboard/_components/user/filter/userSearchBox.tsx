@@ -4,7 +4,7 @@ import React from "react";
 
 export type SearchType = "id" | "username" | "nickname" | "email";
 
-interface MemberSearchBoxProps {
+interface UserSearchBoxProps {
   searchType: SearchType;
   searchTerm: string;
   onSearchTypeChange: (type: SearchType) => void;
@@ -12,13 +12,13 @@ interface MemberSearchBoxProps {
   onReset: () => void;
 }
 
-export function MemberSearchBox({
+export function UserSearchBox({
   searchType,
   searchTerm,
   onSearchTypeChange,
   onSearchTermChange,
   onReset,
-}: MemberSearchBoxProps) {
+}: UserSearchBoxProps) {
   return (
     <div>
       <label className="block text-sm font-medium text-gray-700 mb-2">

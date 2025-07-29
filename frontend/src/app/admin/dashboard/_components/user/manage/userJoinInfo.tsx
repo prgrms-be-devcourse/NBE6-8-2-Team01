@@ -1,11 +1,11 @@
 import { UserDetailResponseDto } from "../../../_types/userResponseDto";
 import { formatDate } from "../../common/dateFormatter";
 
-interface MemberJoinInfoProps {
-  member: UserDetailResponseDto;
+interface UserJoinInfoProps {
+  user: UserDetailResponseDto;
 }
 
-const MemberJoinInfo: React.FC<MemberJoinInfoProps> = ({ member }) => {
+const UserJoinInfo: React.FC<UserJoinInfoProps> = ({ user }) => {
   return (
     <div className="bg-gray-50 rounded-lg p-4">
       <h3 className="text-lg font-medium text-gray-900 mb-3">가입 정보</h3>
@@ -15,7 +15,7 @@ const MemberJoinInfo: React.FC<MemberJoinInfoProps> = ({ member }) => {
             가입일시
           </label>
           <p className="text-gray-900">
-            {formatDate(member.baseResponseDto.createdAt)}
+            {formatDate(user.baseResponseDto.createdAt)}
           </p>
         </div>
         <div>
@@ -23,7 +23,7 @@ const MemberJoinInfo: React.FC<MemberJoinInfoProps> = ({ member }) => {
             최종 수정일시
           </label>
           <p className="text-gray-900">
-            {formatDate(member.baseResponseDto.updatedAt)}
+            {formatDate(user.baseResponseDto.updatedAt)}
           </p>
         </div>
       </div>
@@ -31,4 +31,4 @@ const MemberJoinInfo: React.FC<MemberJoinInfoProps> = ({ member }) => {
   );
 };
 
-export default MemberJoinInfo;
+export default UserJoinInfo;

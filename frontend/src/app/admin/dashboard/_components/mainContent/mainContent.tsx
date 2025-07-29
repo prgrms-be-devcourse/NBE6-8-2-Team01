@@ -2,10 +2,10 @@ import { useEffect } from "react";
 import { MenuItem } from "../../_types/menuItem";
 import { menuItems } from "../sidebar/consts";
 
-import { SuspendedMemberListComponent } from "./suspendedMemberListComponent";
+import { SuspendedUserListComponent } from "./suspendedUserListComponent";
 import { DashBoardComponent } from "./dashBoardComponent";
-import { MemberListComponent } from "./memberListComponent";
-import { MemberRentPostComponent } from "./memberRentPostComponent";
+import { UserListComponent } from "./userListComponent";
+import { UserRentPostComponent } from "./userRentPostComponent";
 import { ReportHistoryComponent } from "./reportHistoryComponent";
 import { BaseContentComponentProps } from "./baseContentComponentProps";
 
@@ -22,11 +22,11 @@ interface MainContentProps {
 const componentMap: {
   [key: string]: React.ComponentType<BaseContentComponentProps>;
 } = {
-  "suspended-member-list": SuspendedMemberListComponent,
-  dashboard: DashBoardComponent,
-  "member-list": MemberListComponent,
-  "post-management": MemberRentPostComponent,
-  reports: ReportHistoryComponent,
+  "suspended-user-list": SuspendedUserListComponent,
+  "dashboard": DashBoardComponent,
+  "user-list": UserListComponent,
+  "post-management": UserRentPostComponent,
+  "reports": ReportHistoryComponent,
 };
 
 export function MainContent(props: MainContentProps) {

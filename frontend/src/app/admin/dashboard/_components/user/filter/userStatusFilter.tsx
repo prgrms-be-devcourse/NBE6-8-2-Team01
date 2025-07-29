@@ -3,17 +3,17 @@
 import React from "react";
 import { userStatus } from "../../../_types/userResponseDto";
 
-interface MemberStatusFilterProps {
+interface UserStatusFilterProps {
   selectedStatuses: Set<userStatus>;
   onStatusToggle: (status: userStatus) => void;
   onSelectAll: () => void;
 }
 
-export function MemberStatusFilter({
+export function UserStatusFilter({
   selectedStatuses,
   onStatusToggle,
   onSelectAll,
-}: MemberStatusFilterProps) {
+}: UserStatusFilterProps) {
   const allStatuses: userStatus[] = ["ACTIVE", "SUSPENDED", "INACTIVE"];
   const isAllSelected = allStatuses.every((status) =>
     selectedStatuses.has(status)

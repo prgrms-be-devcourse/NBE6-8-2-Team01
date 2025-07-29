@@ -8,24 +8,24 @@ import {
   getStatus,
   userStatus,
 } from "../../_types/userResponseDto";
-import { formatDate } from "@/app/admin/dashboard/_components/common/dateFormatter";
-import MemberDetailModal from "../member/manage/memberDetailModal";
+import { formatDate } from "../common/dateFormatter";
+import UserDetailModal from "../user/manage/userDetailModal";
 import { BaseContentComponentProps } from "./baseContentComponentProps";
 import {
-  MemberFilterContainer,
+  UserFilterContainer,
   FilterState,
   SearchType,
-} from "../member/filter";
+} from "../user/filter";
 
 interface ManagementButtonProps {
-  member: UserBaseResponseDto;
-  onClick: (member: UserBaseResponseDto) => void;
+  user: UserBaseResponseDto;
+  onClick: (user: UserBaseResponseDto) => void;
 }
 
-function ManagementButton({ member, onClick }: ManagementButtonProps) {
+function ManagementButton({ user, onClick }: ManagementButtonProps) {
   return (
     <button
-      onClick={() => onClick(member)}
+      onClick={() => onClick(user)}
       className="px-3 py-1.5 text-xs font-medium text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-500 transition-colors"
     >
       관리
@@ -33,12 +33,11 @@ function ManagementButton({ member, onClick }: ManagementButtonProps) {
   );
 }
 
-export function MemberListComponent({
+export function UserListComponent({
   responseData,
   onRefresh,
 }: BaseContentComponentProps) {
-  const [selectedMember, setSelectedMember] =
-    useState<UserDetailResponseDto | null>(null);
+  const [selectedUser, setSelectedUser] = useState<UserDetailResponseDto | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -49,18 +48,18 @@ export function MemberListComponent({
     searchTerm: "",
   });
 
-  const handleManageClick = async (member: UserBaseResponseDto) => {
+  const handleManageClick = async (user: UserBaseResponseDto) => {
     console.log(
-      `관리 버튼 클릭: 멤버 ID - ${member.id}, 닉네임 - ${member.nickname}`
+      `관리 버튼 클릭: 멤버 ID - ${user.id}, 닉네임 - ${user.nickname}`
     );
     setIsLoading(true);
 
-    fetch(`http://localhost:8080/api/v1/admin/members/${member.id}`, {
+    fetch(`http://localhost:8080/api/v1/admin/users/${user.id}`, {
       method: "GET",
     })
       .then((response) => {
         if (!response.ok) {
-          setSelectedMember(null);
+          setSelectedUser(null);
           return;
         }
 
@@ -68,7 +67,7 @@ export function MemberListComponent({
       })
       .then((data) => {
         console.log(data);
-        setSelectedMember(data.data as UserDetailResponseDto);
+        setSelectedUser(data.data as UserDetailResponseDto);
       });
 
     setIsModalOpen(true);
@@ -76,23 +75,23 @@ export function MemberListComponent({
 
   const handleModalClose = () => {
     setIsModalOpen(false);
-    setSelectedMember(null);
+    setSelectedUser(null);
   };
 
-  const [members, setMembers] = useState<UserBaseResponseDto[]>([]);
+  const [users, setUsers] = useState<UserBaseResponseDto[]>([]);
 
   useEffect(() => {
     if (responseData) {
       const data = responseData as UserBaseResponseDto[];
-      setMembers(data.reverse());
+      setUsers(data.reverse());
     }
   }, [responseData]);
 
   // 필터링된 멤버 목록
-  const filteredMembers = useMemo(() => {
-    return members.filter((member) => {
+  const filteredUsers = useMemo(() => {
+    return users.filter((user) => {
       // 상태 필터링
-      if (!filters.userStatuses.has(member.userStatus)) {
+      if (!filters.userStatuses.has(user.userStatus)) {
         return false;
       }
 
@@ -103,16 +102,13 @@ export function MemberListComponent({
 
         switch (filters.searchType) {
           case "id":
-            searchValue = member.id.toString();
+            searchValue = user.id.toString();
             break;
           case "username":
-            searchValue = member.username.toLowerCase();
+            searchValue = user.username.toLowerCase();
             break;
           case "nickname":
-            searchValue = member.nickname.toLowerCase();
-            break;
-          case "email":
-            searchValue = member.email.toLowerCase();
+            searchValue = user.nickname.toLowerCase();
             break;
         }
 
@@ -121,7 +117,7 @@ export function MemberListComponent({
 
       return true;
     });
-  }, [members, filters]);
+  }, [users, filters]);
 
   // 상태 체크박스 핸들러
   const handleStatusToggle = (status: userStatus) => {
@@ -170,40 +166,39 @@ export function MemberListComponent({
     { key: "id", label: "No" },
     { key: "username", label: "유저명" },
     { key: "nickname", label: "닉네임" },
-    { key: "email", label: "이메일" },
     {
       key: "createdAt",
       label: "가입일",
-      render: (member) => <span>{formatDate(member.createdAt)}</span>,
+      render: (user) => <span>{formatDate(user.createdAt)}</span>,
     },
     {
       key: "updatedAt",
       label: "수정일",
-      render: (member) => <span>{formatDate(member.updatedAt)}</span>,
+      render: (user) => <span>{formatDate(user.updatedAt)}</span>,
     },
     { key: "rating", label: "평점" },
     {
       key: "userStatus",
       label: "상태",
-      render: (member) => (
+      render: (user) => (
         <span
           className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-            member.userStatus === "ACTIVE"
+            user.userStatus === "ACTIVE"
               ? "text-green-600 bg-green-50"
-              : member.userStatus === "SUSPENDED"
+              : user.userStatus === "SUSPENDED"
               ? "text-red-600 bg-red-50"
               : "text-gray-600 bg-gray-50"
           }`}
         >
-          {getStatus(member.userStatus)}
+          {getStatus(user.userStatus)}
         </span>
       ),
     },
     {
       key: "actions",
       label: "관리",
-      render: (member) => (
-        <ManagementButton member={member} onClick={handleManageClick} />
+      render: (user) => (
+        <ManagementButton user={user} onClick={handleManageClick} />
       ),
     },
   ];
@@ -217,12 +212,12 @@ export function MemberListComponent({
             전체 멤버 목록
           </h3>
           <div className="text-sm text-gray-500">
-            총 {members.length}명 중 {filteredMembers.length}명 표시
+            총 {users.length}명 중 {filteredUsers.length}명 표시
           </div>
         </div>
 
         {/* 필터 및 검색 영역 */}
-        <MemberFilterContainer
+        <UserFilterContainer
           filters={filters}
           onStatusToggle={handleStatusToggle}
           onSelectAll={handleSelectAll}
@@ -233,14 +228,14 @@ export function MemberListComponent({
 
         {/* 테이블 */}
         <div className="bg-white rounded-lg border border-gray-200">
-          <DataTable columns={columns} data={filteredMembers} />
+          <DataTable columns={columns} data={filteredUsers} />
         </div>
       </div>
 
       {/* 멤버 상세 정보 모달 */}
-      {selectedMember && (
-        <MemberDetailModal
-          member={selectedMember}
+      {selectedUser && (
+        <UserDetailModal
+          user={selectedUser}
           isOpen={isModalOpen}
           onClose={handleModalClose}
           onRefresh={onRefresh} // 새로고침 함수 전달
