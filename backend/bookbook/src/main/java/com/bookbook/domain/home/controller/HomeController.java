@@ -25,13 +25,15 @@ public class HomeController {
     @GetMapping
     @Operation(
             summary = "메인페이지 데이터 조회",
-            description = "이미지가 포함된 최신 5개 도서를 조회합니다.",
+            description = "이미지가 포함된 최신 5개 도서를 조회합니다. 지역 파라미터로 특정 지역의 도서만 조회 가능합니다.",
             tags = { "Home", "MainPage" }
     )
-    public RsData<HomeResponseDto> getHomeData() {
-        log.debug("GET /api/v1/bookbook/home 요청 수신 - 메인페이지 데이터 조회 시작");
+    public RsData<HomeResponseDto> getHomeData(
+            @RequestParam(value = "region", required = false) String region
+    ) {
+        log.debug("GET /api/v1/bookbook/home 요청 수신 - 지역: {}", region);
 
-        HomeResponseDto homeData = homeService.getHomeData();
+        HomeResponseDto homeData = homeService.getHomeData(region);
 
         return new RsData<>(
                 SUCCESS_HOME_FETCH,

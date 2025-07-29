@@ -1,5 +1,6 @@
 package com.bookbook.domain.user.entity;
 
+import com.bookbook.domain.suspend.entity.SuspendedUser;
 import com.bookbook.domain.user.enums.Role;
 import com.bookbook.domain.user.enums.UserStatus;
 import com.bookbook.global.entity.BaseEntity;
@@ -14,6 +15,7 @@ import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Entity
 @Getter
@@ -21,8 +23,9 @@ import java.time.LocalDateTime;
 @EntityListeners(AuditingEntityListener.class)
 @NoArgsConstructor(access = lombok.AccessLevel.PROTECTED)
 public class User extends BaseEntity {
+
     @Id
-    @Column(name = "id")
+    @Column(name = "user_id")
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
@@ -35,7 +38,7 @@ public class User extends BaseEntity {
     @Column(name = "nickname", unique = true, nullable = false)
     private String nickname;
 
-    @Column(name = "email", unique = true, nullable = false)
+    @Column(name = "email", unique = true, nullable = true)
     private String email;
 
     @Column(name = "address", nullable = false)
@@ -61,6 +64,13 @@ public class User extends BaseEntity {
 
     @LastModifiedDate
     private LocalDateTime updateAt;
+
+    private LocalDateTime suspendedAt;
+
+    private LocalDateTime resumedAt;
+
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL)
+    private List<SuspendedUser> suspends;
 
     @Builder
     public User(String username, String password, String nickname, String email, String address, Float rating, Role role, UserStatus userStatus) {
@@ -91,5 +101,21 @@ public class User extends BaseEntity {
             throw new IllegalArgumentException("Rating must be between 0 and 5");
         }
         this.rating = rating;
+    }
+
+    public void suspend(Integer periodDays) {
+        userStatus = UserStatus.SUSPENDED;
+        suspendedAt = LocalDateTime.now();
+        resumedAt = suspendedAt.plusDays(periodDays);
+    }
+
+    public void resume() {
+        userStatus = UserStatus.ACTIVE;
+        suspendedAt = null;
+        resumedAt = null;
+    }
+
+    public boolean isSuspended() {
+        return userStatus == UserStatus.SUSPENDED;
     }
 }

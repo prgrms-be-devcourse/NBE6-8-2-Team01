@@ -58,20 +58,20 @@ function ManagementButton({ rentPost, onClick }: ManagementButtonProps) {
     );
 }
 
-export function MemberRentPostComponent({ responseData }: BaseContentComponentProps) {
+export function UserRentPostComponent({ responseData }: BaseContentComponentProps) {
     const handleManageClick = (postId: number) => {
         console.log(`관리 버튼 클릭: 글 ID - ${postId}`);
         // TODO: 작성된 글로 이동
     };
 
-    const [suspendedMembers, setSuspendedMembers] = useState<RentPost[]>([]);
+    const [suspendedMembers, setsuspendedMembers] = useState<RentPost[]>([]);
 
     useEffect(() => {
         if (responseData) {
             // setSuspendedMembers(responseData);
         }
         // 테스트 목적으로 추가했습니다
-        setSuspendedMembers(mockRentPosts);
+        setsuspendedMembers(mockRentPosts);
     }, [responseData]);
 
     const columns: ColumnDefinition<RentPost>[] = [
