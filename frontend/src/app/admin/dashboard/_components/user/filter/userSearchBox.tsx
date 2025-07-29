@@ -2,7 +2,7 @@
 
 import React from "react";
 
-export type SearchType = "id" | "username" | "nickname" | "email";
+export type SearchType = "id" | "username" | "nickname";
 
 interface UserSearchBoxProps {
   searchType: SearchType;
@@ -33,7 +33,6 @@ export function UserSearchBox({
           <option value="id">멤버 ID</option>
           <option value="username">유저명</option>
           <option value="nickname">닉네임</option>
-          <option value="email">이메일</option>
         </select>
 
         <input
@@ -45,10 +44,8 @@ export function UserSearchBox({
               ? "멤버 ID"
               : searchType === "username"
               ? "유저명"
-              : searchType === "nickname"
-              ? "닉네임"
-              : "이메일"
-          }로 검색...`}
+              : "닉네임"
+          }(으)로 검색...`}
           className="flex-1 block px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-sm"
         />
 
