@@ -86,7 +86,7 @@ export default function AdminLoginPage() {
                         {/* 유저네임 입력 */}
                         <div>
                             <label htmlFor="username" className="block text-sm font-medium text-gray-700 mb-2">
-                                유저네임
+                                유저명
                             </label>
                             <div className="relative">
                                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -103,7 +103,7 @@ export default function AdminLoginPage() {
                                             ? 'border-red-300 focus:ring-red-500 focus:border-red-500' 
                                             : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500'
                                     }`}
-                                    placeholder="관리자 유저네임을 입력하세요"
+                                    placeholder="유저명을 입력하세요"
                                 />
                             </div>
                             {/* 유저네임 스페이스 경고 */}
@@ -176,7 +176,7 @@ export default function AdminLoginPage() {
                             ) : hasAnySpace ? (
                                 <span>공백을 제거해주세요</span>
                             ) : (
-                                <span>관리자 로그인</span>
+                                <span>로그인</span>
                             )}
                         </button>
                     </form>
