@@ -12,8 +12,14 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 public class BookbookApplication {
 
     public static void main(String[] args) {
-        Dotenv dotenv = Dotenv.load();
-        dotenv.entries().forEach(entry -> System.setProperty(entry.getKey(), entry.getValue()));
+        try {
+            Dotenv dotenv = Dotenv.configure()
+                    .ignoreIfMissing()
+                    .load();
+            dotenv.entries().forEach(entry -> System.setProperty(entry.getKey(), entry.getValue()));
+        } catch (Exception e) {
+            System.out.println(".env 파일 없음 - 기본 설정으로 실행");
+        }
         SpringApplication.run(BookbookApplication.class, args);
     }
 
