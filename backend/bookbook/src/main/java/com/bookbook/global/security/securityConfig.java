@@ -30,8 +30,10 @@ public class securityConfig {
 
                         
                         .requestMatchers("/favicon.ico").permitAll() // 파비콘 접근 허용
-                        .requestMatchers("/h2-console/**").permitAll()
-                        .requestMatchers("/bookbook/rent/create").permitAll() // Rent 페이지 생성은 인증 필요, (임시)               
+                        .requestMatchers("/h2-console/**").permitAll() // H2 콘솔 접근 허용
+                        .requestMatchers("/bookbook/rent/create").permitAll() // Rent 페이지 생성은 인증 필요, (임시)
+                        .requestMatchers("/api/v1/bookbook/upload-image").permitAll() //  이미지 업로드 API 경로 허용
+                        .requestMatchers(org.springframework.http.HttpMethod.OPTIONS, "/**").permitAll() // OPTIONS 메서드 요청은 모든 경로에 대해 허용 (Preflight 요청)
                         .anyRequest().authenticated() // 나머지 모든 요청은 인증 필요
                 )
                 .oauth2Login(oauth2 -> oauth2
@@ -67,9 +69,8 @@ public class securityConfig {
         // CORS 설정을 소스에 등록
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/bookbook/**", configuration);
-        source.registerCorsConfiguration("/api/**", configuration);
+        source.registerCorsConfiguration("/api/**", configuration); // 이 부분을 /api/** 로 수정했습니다.
 
         return source;
-
     }
 }
