@@ -39,7 +39,7 @@ public class AdminController {
         );
     }
 
-    @GetMapping("/members")
+    @GetMapping("/users")
     public RsData<List<UserBaseDto>> getAllUsers() {
         List<UserBaseDto> users = adminService.getAllUsers();
 
@@ -50,18 +50,18 @@ public class AdminController {
         );
     }
 
-    @GetMapping("/members/suspend")
+    @GetMapping("/users/suspend")
     public RsData<List<UserSuspendResponseDto>> getAllSuspendedHistory() {
         List<UserSuspendResponseDto> suspendedHistory = suspendedUserService.getAllSuspendedHistory();
 
         return new RsData<>(
                 "200-1",
-                null,
+                "%d개의 이력을 발견했습니다".formatted(suspendedHistory.size()),
                 suspendedHistory
         );
     }
 
-    @PutMapping("/members/suspend")
+    @PutMapping("/users/suspend")
     public RsData<UserSuspendResponseDto> suspendUser(
             @RequestBody UserSuspendRequestDto requestDto
     ) {
@@ -75,7 +75,7 @@ public class AdminController {
         );
     }
 
-    @GetMapping("/members/{userId}")
+    @GetMapping("/users/{userId}")
     public RsData<UserDetailResponseDto> getUserDetail(
             @PathVariable Long userId
     ) {
@@ -88,7 +88,7 @@ public class AdminController {
         );
     }
 
-    @PutMapping("/members/{userId}/resume")
+    @PutMapping("/users/{userId}/resume")
     public RsData<UserResumeResponseDto> resumeUser(
             @PathVariable Long userId
     ) {

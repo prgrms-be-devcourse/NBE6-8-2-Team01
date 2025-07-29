@@ -15,7 +15,7 @@ import java.util.List;
 @Slf4j
 @Component
 @RequiredArgsConstructor
-public class SuspendedMemberScheduler {
+public class SuspendedUserScheduler {
 
     private final UserRepository userRepository;
 
@@ -23,10 +23,10 @@ public class SuspendedMemberScheduler {
     @Transactional
     public void executeScheduledResumingMembers() {
         log.info("Suspending users suspended members");
-        List<User> suspendedMembers = userRepository
+        List<User> suspendedUsers = userRepository
                 .findAllByUserStatusAndResumedAtBefore(UserStatus.SUSPENDED, LocalDateTime.now());
 
-        for (User suspendedMember : suspendedMembers) {
+        for (User suspendedMember : suspendedUsers) {
             try {
                 suspendedMember.resume();
                 log.info("멤버: {} 정지 해제 완료", suspendedMember.getId());
