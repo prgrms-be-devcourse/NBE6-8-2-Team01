@@ -26,7 +26,7 @@ public class securityConfig {
                 .authorizeHttpRequests(authorize -> authorize
                         // 로그인 관련 경로는 모두 허용
 
-                        .requestMatchers("/api/admin/login", "api/v1/bookbook/users/login/dev", "api/v1/bookbook/users/social/callback", "/login/**", "/bookbook/home", "/api/v1/bookbook/login/oauth2/code/**","/api/v1/users/dev/login", "/api/v1/bookbook/home", "/api/v1/bookbook/user/**").permitAll()
+                        .requestMatchers("/api/admin/login", "api/v1/bookbook/users/login/dev", "api/v1/bookbook/users/social/callback", "/login/**", "/bookbook/home", "/api/v1/bookbook/login/oauth2/code/**","/api/v1/users/dev/login", "/api/v1/bookbook/home", "/api/v1/bookbook/user/**", "/api/v1/bookbook/rent/**").permitAll()
 
                         
                         .requestMatchers("/favicon.ico").permitAll() // 파비콘 접근 허용
