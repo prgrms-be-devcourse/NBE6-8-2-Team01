@@ -13,6 +13,11 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 
+/**
+ * 찜 목록 관리 서비스
+ * 
+ * 사용자의 찜 목록 조회, 추가, 삭제 등의 비즈니스 로직을 처리합니다.
+ */
 @Service
 @RequiredArgsConstructor
 public class WishListService {
@@ -21,6 +26,14 @@ public class WishListService {
     private final UserRepository userRepository;
     private final RentRepository rentRepository;
 
+    /**
+     * 사용자의 찜 목록 조회
+     * 
+     * 사용자의 모든 찜 목록을 생성일 역순으로 조회합니다.
+     * 
+     * @param userId 사용자 ID
+     * @return 찜 목록 리스트
+     */
     public List<WishListResponseDto> getWishListByUserId(Long userId) {
         return wishListRepository.findByUserIdOrderByCreateDateDesc(userId)
                 .stream()
@@ -28,6 +41,17 @@ public class WishListService {
                 .toList();
     }
 
+    /**
+     * 찜 목록에 도서 추가
+     * 
+     * 사용자가 관심 있는 도서를 찜 목록에 추가합니다.
+     * 이미 찜한 도서는 중복 추가할 수 없습니다.
+     * 
+     * @param userId 사용자 ID
+     * @param request 찜 추가 요청 정보
+     * @return 생성된 찜 정보
+     * @throws IllegalArgumentException 이미 찜한 게시글이거나 사용자/게시글을 찾을 수 없는 경우
+     */
     public WishListResponseDto addWishList(Long userId, WishListCreateRequestDto request) {
         // 중복 체크 로직
         if (wishListRepository.findByUserIdAndRentId(userId, request.rentId()).isPresent()) {
@@ -52,6 +76,15 @@ public class WishListService {
         return WishListResponseDto.from(savedWishList);
     }
 
+    /**
+     * 찜 목록에서 도서 삭제
+     * 
+     * 사용자의 찜 목록에서 특정 도서를 제거합니다.
+     * 
+     * @param userId 사용자 ID
+     * @param rentId 삭제할 도서 게시글 ID
+     * @throws IllegalArgumentException 찜하지 않은 게시글인 경우
+     */
     public void deleteWishList(Long userId, Integer rentId) {
         WishList wishList = wishListRepository.findByUserIdAndRentId(userId, rentId)
                 .orElseThrow(() -> new IllegalArgumentException("찜하지 않은 게시글입니다."));
