@@ -71,3 +71,7 @@ logging:
     org.hibernate.orm.jdbc.extract: TRACE
     org.springframework.transaction.interceptor: TRACE
     com.bookbook: DEBUG
+frontend:
+  base-url: http://localhost:3000
+  signup-path: /bookbook/user/signup
+  main-path: /bookbook
