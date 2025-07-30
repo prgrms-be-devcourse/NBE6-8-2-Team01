@@ -5,6 +5,8 @@ import com.bookbook.domain.user.enums.Role;
 import com.bookbook.domain.user.enums.UserStatus;
 import lombok.Getter;
 
+import java.time.LocalDateTime;
+
 @Getter
 public class UserResponseDto {
     private Long id;
@@ -15,6 +17,7 @@ public class UserResponseDto {
     private float rating;
     private Role role;
     private UserStatus userStatus;
+    private LocalDateTime createAt;
 
     // Entity를 DTO로 변환하는 생성자
     public UserResponseDto(User user) {
@@ -26,5 +29,6 @@ public class UserResponseDto {
         this.rating = user.getRating();
         this.role = user.getRole();
         this.userStatus = user.getUserStatus();
+        this.createAt = user.getCreateAt();
     }
 }
