@@ -23,13 +23,13 @@ public class RentService {
 
         // Rent 엔티티 생성 (Builder 패턴 활용)
         Rent rent = Rent.builder()
-                .lender_user_id(userId)
+                .lenderUserId(userId)
                 .title(dto.title())
                 .bookCondition(dto.bookCondition())
                 .bookImage(dto.bookImage())
                 .address(dto.address())
                 .contents(dto.contents())
-                .rent_status(dto.rentStatus())
+                .rentStatus(dto.rentStatus())
                 .bookTitle(dto.bookTitle())
                 .author(dto.author())
                 .publisher(dto.publisher())
@@ -47,12 +47,12 @@ public class RentService {
                 .orElseThrow(()-> new ServiceException("404-2", "해당 대여글을 찾을 수 없습니다."));
 
         return new RentResponseDto(
-                rent.getLender_user_id(),
+                rent.getLenderUserId(),
                 rent.getBookCondition(),
                 rent.getBookImage(),
                 rent.getAddress(),
                 rent.getContents(),
-                rent.getRent_status(),
+                rent.getRentStatus(),
                 rent.getTitle(),
                 rent.getAuthor(),
                 rent.getPublisher(),

@@ -1,6 +1,5 @@
 package com.bookbook.domain.rentBookList.service;
 
-import com.bookbook.domain.notification.entity.Notification;
 import com.bookbook.domain.notification.enums.NotificationType;
 import com.bookbook.domain.notification.service.NotificationService;
 import com.bookbook.domain.rent.entity.Rent;
@@ -64,8 +63,8 @@ public class RentBookListService {
                 .orElseThrow(() -> new RuntimeException("존재하지 않는 대여 글입니다. ID: " + rentId));
 
         // 책 소유자 조회
-        User bookOwner = userRepository.findById(rent.getLender_user_id())
-                .orElseThrow(() -> new RuntimeException("책 소유자를 찾을 수 없습니다. ID: " + rent.getLender_user_id()));
+        User bookOwner = userRepository.findById(rent.getLenderUserId())
+                .orElseThrow(() -> new RuntimeException("책 소유자를 찾을 수 없습니다. ID: " + rent.getLenderUserId()));
 
         // 신청자 조회 (현재는 임시로 admin 사용 - 실제로는 @AuthenticationPrincipal로 받아야 함)
         User requester = userRepository.findByUsername("admin")

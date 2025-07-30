@@ -30,12 +30,12 @@ public class ReviewService {
                 .orElseThrow(() -> new IllegalArgumentException("대여 게시글을 찾을 수 없습니다. rentId: " + rentId));
         
         // 본인이 작성한 글인지 확인
-        if (!rent.getLender_user_id().equals(lenderId)) {
+        if (!rent.getLenderUserId().equals(lenderId)) {
             throw new IllegalArgumentException("본인이 작성한 게시글에만 리뷰를 작성할 수 있습니다.");
         }
         
         // 거래가 완료된 상태인지 확인
-        if (!"Finished".equals(rent.getRent_status())) {
+        if (!"Finished".equals(rent.getRentStatus())) {
             throw new IllegalStateException("거래가 완료된 경우에만 리뷰를 작성할 수 있습니다.");
         }
         
@@ -70,7 +70,7 @@ public class ReviewService {
                 .orElseThrow(() -> new IllegalArgumentException("대여 게시글을 찾을 수 없습니다. rentId: " + rentId));
         
         // 거래가 완료된 상태인지 확인
-        if (!"Finished".equals(rent.getRent_status())) {
+        if (!"Finished".equals(rent.getRentStatus())) {
             throw new IllegalStateException("거래가 완료된 경우에만 리뷰를 작성할 수 있습니다.");
         }
         
@@ -86,11 +86,11 @@ public class ReviewService {
         }
         
         // 리뷰 생성 (빌려간 사람이 빌려준 사람을 평가)
-        Review review = new Review(rentId, borrowerId, rent.getLender_user_id(), request.getRating(), "BORROWER_TO_LENDER");
+        Review review = new Review(rentId, borrowerId, rent.getLenderUserId(), request.getRating(), "BORROWER_TO_LENDER");
         Review savedReview = reviewRepository.save(review);
         
         // 사용자 평점 업데이트
-        updateUserRating(rent.getLender_user_id());
+        updateUserRating(rent.getLenderUserId());
         
         return ReviewResponseDto.from(savedReview);
     }
