@@ -72,7 +72,6 @@ export default function BookRentPage() {
         setCurrentPage(1); // 폼 초기화 시 페이지도 1로 초기화
         setHasMoreResults(false);
     };
-
     const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files && e.target.files[0]) {
             setBookImage(e.target.files[0]);
@@ -134,6 +133,8 @@ export default function BookRentPage() {
     };
 
     // 백엔드 API (POST /rent)로 데이터 전송.
+    // 1. 이미지 파일이 있다면 먼저 이미지 업로드 API로 전송하여 URL을 받습니다.
+    // 2. 받은 이미지 URL과 폼 데이터를 조합하여 대여글 생성 API로 전송합니다.
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
 
@@ -197,6 +198,7 @@ export default function BookRentPage() {
                 resetForm();
                 setShowPopup(true);
             } else {
+
                 const errorData = await res.json();
                 console.error('책 등록 실패', errorData);
                 alert(`책 등록에 실패했습니다. ${errorData.msg || res.statusText}`);
@@ -239,12 +241,12 @@ export default function BookRentPage() {
                             <input
                                 type="file"
                                 id="bookImage"
-                                className="hidden"
+                                className="hidden" // 기본 파일 입력을 숨김
                                 onChange={handleImageChange}
-                                accept="image/*"
+                                accept="image/*" // 이미지 파일만 선택 가능하도록 제한
                             />
                             <label
-                                htmlFor="bookImage"
+                                htmlFor="bookImage" // '파일 선택' 버튼(label)을 클릭하면, 브라우저는 자동으로 숨겨진 <input type="file">을 클릭한 것처럼 동작
                                 className="w-full sm:w-auto px-4 py-2 text-white font-semibold rounded-lg shadow-md focus:outline-none focus:ring-2 focus:ring-offset-2 cursor-pointer text-center
                                 bg-[#D5BAA3] hover:bg-[#C2A794] focus:ring-[#D5BAA3]"
                             >

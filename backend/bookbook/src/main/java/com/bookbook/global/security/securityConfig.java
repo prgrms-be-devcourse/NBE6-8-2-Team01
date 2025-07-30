@@ -34,9 +34,8 @@ public class securityConfig {
                                 "/api/v1/bookbook/login/oauth2/code/**",
                                 "/api/v1/users/dev/login",
                                 "/api/v1/bookbook/home",
-                                "/api/v1/bookbook/user/**").permitAll()
+                                "/api/v1/bookbook/user/**", "/api/v1/bookbook/users/isAuthenticated").permitAll()
                         .requestMatchers("api/*/admin/**").hasRole("ADMIN")
-                        .requestMatchers("/api/admin/login", "api/v1/bookbook/users/login/dev", "api/v1/bookbook/users/social/callback", "/login/**", "/bookbook/home", "/api/v1/bookbook/login/oauth2/code/**","/api/v1/users/dev/login", "/api/v1/bookbook/home", "/api/v1/bookbook/user/**").permitAll()
                         .requestMatchers("/favicon.ico").permitAll() // 파비콘 접근 허용
                         .requestMatchers("/h2-console/**").permitAll() // H2 콘솔 접근 허용
                         .requestMatchers("/bookbook/rent/create").permitAll() // Rent 페이지 생성은 인증 필요, (임시)

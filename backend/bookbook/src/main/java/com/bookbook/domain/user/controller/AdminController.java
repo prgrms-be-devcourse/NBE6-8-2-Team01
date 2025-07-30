@@ -5,10 +5,10 @@ import com.bookbook.domain.suspend.dto.response.UserResumeResponseDto;
 import com.bookbook.domain.suspend.dto.response.UserSuspendResponseDto;
 import com.bookbook.domain.suspend.entity.SuspendedUser;
 import com.bookbook.domain.suspend.service.SuspendedUserService;
-import com.bookbook.domain.user.dto.response.UserDetailResponseDto;
-import com.bookbook.domain.user.dto.UserLoginRequestDto;
-import com.bookbook.domain.user.dto.UserResponseDto;
 import com.bookbook.domain.user.dto.UserBaseDto;
+import com.bookbook.domain.user.dto.UserLoginRequestDto;
+import com.bookbook.domain.user.dto.response.UserDetailResponseDto;
+import com.bookbook.domain.user.dto.response.UserLoginResponseDto;
 import com.bookbook.domain.user.entity.User;
 import com.bookbook.domain.user.service.AdminService;
 import com.bookbook.global.rsdata.RsData;
@@ -26,16 +26,25 @@ public class AdminController {
     private final SuspendedUserService suspendedUserService;
 
     @PostMapping("/login")
-    public RsData<UserResponseDto> adminLogin(
+    public RsData<UserLoginResponseDto> adminLogin(
             @Valid @RequestBody UserLoginRequestDto requestDto
     ) {
         User admin = adminService.login(requestDto);
-        UserResponseDto userResponseDto = new UserResponseDto(admin);
+        UserLoginResponseDto userLoginResponseDto = UserLoginResponseDto.from(admin);
 
         return new RsData<>(
                 "200-1",
                 "관리자 %s님이 로그인하였습니다.".formatted(admin.getUsername()),
-                userResponseDto
+                userLoginResponseDto
+        );
+    }
+
+    @DeleteMapping("/logout")
+    public RsData<Void> adminLogin() {
+        return new RsData<>(
+                "200-1",
+                "로그아웃을 정상적으로 완료했습니다.",
+                null
         );
     }
 

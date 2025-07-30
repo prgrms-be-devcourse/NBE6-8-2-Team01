@@ -3,12 +3,12 @@ package com.bookbook.domain.rent.dto;
 import java.time.LocalDateTime;
 
 public record RentResponseDto(
-        Long lender_user_id,
+        Long lenderUserId,
         String bookCondition,
         String bookImage,
         String address,
         String contents,
-        String rent_status,
+        String rentStatus,
 
         String title,
         String author,

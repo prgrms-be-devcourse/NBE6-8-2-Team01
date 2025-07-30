@@ -16,6 +16,5 @@ public interface UserRepository extends JpaRepository<User, Long> {
     List<User> findAllByUserStatusAndResumedAtBefore(UserStatus userStatus, LocalDateTime now);
 
     boolean existsByUsername(String username); // 사용자명 중복확인
-    boolean existsByEmail(String email); // 이메일 중복확인
     boolean existsByNickname(String nickname); // 닉네임 중복확인
 }

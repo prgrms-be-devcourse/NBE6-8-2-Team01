@@ -25,7 +25,7 @@ public record WishListResponseDto(
                 wishList.getRent().getAuthor(),
                 wishList.getRent().getPublisher(),
                 wishList.getRent().getBookCondition(),
-                wishList.getRent().getRent_status(),
+                wishList.getRent().getRentStatus(),
                 wishList.getRent().getBookImage(),
                 wishList.getCreateDate()
         );

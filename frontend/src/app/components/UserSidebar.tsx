@@ -31,7 +31,7 @@ export default function UserSidebar() {
           <div>
             <h3 className="text-lg font-bold text-gray-600 mb-3">내 정보</h3>
             <div className="space-y-1">
-              <SidebarItem href="/user/edit" label="회원정보 수정" />
+              <SidebarItem href="/bookbook/user/profile" label="회원정보 수정" />
             </div>
           </div>
 
