@@ -27,12 +27,10 @@ public class securityConfig {
                         // 로그인 관련 경로는 모두 허용
                         .requestMatchers(
                                 "/api/*/admin/login", "/api/*/admin/logout",
-                                "api/v1/bookbook/users/login/dev",
                                 "api/v1/bookbook/users/social/callback",
                                 "/login/**",
                                 "/bookbook/home",
                                 "/api/v1/bookbook/login/oauth2/code/**",
-                                "/api/v1/users/dev/login",
                                 "/api/v1/bookbook/home",
                                 "/api/v1/bookbook/user/**",
                                 "/api/v1/bookbook/users/isAuthenticated").permitAll()
