@@ -1,77 +1,193 @@
 'use client';
 
-import React, { useState } from 'react'; // useEffect 제거
+import React, { useState, useEffect } from 'react'; // useEffect 추가
 
-// 메인 React 컴포넌트
 export default function App() {
-    // 상태 변수 정의
+    //  서버에서 받아올 사용자 정보를 위한 초기 상태
+    const [userData, setUserData] = useState({
+        userId: null, // 백엔드에서 받아올 ID
+        username: '', // 백엔드에서 받아올 사용자 이름 (이메일과 다를 수 있음)
+        nickname: '로딩중...',
+        address: '로딩중...',
+        email: '로딩중...',
+        joinDate: '로딩중...',
+        // isNewUser와 role은 이 페이지에서 직접 사용되지 않을 수 있으나, 필요시 추가
+    });
+
     const [isEditing, setIsEditing] = useState(false); // 수정 모드 여부
-    const [nickname, setNickname] = useState('홍길동'); // 닉네임 상태
-    const [address, setAddress] = useState('서울특별시 강남구'); // 주소 상태
+    const [editedNickname, setEditedNickname] = useState(''); // 수정 중인 닉네임
+    const [editedAddress, setEditedAddress] = useState('');   // 수정 중인 주소
 
-    // 이메일과 가입일은 변경되지 않으므로 상태로 관리하지 않고 직접 값을 사용합니다.
-    const email = 'hong.gildong@example.com';
-    const joinDate = '2023-01-01';
+    // 원본 값 저장을 위한 상태 (취소 시 복원용)
+    const [originalNickname, setOriginalNickname] = useState('');
+    const [originalAddress, setOriginalAddress] = useState('');
 
-    // 원본 값 저장을 위한 상태 (취소 시 복원용) - 초기값을 직접 설정
-    const [originalNickname, setOriginalNickname] = useState(nickname);
-    const [originalAddress, setOriginalAddress] = useState(address);
+    // ️ 컴포넌트 마운트 시 사용자 정보 로드
+    useEffect(() => {
+        const fetchUserData = async () => {
+            try {
+                const response = await fetch('/api/v1/bookbook/users/me', {
+                    credentials: 'include' // 세션 쿠키 전송
+                });
+
+                if (response.ok) {
+                    const data = await response.json(); // 이제 data는 UserResponseDto 형태
+                    setUserData({
+                        userId: data.id, // UserResponseDto의 필드명은 'id'
+                        username: data.username,
+                        nickname: data.nickname,
+                        address: data.address || '', // 백엔드에서 null로 올 수 있으니 대비
+                        email: data.email,
+                        // 백엔드에서 LocalDateTime으로 넘어오므로 Date 객체로 변환하여 포맷팅
+                        joinDate: data.createAt ? new Date(data.createAt).toLocaleDateString('ko-KR', {
+                            year: 'numeric',
+                            month: 'numeric',
+                            day: 'numeric',
+                        }) : '날짜 없음',
+                    });
+                    setEditedNickname(data.nickname);
+                    setEditedAddress(data.address || '');
+                    setOriginalNickname(data.nickname);
+                    setOriginalAddress(data.address || '');
+                } else if (response.status === 401) {
+                    console.log('로그인이 필요합니다.');
+                    //  로그인되지 않은 경우 처리: 로그인 페이지로 리다이렉트 권장
+                    // window.location.href = '/bookbook/login'; // 예시
+                } else {
+                    console.error('사용자 정보 로드 실패:', response.statusText);
+                    alert('사용자 정보를 불러오는데 실패했습니다.');
+                }
+            } catch (error) {
+                console.error('사용자 정보 로드 중 오류 발생:', error);
+                alert('네트워크 오류가 발생했습니다.');
+            }
+        };
+
+        fetchUserData();
+    }, []); // 컴포넌트 첫 렌더링 시 한 번만 실행
 
     // "수정" 버튼 클릭 핸들러
     const handleEditClick = () => {
-        if (!isEditing) { // 현재 수정 모드가 아닐 때만 진입
-            setIsEditing(true); // 수정 모드 활성화
+        if (!isEditing) {
+            // 수정 모드 진입 시 현재 값을 수정 필드에 로드
+            setEditedNickname(userData.nickname);
+            setEditedAddress(userData.address);
+            setIsEditing(true);
         }
-        // 이미 수정 모드일 때는 아무 동작 안 함 (확인/취소로만 종료)
     };
 
-    // "닉네임 변경" 버튼 클릭 핸들러
-    const handleChangeNicknameClick = () => {
-        // 실제 닉네임 변경 로직 (예: 모달 팝업, API 호출 등)
-        console.log('닉네임 변경 기능을 구현해야 합니다.'); // 사용자에게 알림 대신 실제 UI로 대체해야 합니다.
-        // 필요하다면 닉네임 입력 필드에 포커스
-        document.getElementById('nickname')?.focus();
+    // 닉네임 변경 시 백엔드 닉네임 중복 확인 (선택 사항)
+    const handleCheckNicknameAvailability = async () => {
+        if (!editedNickname) {
+            alert('닉네임을 입력해주세요.');
+            return;
+        }
+        try {
+            const response = await fetch(`/api/v1/bookbook/users/check-nickname?nickname=${editedNickname}`);
+            if (response.ok) {
+                const data = await response.json();
+                if (data.isAvailable) {
+                    alert('사용 가능한 닉네임입니다.');
+                } else {
+                    alert('이미 사용 중인 닉네임입니다. 다른 닉네임을 사용해주세요.');
+                }
+            } else {
+                alert('닉네임 중복 확인 중 오류가 발생했습니다.');
+            }
+        } catch (error) {
+            console.error('닉네임 중복 확인 오류:', error);
+            alert('네트워크 오류로 닉네임 중복 확인에 실패했습니다.');
+        }
     };
 
-    // "주소 변경" 버튼 클릭 핸들러
-    const handleChangeAddressClick = () => {
-        // 실제 주소 변경 로직 (예: 모달 팝업, API 호출 등)
-        console.log('주소 변경 기능을 구현해야 합니다.'); // 사용자에게 알림 대신 실제 UI로 대체해야 합니다.
-        // 필요하다면 주소 입력 필드에 포커스
-        document.getElementById('address')?.focus();
-    };
+    // "확인" 버튼 클릭 핸들러 (수정 사항 저장)
+    const handleConfirmClick = async () => {
+        if (!isEditing) {
+            console.log('수정 모드가 아닙니다.');
+            return;
+        }
 
-    // "확인" 버튼 클릭 핸들러
-    const handleConfirmClick = () => {
-        if (isEditing) {
-            // 수정 모드일 때만 저장 로직 실행
-            console.log('변경 사항을 저장합니다:', { nickname, address }); // 실제 저장 로직으로 대체
-            // 예: saveProfileChanges(nickname, address);
+        if (!editedNickname || !editedAddress) {
+            alert('닉네임과 주소를 모두 입력해주세요.');
+            return;
+        }
 
-            // 저장 후 수정 모드 비활성화 및 UI 초기화
-            setIsEditing(false);
-            setOriginalNickname(nickname); // 변경된 값으로 원본 업데이트
-            setOriginalAddress(address);   // 변경된 값으로 원본 업데이트
-        } else {
-            // 수정 모드가 아닐 때 "확인" 버튼은 단순히 페이지 이동 또는 닫기 역할
-            console.log('확인되었습니다.'); // 또는 다른 동작
+        try {
+            const response = await fetch('/api/v1/bookbook/users/me', {
+                method: 'PATCH',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    nickname: editedNickname,
+                    address: editedAddress,
+                }),
+                credentials: 'include'
+            });
+
+            if (response.ok) {
+                // 성공적으로 저장되었으면 userData 업데이트
+                setUserData(prev => ({
+                    ...prev,
+                    nickname: editedNickname,
+                    address: editedAddress,
+                }));
+                setOriginalNickname(editedNickname); // 원본도 업데이트
+                setOriginalAddress(editedAddress);
+                setIsEditing(false); // 수정 모드 종료
+                alert('프로필 정보가 성공적으로 업데이트되었습니다.');
+            } else if (response.status === 400) {
+                const errorData = await response.json();
+                alert(`업데이트 실패: ${errorData.message || '입력값이 유효하지 않습니다.'}`);
+            } else {
+                alert('프로필 업데이트에 실패했습니다.');
+            }
+        } catch (error) {
+            console.error('프로필 업데이트 중 오류 발생:', error);
+            alert('네트워크 오류로 프로필 업데이트에 실패했습니다.');
         }
     };
 
     // "취소" 버튼 클릭 핸들러
     const handleCancelClick = () => {
         if (isEditing) {
-            // 수정 모드일 때만 변경 사항 취소
-            console.log('변경 사항을 취소하고 원래대로 되돌립니다.'); // 실제 취소 로직으로 대체
-            // 원본 값으로 되돌리는 로직
-            setNickname(originalNickname);
-            setAddress(originalAddress);
-
-            // 수정 모드 비활성화 및 UI 초기화
-            setIsEditing(false);
+            setEditedNickname(originalNickname); // 원본 값으로 되돌리기
+            setEditedAddress(originalAddress);
+            setIsEditing(false); // 수정 모드 비활성화
+            alert('변경 사항이 취소되었습니다.');
         } else {
-            // 수정 모드가 아닐 때 "취소" 버튼은 단순히 페이지 이동 또는 닫기 역할
-            console.log('취소되었습니다.'); // 또는 다른 동작
+            // 수정 모드가 아닐 때 "취소" 버튼은 뒤로 가기 또는 홈으로 이동
+            window.history.back(); // 또는 window.location.href = '/bookbook';
+        }
+    };
+
+    //  회원 탈퇴 핸들러
+    const handleDeactivateAccount = async (event: React.MouseEvent) => {
+        event.preventDefault(); // 기본 링크 동작 방지
+
+        if (confirm('정말로 계정을 비활성화(회원 탈퇴) 하시겠습니까? 이 작업은 되돌릴 수 없습니다.')) {
+            try {
+                const response = await fetch('/api/v1/bookbook/users/me', {
+                    method: 'DELETE',
+                    credentials: 'include' // 세션 쿠키 전송
+                });
+
+                if (response.ok) {
+                    alert('회원 탈퇴가 성공적으로 처리되었습니다.');
+                    // 로그아웃 처리 및 홈으로 리다이렉트 (필요하다면 백엔드 logout 엔드포인트도 호출)
+                    // 현재 백엔드 DELETE /me는 세션 무효화까지는 안 하므로,
+                    window.location.href = '/api/v1/bookbook/users/logout'; // 로그아웃 URL로 이동
+                } else if (response.status === 401) {
+                    alert('로그인이 필요합니다.');
+                    window.location.href = '/bookbook'; // 로그인 페이지로 리다이렉트
+                } else {
+                    const errorData = await response.json();
+                    alert(`회원 탈퇴 실패: ${errorData.message || '알 수 없는 오류'}`);
+                }
+            } catch (error) {
+                console.error('회원 탈퇴 중 오류 발생:', error);
+                alert('네트워크 오류로 회원 탈퇴에 실패했습니다.');
+            }
         }
     };
 
@@ -79,13 +195,15 @@ export default function App() {
         <div className="min-h-screen flex justify-center items-center p-5 bg-gray-100">
             <div className="container bg-white rounded-xl shadow-lg p-8 w-full max-w-md">
                 <div className="flex justify-between items-center mb-8">
-                    <h1 className="text-3xl font-bold text-gray-800">홍길동 님</h1>
+                    {/* 사용자 닉네임과 "님" 표시 */}
+                    <h1 className="text-3xl font-bold text-gray-800">{userData.nickname} 님</h1>
                     <button
                         id="editProfileBtn"
                         className={`edit-button px-4 py-2 rounded-lg font-medium transition-colors ${
                             isEditing ? 'bg-blue-500 text-white hover:bg-blue-600' : 'bg-gray-200 text-gray-800 hover:bg-gray-300'
                         }`}
                         onClick={handleEditClick}
+                        disabled={isEditing} //  수정 모드일 때는 "수정" 버튼 비활성화
                     >
                         수정
                     </button>
@@ -104,8 +222,8 @@ export default function App() {
                             type="text"
                             id="nickname"
                             className="flex-grow p-3 border border-gray-300 rounded-lg text-gray-800 focus:outline-none focus:border-gray-400 disabled:bg-gray-50 disabled:text-gray-500 disabled:cursor-not-allowed"
-                            value={nickname}
-                            onChange={(e) => setNickname(e.target.value)}
+                            value={isEditing ? editedNickname : userData.nickname} // ⭐️ 수정 모드에 따라 값 변경
+                            onChange={(e) => setEditedNickname(e.target.value)} // ⭐️ 수정 필드 상태 업데이트
                             disabled={!isEditing} // isEditing이 false일 때 비활성화
                         />
                         <button
@@ -113,9 +231,9 @@ export default function App() {
                             className={`change-button px-5 py-3 rounded-lg font-medium whitespace-nowrap transition-colors ${
                                 isEditing ? 'bg-gray-700 text-white hover:bg-gray-800' : 'hidden'
                             }`}
-                            onClick={handleChangeNicknameClick}
+                            onClick={handleCheckNicknameAvailability} // ⭐️ 닉네임 중복 확인 기능
                         >
-                            변경
+                            중복 확인
                         </button>
                     </div>
                 </div>
@@ -133,19 +251,10 @@ export default function App() {
                             type="text"
                             id="address"
                             className="flex-grow p-3 border border-gray-300 rounded-lg text-gray-800 focus:outline-none focus:border-gray-400 disabled:bg-gray-50 disabled:text-gray-500 disabled:cursor-not-allowed"
-                            value={address}
-                            onChange={(e) => setAddress(e.target.value)}
+                            value={isEditing ? editedAddress : userData.address} //  수정 모드에 따라 값 변경
+                            onChange={(e) => setEditedAddress(e.target.value)} //  수정 필드 상태 업데이트
                             disabled={!isEditing} // isEditing이 false일 때 비활성화
                         />
-                        <button
-                            id="changeAddressBtn"
-                            className={`change-button px-5 py-3 rounded-lg font-medium whitespace-nowrap transition-colors ${
-                                isEditing ? 'bg-gray-700 text-white hover:bg-gray-800' : 'hidden'
-                            }`}
-                            onClick={handleChangeAddressClick}
-                        >
-                            변경
-                        </button>
                     </div>
                 </div>
 
@@ -161,7 +270,7 @@ export default function App() {
                         type="email"
                         id="email"
                         className="w-full p-3 border border-gray-300 rounded-lg bg-gray-50 text-gray-500 cursor-not-allowed"
-                        value={email}
+                        value={userData.email} //  서버에서 받아온 값 사용
                         disabled // 항상 비활성화
                     />
                 </div>
@@ -178,7 +287,7 @@ export default function App() {
                         type="text"
                         id="joinDate"
                         className="w-full p-3 border border-gray-300 rounded-lg bg-gray-50 text-gray-500 cursor-not-allowed"
-                        value={joinDate}
+                        value={userData.joinDate} //  서버에서 받아온 값 사용
                         disabled // 항상 비활성화
                     />
                 </div>
@@ -209,7 +318,13 @@ export default function App() {
 
                 {/* 회원 탈퇴 링크 */}
                 <div className="text-right mt-5 text-sm">
-                    <a href="#" className="text-gray-600 hover:text-gray-800 transition-colors">회원탈퇴 &gt;</a>
+                    <a
+                        href="#"
+                        className="text-gray-600 hover:text-gray-800 transition-colors"
+                        onClick={handleDeactivateAccount} //  회원 탈퇴 핸들러 연결
+                    >
+                        회원탈퇴 &gt;
+                    </a>
                 </div>
             </div>
         </div>
