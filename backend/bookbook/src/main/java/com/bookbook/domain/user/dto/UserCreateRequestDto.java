@@ -11,6 +11,6 @@ import lombok.Setter;
 public class UserCreateRequestDto {
     @NotBlank(message="아이디는 필수 입력값입니다.")
     private String nickname;
-    @NotBlank(message="이메일은 필수 입력값입니다.")
+    @NotBlank(message="주소는 필수 입력값입니다.")
     private String address;
 }
