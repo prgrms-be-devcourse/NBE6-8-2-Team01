@@ -113,57 +113,84 @@ export default function App() {
 
     // "확인" 버튼 클릭 핸들러 (수정 사항 저장)
     const handleConfirmClick = async () => {
+        // 수정 모드가 아니면 처리하지 않음
         if (!isEditing) {
             console.log('수정 모드가 아닙니다.');
-            alert('수정 모드가 아닙니다.'); // alert 사용
+            alert('수정 모드가 아닙니다.');
             return;
         }
 
-        // 닉네임 또는 주소 중 하나라도 변경되지 않았다면 업데이트 요청을 보내지 않음
-        if (editedNickname === originalNickname && editedAddress === originalAddress) {
-            alert('변경할 내용이 없습니다.'); // alert 사용
-            setIsEditing(false); // 변경사항 없으면 수정 모드 종료
+        // 입력된 닉네임과 주소의 양쪽 공백을 제거
+        const trimmedNickname = editedNickname.trim();
+        const trimmedAddress = editedAddress.trim();
+
+        // 닉네임과 주소 모두 비어있거나 공백만 있는 경우 알림 후 종료
+        if (trimmedNickname === '' && trimmedAddress === '') {
+            alert('닉네임 또는 주소를 입력해주세요.');
             return;
         }
 
-        if (!editedNickname || !editedAddress) {
-            alert('닉네임과 주소를 모두 입력해주세요.'); // alert 사용
+        // 트림된 닉네임과 주소가 원본과 모두 동일한 경우 (실제 변경 없음) 알림 후 종료
+        if (trimmedNickname === originalNickname && trimmedAddress === originalAddress) {
+            alert('변경할 내용이 없습니다.');
+            setIsEditing(false); // 수정 모드 비활성화
+            return;
+        }
+
+        // 백엔드 요청 바디를 위한 객체 선언 (타입스크립트 오류 방지를 위해 명시적 타입 지정)
+        const requestBody : {nickname?: string; address?: string} = {}; // TypeScript에서 { nickname?: string; address?: string } 타입으로 선언 필요
+
+        // 트림된 닉네임이 빈 문자열이 아니고, 원본 닉네임과 다를 경우에만 requestBody에 추가
+        if (trimmedNickname !== '' && trimmedNickname !== originalNickname) {
+            requestBody.nickname = trimmedNickname;
+        }
+
+        // 트림된 주소가 빈 문자열이 아니고, 원본 주소와 다를 경우에만 requestBody에 추가
+        if (trimmedAddress !== '' && trimmedAddress !== originalAddress) {
+            requestBody.address = trimmedAddress;
+        }
+
+        // 만약 requestBody에 실제 변경 사항이 아무것도 없다면 알림 후 종료
+        // 이 조건은 위에서 대부분 걸러지지만, 혹시 모를 예외 상황을 위해 유지
+        if (Object.keys(requestBody).length === 0) {
+            alert('변경할 내용이 없습니다.');
+            setIsEditing(false); // 수정 모드 비활성화
             return;
         }
 
         try {
+            // 백엔드 API 호출
             const response = await fetch('/api/v1/bookbook/users/me', {
-                method: 'PATCH',
+                method: 'PATCH', // PATCH 메서드 사용
                 headers: {
-                    'Content-Type': 'application/json',
+                    'Content-Type': 'application/json', // JSON 형식으로 데이터 전송 명시
                 },
-                body: JSON.stringify({
-                    nickname: editedNickname,
-                    address: editedAddress,
-                }),
-                credentials: 'include'
+                body: JSON.stringify(requestBody), // requestBody 객체를 JSON 문자열로 변환하여 전송
+                credentials: 'include' // 세션 쿠키 포함하여 전송
             });
 
-            if (response.ok) {
-                // 성공적으로 저장되었으면 userData 업데이트
+            // 응답 처리
+            if (response.ok) { // 요청 성공 (HTTP 상태 코드 200번대)
+                // 사용자 데이터 업데이트 (실제로 변경된 필드만 반영)
                 setUserData(prev => ({
                     ...prev,
-                    nickname: editedNickname,
-                    address: editedAddress,
+                    ...(requestBody.nickname ? { nickname: requestBody.nickname } : {}),
+                    ...(requestBody.address ? { address: requestBody.address } : {}),
                 }));
-                setOriginalNickname(editedNickname); // 원본도 업데이트
-                setOriginalAddress(editedAddress);
+                // 원본 닉네임/주소도 업데이트된 값으로 설정
+                setOriginalNickname(requestBody.nickname || originalNickname);
+                setOriginalAddress(requestBody.address || originalAddress);
                 setIsEditing(false); // 수정 모드 종료
-                alert('프로필 정보가 성공적으로 업데이트되었습니다.'); // alert 사용
-            } else if (response.status === 400 || response.status === 409) { // 400 Bad Request, 409 Conflict (닉네임 중복 등)
-                const errorRsData = await response.json();
-                alert(`업데이트 실패: ${errorRsData.msg || '입력값이 유효하지 않습니다.'}`); // alert 사용
-            } else {
-                alert('프로필 업데이트에 실패했습니다.'); // alert 사용
+                alert('프로필 정보가 성공적으로 업데이트되었습니다.');
+            } else if (response.status === 400 || response.status === 409) { // 400 Bad Request 또는 409 Conflict (예: 닉네임 중복, 유효성 검사 실패 등)
+                const errorRsData = await response.json(); // 에러 응답 파싱
+                alert(`업데이트 실패: ${errorRsData.msg || '입력값이 유효하지 않습니다.'}`);
+            } else { // 그 외의 실패 응답
+                alert('프로필 업데이트에 실패했습니다.');
             }
-        } catch (error) {
+        } catch (error) { // 네트워크 오류 등 예외 발생 시
             console.error('프로필 업데이트 중 오류 발생:', error);
-            alert('네트워크 오류로 프로필 업데이트에 실패했습니다.'); // alert 사용
+            alert('네트워크 오류로 프로필 업데이트에 실패했습니다.');
         }
     };
 
