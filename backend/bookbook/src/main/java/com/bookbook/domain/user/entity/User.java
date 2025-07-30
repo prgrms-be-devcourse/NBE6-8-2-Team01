@@ -118,4 +118,12 @@ public class User extends BaseEntity {
     public boolean isSuspended() {
         return userStatus == UserStatus.SUSPENDED;
     }
+
+    public void changeUsername(String username) {
+        this.username = username;
+    }
+
+    public void setEmail(String email) { // 이메일 변경 메서드 추가 (null 허용)
+        this.email = email;
+    }
 }
