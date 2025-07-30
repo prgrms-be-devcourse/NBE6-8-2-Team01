@@ -1,6 +1,8 @@
 export interface MyBook {
   id: number;
   lenderUserId: number;
+  borrowerUserId?: number;
+  borrowerNickname?: string;
   title: string;
   bookTitle: string;
   author: string;
