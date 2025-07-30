@@ -15,6 +15,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Optional;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -108,5 +109,29 @@ public class UserService {
         user.changeAddress(address);
 
         return userRepository.save(user);
+    }
+
+    @Transactional
+    public void deactivateUser(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new IllegalArgumentException("해당 ID의 사용자를 찾을 수 없습니다."));
+
+        // 사용자가 이미 비활성화 상태인 경우
+        if (user.getUserStatus() == UserStatus.INACTIVE) {
+            throw new IllegalStateException("이미 탈퇴 처리된 사용자입니다.");
+        }
+
+        // 사용자 상태를 INACTIVE로 변경
+        user.changeUserStatus(UserStatus.INACTIVE);
+        // 사용자명, 이메일, 닉네임 등을 고유성이 유지되지 않도록 변경하여 재가입 시 문제 없도록 처리
+        // 예: 원래 username + "_deleted_" + UUID
+        user.changeUsername(user.getUsername() + "_deleted_" + UUID.randomUUID().toString());
+        if (user.getEmail() != null && !user.getEmail().isEmpty()) {
+            user.setEmail(user.getEmail() + "_deleted_" + UUID.randomUUID().toString());
+        }
+        user.changeNickname(user.getNickname() + "_deleted_" + UUID.randomUUID().toString());
+
+
+        userRepository.save(user);
     }
 }

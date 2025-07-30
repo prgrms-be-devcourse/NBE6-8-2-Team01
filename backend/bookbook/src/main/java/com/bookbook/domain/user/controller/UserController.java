@@ -98,4 +98,22 @@ public class UserController {
         return ResponseEntity.ok(customOAuth2User != null);
     }
 
+
+    @DeleteMapping("/me") // 회원 탈퇴 엔드포인트
+    public ResponseEntity<String> deactivateUser(@AuthenticationPrincipal CustomOAuth2User customOAuth2User) {
+        if (customOAuth2User == null || customOAuth2User.getUserId() == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("로그인 정보가 유효하지 않습니다.");
+        }
+
+        try {
+            userService.deactivateUser(customOAuth2User.getUserId());
+            return ResponseEntity.ok("회원 탈퇴가 성공적으로 처리되었습니다.");
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        } catch (IllegalStateException e) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(e.getMessage()); // 409 Conflict
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("회원 탈퇴 처리 중 오류가 발생했습니다: " + e.getMessage());
+        }
+    }
 }
