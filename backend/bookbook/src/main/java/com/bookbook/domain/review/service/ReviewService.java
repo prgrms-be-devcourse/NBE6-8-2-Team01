@@ -16,6 +16,12 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Optional;
 
+/**
+ * 양방향 리뷰 관리 서비스
+ * 
+ * 도서 대여 거래 완료 후 대여자와 대여받은 사람이 서로를 평가할 수 있는 
+ * 양방향 리뷰 시스템의 비즈니스 로직을 처리합니다.
+ */
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
@@ -26,6 +32,19 @@ public class ReviewService {
     private final UserRepository userRepository;
     private final RentListRepository rentListRepository;
     
+    /**
+     * 대여자가 대여받은 사람에게 리뷰 작성
+     * 
+     * 도서를 빌려준 사람이 빌려간 사람을 평가하는 기능입니다.
+     * 거래 완료 후에만 작성 가능하며, 중복 리뷰는 방지됩니다.
+     * 
+     * @param lenderId 대여자(리뷰 작성자) ID
+     * @param rentId 대여 게시글 ID
+     * @param request 리뷰 생성 요청 데이터 (평점)
+     * @return 생성된 리뷰 정보
+     * @throws IllegalArgumentException 게시글을 찾을 수 없거나 권한이 없는 경우
+     * @throws IllegalStateException 거래가 완료되지 않았거나 이미 리뷰를 작성한 경우
+     */
     @Transactional
     public ReviewResponseDto createLenderReview(Long lenderId, Integer rentId, ReviewCreateRequestDto request) {
         // 대여 게시글 조회
@@ -72,6 +91,19 @@ public class ReviewService {
         return ReviewResponseDto.from(savedReview);
     }
     
+    /**
+     * 대여받은 사람이 대여자에게 리뷰 작성
+     * 
+     * 도서를 빌린 사람이 빌려준 사람을 평가하는 기능입니다.
+     * 거래 완료 후에만 작성 가능하며, 중복 리뷰는 방지됩니다.
+     * 
+     * @param borrowerId 대여받은 사람(리뷰 작성자) ID
+     * @param rentId 대여 게시글 ID
+     * @param request 리뷰 생성 요청 데이터 (평점)
+     * @return 생성된 리뷰 정보
+     * @throws IllegalArgumentException 게시글을 찾을 수 없는 경우
+     * @throws IllegalStateException 거래가 완료되지 않았거나 이미 리뷰를 작성한 경우
+     */
     @Transactional
     public ReviewResponseDto createBorrowerReview(Long borrowerId, Integer rentId, ReviewCreateRequestDto request) {
         // 대여 게시글 조회
@@ -104,6 +136,13 @@ public class ReviewService {
         return ReviewResponseDto.from(savedReview);
     }
     
+    /**
+     * 사용자 평점 업데이트
+     * 
+     * 리뷰 작성 후 해당 사용자의 평균 평점을 계산하여 사용자 정보를 업데이트합니다.
+     * 
+     * @param userId 평점을 업데이트할 사용자 ID
+     */
     private void updateUserRating(Long userId) {
         Optional<Double> averageRating = reviewRepository.findAverageRatingByRevieweeId(userId);
         if (averageRating.isPresent()) {
