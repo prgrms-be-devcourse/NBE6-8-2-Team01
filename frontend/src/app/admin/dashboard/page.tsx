@@ -4,8 +4,10 @@ import { useState, useEffect } from 'react';
 import { SideBar } from "./_components/sidebar/sideBar";
 import { MenuItem } from "./_types/menuItem";
 import { MainContent } from "./_components/mainContent/mainContent";
+import { useAuthContext } from "../_hook/useAuth";
 
 export default function AdminPage() {
+  const { logout: _logout, loginMember } = useAuthContext();
   const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set());
   const [activeItem, setActiveItem] = useState('dashboard');
   const [responseData, setResponseData] = useState<unknown | null>(null);
@@ -19,9 +21,15 @@ export default function AdminPage() {
     }
 
     setLoading(true);
-    const requestURL = `${URL}${currentItem.apiPath}`;
+    const requestURL = `http://localhost:8080${currentItem.apiPath}`;
 
-    fetch(requestURL, { method: "GET" })
+    fetch(requestURL, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json; charset=utf-8",
+      },
+      credentials: "include",
+    })
       .then(response => {
         if (!response.ok) {
           setResponseData(null);
@@ -53,7 +61,9 @@ export default function AdminPage() {
 
   const handleLogout = () => {
     console.log("로그아웃 처리");
-    // TODO: 로그아웃 API 호출 및 로그인 페이지로 리다이렉트
+    _logout(() => {
+      alert("로그아웃 완료");
+    });
   };
 
   useEffect(() => {
@@ -94,7 +104,7 @@ export default function AdminPage() {
     };
 
     handleApiCall();
-  }, [currentItem, URL]);
+  }, [currentItem]);
 
   return (
     <div className="flex min-h-screen bg-gray-100">
@@ -104,8 +114,9 @@ export default function AdminPage() {
         activeItem={activeItem}
         onItemClick={setActiveItem}
         onLogout={handleLogout}
+        loginMember={loginMember}
       />
-      <MainContent 
+      <MainContent
         activeItem={activeItem}
         responseData={responseData}
         currentItem={currentItem}

@@ -21,17 +21,17 @@ public class SuspendedUserScheduler {
 
     @Scheduled(cron = "0 0 */1 * * *")
     @Transactional
-    public void executeScheduledResumingMembers() {
+    public void executeScheduledResumingUsers() {
         log.info("Suspending users suspended members");
         List<User> suspendedUsers = userRepository
                 .findAllByUserStatusAndResumedAtBefore(UserStatus.SUSPENDED, LocalDateTime.now());
 
-        for (User suspendedMember : suspendedUsers) {
+        for (User suspendedUser : suspendedUsers) {
             try {
-                suspendedMember.resume();
-                log.info("멤버: {} 정지 해제 완료", suspendedMember.getId());
+                suspendedUser.resume();
+                log.info("멤버: {} 정지 해제 완료", suspendedUser.getId());
             } catch (RuntimeException e) {
-                log.warn("멤버: {} 정지 해제 실패", suspendedMember.getId());
+                log.warn("멤버: {} 정지 해제 실패", suspendedUser.getId());
             }
         }
     }
