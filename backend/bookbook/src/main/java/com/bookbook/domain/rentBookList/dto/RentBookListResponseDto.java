@@ -31,8 +31,8 @@ public class RentBookListResponseDto {
         this.bookImage = rent.getBookImage();
         this.address = rent.getAddress();
         this.category = rent.getCategory();
-        this.rentStatus = rent.getRent_status();
-        this.lenderUserId = rent.getLender_user_id();
+        this.rentStatus = rent.getRentStatus();
+        this.lenderUserId = rent.getLenderUserId();
         this.title = rent.getTitle();
         this.contents = rent.getContents();
         this.createdDate = rent.getCreatedDate();

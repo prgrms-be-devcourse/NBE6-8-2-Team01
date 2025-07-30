@@ -25,14 +25,14 @@ public class LendListResponseDto {
     public static LendListResponseDto from(Rent rent) {
         return LendListResponseDto.builder()
                 .id(rent.getId())
-                .lenderUserId(rent.getLender_user_id())
+                .lenderUserId(rent.getLenderUserId())
                 .title(rent.getTitle())
                 .bookTitle(rent.getBookTitle())
                 .author(rent.getAuthor())
                 .publisher(rent.getPublisher())
                 .bookCondition(rent.getBookCondition())
                 .bookImage(rent.getBookImage())
-                .rentStatus(rent.getRent_status())
+                .rentStatus(rent.getRentStatus())
                 .createdAt(rent.getCreatedDate())
                 .updatedAt(rent.getModifiedDate())
                 .build();
