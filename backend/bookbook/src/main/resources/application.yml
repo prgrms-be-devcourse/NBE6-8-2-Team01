@@ -75,3 +75,5 @@ frontend:
   base-url: http://localhost:3000
   signup-path: /bookbook/user/signup
   main-path: /bookbook
+aladin:
+  ttbkey: ${ALADIN_API_KEY}

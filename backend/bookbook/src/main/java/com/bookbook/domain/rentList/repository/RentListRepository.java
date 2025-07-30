@@ -10,4 +10,6 @@ import java.util.List;
 public interface RentListRepository extends JpaRepository<RentList, Integer> {
     
     List<RentList> findByBorrowerUserId(Long borrowerUserId);
+    
+    List<RentList> findByRentId(Integer rentId);
 }

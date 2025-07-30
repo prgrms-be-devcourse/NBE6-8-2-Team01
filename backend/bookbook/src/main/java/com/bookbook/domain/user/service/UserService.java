@@ -110,6 +110,10 @@ public class UserService {
         userRepository.save(user);
     }
 
+    public User findById(Long id) {
+        return userRepository.findById(id).orElse(null);
+    }
+
     @Transactional
     public void deactivateUser(Long userId) {
         User user = userRepository.findById(userId)
