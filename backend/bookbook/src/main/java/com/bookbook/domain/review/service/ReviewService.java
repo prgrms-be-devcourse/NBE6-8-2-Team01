@@ -2,6 +2,8 @@ package com.bookbook.domain.review.service;
 
 import com.bookbook.domain.rent.entity.Rent;
 import com.bookbook.domain.rent.repository.RentRepository;
+import com.bookbook.domain.rentList.entity.RentList;
+import com.bookbook.domain.rentList.repository.RentListRepository;
 import com.bookbook.domain.review.dto.ReviewCreateRequestDto;
 import com.bookbook.domain.review.dto.ReviewResponseDto;
 import com.bookbook.domain.review.entity.Review;
@@ -22,6 +24,7 @@ public class ReviewService {
     private final ReviewRepository reviewRepository;
     private final RentRepository rentRepository;
     private final UserRepository userRepository;
+    private final RentListRepository rentListRepository;
     
     @Transactional
     public ReviewResponseDto createLenderReview(Long lenderId, Integer rentId, ReviewCreateRequestDto request) {
@@ -50,8 +53,14 @@ public class ReviewService {
             throw new IllegalArgumentException("별점은 1점부터 5점까지 입력 가능합니다.");
         }
         
-        // 빌려간 사람 ID 조회 (임시로 빈 값 처리 - 실제로는 대여 기록에서 조회 필요)
-        Long borrowerId = 1L; // TODO: 실제 borrower ID 조회 로직 구현
+        // 빌려간 사람 ID 조회
+        RentList rentList = rentListRepository.findByRentId(rentId)
+                .stream()
+                .filter(rl -> rl.getRent().getRentStatus().equals("Finished"))
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException("완료된 대여 기록을 찾을 수 없습니다."));
+        
+        Long borrowerId = rentList.getBorrowerUser().getId();
         
         // 리뷰 생성
         Review review = new Review(rentId, lenderId, borrowerId, request.getRating(), "LENDER_TO_BORROWER");
