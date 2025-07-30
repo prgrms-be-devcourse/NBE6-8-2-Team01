@@ -13,7 +13,7 @@ export const dummyLendListBooks: MyBook[] = [
     bookImage: "https://image.yes24.com/goods/11681152/XL",
     address: "서울특별시 강남구",
     contents: "깨끗한 코드 작성법을 배울 수 있는 필독서입니다. 거의 새책 수준입니다.",
-    rentStatus: "대여가능",
+    rentStatus: "Available",
     createdDate: "2024-01-15T10:30:00",
     modifiedDate: "2024-01-15T10:30:00"
   },
@@ -29,8 +29,10 @@ export const dummyLendListBooks: MyBook[] = [
     bookImage: "https://image.yes24.com/goods/65551284/XL",
     address: "서울특별시 서초구",
     contents: "자바 개발자 필수 도서입니다. 약간의 필기 흔적이 있습니다.",
-    rentStatus: "대여중",
+    rentStatus: "Loaned",
     returnDate: "2024-02-10T14:00:00",
+    borrowerUserId: 101,
+    borrowerNickname: "자바공부생",
     createdDate: "2024-01-10T14:20:00",
     modifiedDate: "2024-01-12T09:15:00"
   },
@@ -46,7 +48,7 @@ export const dummyLendListBooks: MyBook[] = [
     bookImage: "/book-sample-1.png",
     address: "서울특별시 종로구",
     contents: "한강 작가의 감동적인 신작입니다.",
-    rentStatus: "대여가능",
+    rentStatus: "Available",
     createdDate: "2024-01-18T11:20:00",
     modifiedDate: "2024-01-18T11:20:00"
   },
@@ -62,8 +64,10 @@ export const dummyLendListBooks: MyBook[] = [
     bookImage: "/book-sample-2.png",
     address: "서울특별시 강북구",
     contents: "숲속의 현자가 전하는 지혜로운 인생 이야기",
-    rentStatus: "대여중",
+    rentStatus: "Loaned",
     returnDate: "2024-02-05T15:00:00",
+    borrowerUserId: 102,
+    borrowerNickname: "철학탐구자",
     createdDate: "2024-01-17T14:30:00",
     modifiedDate: "2024-01-19T10:20:00"
   },
@@ -79,7 +83,7 @@ export const dummyLendListBooks: MyBook[] = [
     bookImage: "/book-sample-3.png",
     address: "서울특별시 은평구",
     contents: "익숙함에서 탁월함으로 나아가는 방법을 알려줍니다.",
-    rentStatus: "대여가능",
+    rentStatus: "Available",
     createdDate: "2024-01-16T09:15:00",
     modifiedDate: "2024-01-16T09:15:00"
   },
@@ -95,8 +99,10 @@ export const dummyLendListBooks: MyBook[] = [
     bookImage: "https://image.yes24.com/goods/83849117/XL",
     address: "서울특별시 동대문구",
     contents: "실무에서 바로 사용할 수 있는 스프링 부트 프로젝트 가이드",
-    rentStatus: "대여중",
+    rentStatus: "Loaned",
     returnDate: "2024-02-08T12:00:00",
+    borrowerUserId: 103,
+    borrowerNickname: "스프링마스터",
     createdDate: "2024-01-13T13:25:00",
     modifiedDate: "2024-01-15T11:10:00"
   },
@@ -112,7 +118,7 @@ export const dummyLendListBooks: MyBook[] = [
     bookImage: "/book-sample-4.png",
     address: "서울특별시 중랑구",
     contents: "5.18 광주 민주화 운동을 다룬 감동적인 소설입니다.",
-    rentStatus: "대여가능",
+    rentStatus: "Available",
     createdDate: "2024-01-12T10:50:00",
     modifiedDate: "2024-01-12T10:50:00"
   },
@@ -128,7 +134,7 @@ export const dummyLendListBooks: MyBook[] = [
     bookImage: "/book-sample-5.png",
     address: "서울특별시 광진구",
     contents: "문학평론가의 깊이 있는 에세이입니다.",
-    rentStatus: "대여가능",
+    rentStatus: "Available",
     createdDate: "2024-01-11T15:35:00",
     modifiedDate: "2024-01-11T15:35:00"
   },
@@ -144,7 +150,10 @@ export const dummyLendListBooks: MyBook[] = [
     bookImage: "https://image.yes24.com/goods/17525598/XL",
     address: "서울특별시 송파구",
     contents: "객체지향 설계의 바이블입니다.",
-    rentStatus: "finished",
+    rentStatus: "Finished",
+    returnDate: "2024-01-25T16:20:00",
+    borrowerUserId: 104,
+    borrowerNickname: "패턴학습자",
     hasReview: false,
     createdDate: "2024-01-08T09:30:00",
     modifiedDate: "2024-01-25T16:20:00"
@@ -161,7 +170,10 @@ export const dummyLendListBooks: MyBook[] = [
     bookImage: "https://image.yes24.com/goods/2732189/XL",
     address: "서울특별시 관악구",
     contents: "데이터베이스 이론과 실무를 다룬 교재입니다.",
-    rentStatus: "finished",
+    rentStatus: "Finished",
+    returnDate: "2024-01-20T11:30:00",
+    borrowerUserId: 105,
+    borrowerNickname: "DB학습자",
     hasReview: true,
     createdDate: "2024-01-07T13:40:00",
     modifiedDate: "2024-01-20T11:30:00"
@@ -178,7 +190,7 @@ export const dummyLendListBooks: MyBook[] = [
     bookImage: "https://image.yes24.com/goods/92742567/XL",
     address: "서울특별시 마포구",
     contents: "자바스크립트를 깊이 있게 학습하고 싶은 분들께 추천합니다.",
-    rentStatus: "대여가능",
+    rentStatus: "Available",
     createdDate: "2024-01-20T16:45:00",
     modifiedDate: "2024-01-20T16:45:00"
   }
