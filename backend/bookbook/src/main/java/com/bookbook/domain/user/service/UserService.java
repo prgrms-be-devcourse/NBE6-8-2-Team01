@@ -1,6 +1,7 @@
 package com.bookbook.domain.user.service;
 
 import com.bookbook.domain.user.dto.UserResponseDto;
+import com.bookbook.domain.user.dto.UserUpdateRequestDto;
 import com.bookbook.domain.user.entity.User;
 import com.bookbook.domain.user.enums.Role;
 import com.bookbook.domain.user.enums.UserStatus;
@@ -37,9 +38,10 @@ public class UserService {
                     .email(adminEmail)
                     .nickname("관리자")
                     .address("서울시 강남구")
-                    .rating(5.0f) // 초기 별점
-                    .role(Role.ADMIN) // 관리자 역할
-                    .userStatus(UserStatus.ACTIVE) // 활성화 상태
+                    .rating(5.0f)
+                    .role(Role.ADMIN)
+                    .userStatus(UserStatus.ACTIVE)
+                    .registrationCompleted(true)
                     .build();
             userRepository.save(adminUser);
             System.out.println("관리자 계정이 생성되었습니다: " + adminUsername);
@@ -57,18 +59,19 @@ public class UserService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ServiceException("404-USER-NOT-FOUND", "해당 ID의 사용자를 찾을 수 없습니다."));
 
-        if (!nickname.trim().isEmpty() && userRepository.existsByNickname(nickname)) {
-            throw new ServiceException("409-NICKNAME-DUPLICATE", "이미 사용 중인 닉네임입니다.");
-        }
-        if (nickname.trim().isEmpty()) {
+        if (nickname == null || nickname.trim().isEmpty()) {
             throw new ServiceException("400-NICKNAME-EMPTY", "닉네임은 필수 입력 사항입니다.");
         }
-        if (address.trim().isEmpty()) {
+        if (userRepository.existsByNickname(nickname.trim())) {
+            throw new ServiceException("409-NICKNAME-DUPLICATE", "이미 사용 중인 닉네임입니다.");
+        }
+        if (address == null || address.trim().isEmpty()) {
             throw new ServiceException("400-ADDRESS-EMPTY", "주소는 필수 입력 사항입니다.");
         }
 
-        user.changeNickname(nickname);
-        user.changeAddress(address);
+        user.setNickname(nickname.trim());
+        user.setAddress(address.trim());
+        user.setRegistrationCompleted(true);
         userRepository.save(user);
     }
 
@@ -77,25 +80,33 @@ public class UserService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ServiceException("404-USER-NOT-FOUND", "해당 ID의 사용자를 찾을 수 없습니다."));
 
-        boolean hasChanges = false; // <-- 변경 사항 감지를 위한 플래그 초기화
+        boolean hasChanges = false;
 
-        if (nickname != null && !nickname.trim().isEmpty() && !user.getNickname().equals(nickname.trim())) {
-            if (userRepository.existsByNickname(nickname.trim())) {
-                throw new ServiceException("409-NICKNAME-DUPLICATE", "이미 사용 중인 닉네임입니다.");
+        if (nickname != null && !nickname.trim().isEmpty()) {
+            String trimmedNickname = nickname.trim();
+            if (!trimmedNickname.equals(user.getNickname())) {
+                if (userRepository.existsByNickname(trimmedNickname)) {
+                    throw new ServiceException("409-NICKNAME-DUPLICATE", "이미 사용 중인 닉네임입니다.");
+                }
+                user.setNickname(trimmedNickname);
+                hasChanges = true;
             }
-            user.changeNickname(nickname.trim()); // 변경 적용
-            hasChanges = true; // 변경 사항이 있음을 표시
         }
 
-        if (address != null && !address.trim().isEmpty() && !user.getAddress().equals(address.trim())) {
-            user.changeAddress(address.trim());
-            hasChanges = true;
+
+        if (address != null && !address.trim().isEmpty()) {
+            String trimmedAddress = address.trim();
+            if (!trimmedAddress.equals(user.getAddress())) {
+                user.setAddress(trimmedAddress);
+                hasChanges = true;
+            }
         }
 
         if (!hasChanges) {
             throw new ServiceException("400-NO-CHANGES", "변경할 닉네임 또는 주소를 제공하지 않았거나 변경사항이 없습니다.");
         }
 
+        user.setRegistrationCompleted(true);
         userRepository.save(user);
     }
 
@@ -113,7 +124,10 @@ public class UserService {
         if (user.getEmail() != null && !user.getEmail().isEmpty()) {
             user.setEmail(user.getEmail() + "_deleted_" + UUID.randomUUID().toString());
         }
-        user.changeNickname(user.getNickname() + "_deleted_" + UUID.randomUUID().toString());
+
+        user.setNickname(null);
+        user.setAddress(null);
+        user.setRegistrationCompleted(false);
 
         userRepository.save(user);
     }
@@ -128,36 +142,62 @@ public class UserService {
     public User findOrCreateUser(String username, String email, String socialNickname) {
         return userRepository.findByUsername(username)
                 .map(user -> {
-                    // 기존 사용자: 소셜 닉네임이 다르고 중복되지 않으면 업데이트
-                    if (socialNickname != null && !socialNickname.trim().isEmpty() && !user.getNickname().equals(socialNickname)) {
-                        if (!userRepository.existsByNickname(socialNickname)) {
-                            user.changeNickname(socialNickname);
-                            userRepository.save(user);
-                        }
+                    if (user.getEmail() == null && email != null) {
+                        user.setEmail(email);
                     }
                     return user;
                 })
                 .orElseGet(() -> {
-                    // 새 사용자: 고유한 닉네임 생성 및 User 엔티티 생성
-                    String initialNickname;
-                    if (socialNickname != null && !socialNickname.trim().isEmpty()) {
-                        initialNickname = nicknameGenerator.generateUniqueNickname(socialNickname);
-                    } else {
-                        initialNickname = nicknameGenerator.generateUniqueNickname("새로운 사용자");
-                    }
-
                     User newUser = User.builder()
                             .username(username)
                             .email(email)
-                            .nickname(initialNickname)
-                            .address("기본 주소")
                             .password(passwordEncoder.encode(UUID.randomUUID().toString()))
+                            .nickname(null)
+                            .address(null)
                             .rating(0.0f)
                             .role(Role.USER)
                             .userStatus(UserStatus.ACTIVE)
+                            .registrationCompleted(false)
                             .build();
                     userRepository.save(newUser);
                     return newUser;
                 });
+    }
+
+
+    @Transactional
+    public void updateUserInfo(Long userId, UserUpdateRequestDto updateRequest) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ServiceException("404-USER-NOT-FOUND", "해당 ID의 사용자를 찾을 수 없습니다."));
+
+        boolean hasChanges = false;
+
+        // 닉네임 업데이트
+        if (updateRequest.getNickname() != null && !updateRequest.getNickname().trim().isEmpty()) {
+            String trimmedNickname = updateRequest.getNickname().trim();
+            if (user.getNickname() == null || !trimmedNickname.equals(user.getNickname())) { // 기존 닉네임이 null이거나 다를 경우
+                if (userRepository.existsByNickname(trimmedNickname)) {
+                    throw new ServiceException("409-NICKNAME-DUPLICATE", "이미 사용 중인 닉네임입니다.");
+                }
+                user.setNickname(trimmedNickname);
+                hasChanges = true;
+            }
+        }
+
+
+        if (updateRequest.getAddress() != null && !updateRequest.getAddress().trim().isEmpty()) {
+            String trimmedAddress = updateRequest.getAddress().trim();
+            if (user.getAddress() == null || !trimmedAddress.equals(user.getAddress())) { // 기존 주소가 null이거나 다를 경우
+                user.setAddress(trimmedAddress);
+                hasChanges = true;
+            }
+        }
+
+        if (!hasChanges) {
+            throw new ServiceException("400-NO-CHANGES", "변경할 닉네임 또는 주소를 제공하지 않았거나 변경사항이 없습니다.");
+        }
+
+        user.setRegistrationCompleted(true);
+        userRepository.save(user);
     }
 }
