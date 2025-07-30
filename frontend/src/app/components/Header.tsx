@@ -89,7 +89,7 @@ const Header = () => {
                     <Link href="/bookbook/wishlist">
                       <Heart className="w-6 h-6 text-gray-700 hover:text-blue-600 cursor-pointer" />
                     </Link>
-                    <Link href="/bookbook/mypage"> {/*  마이페이지 링크 추가 권장 */}
+                    <Link href="/bookbook/user/profile"> {/*  마이페이지 링크 추가 권장 */}
                       <User className="w-6 h-6 text-gray-700 hover:text-blue-600 cursor-pointer" />
                     </Link>
                   </>
