@@ -96,6 +96,11 @@ public class UserService {
         return !userRepository.existsByNickname(nickname);
     }
 
+    public User findById(Long userId) {
+        return userRepository.findById(userId)
+                .orElse(null);
+    }
+
     @Transactional
     public User registerAddUserInfo(Long userId, String nickname, String address){
         User user = userRepository.findById(userId)
