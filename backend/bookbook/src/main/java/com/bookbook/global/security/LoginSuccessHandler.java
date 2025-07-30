@@ -1,8 +1,9 @@
-package com.bookbook.global.security; // 적절한 패키지로 변경하세요
+package com.bookbook.global.security;
 
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
@@ -10,7 +11,8 @@ import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 
-@Component // 스프링 빈으로 등록하기 위함
+@Slf4j
+@Component
 public class LoginSuccessHandler implements AuthenticationSuccessHandler {
 
     @Value("${frontend.base-url}${frontend.signup-path}")
@@ -22,16 +24,16 @@ public class LoginSuccessHandler implements AuthenticationSuccessHandler {
     @Override
     public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response,
                                         Authentication authentication) throws IOException, ServletException {
-
-        // 로그인한 사용자 정보 가져오기
         CustomOAuth2User oauth2User = (CustomOAuth2User) authentication.getPrincipal();
 
-        // 첫 로그인 여부 확인
-        if (oauth2User.isNewUser()) {
-            // 첫 로그인인 경우 회원가입 정보 입력 페이지로 리다이렉트
+        log.info("DEBUG: Login success for username: {}, isRegistrationCompleted: {}",
+                oauth2User.getUsername(), oauth2User.isRegistrationCompleted());
+
+        if (!oauth2User.isRegistrationCompleted()) {
+            log.info("Redirecting to signup page: {}", signupRedirectUrl);
             response.sendRedirect(signupRedirectUrl);
         } else {
-            // 첫 로그인이 아닌 경우 메인 페이지로 리다이렉트
+            log.info("Redirecting to main page: {}", mainRedirectUrl);
             response.sendRedirect(mainRedirectUrl);
         }
     }
