@@ -45,7 +45,7 @@ public class CustomOAuth2UserService implements OAuth2UserService<OAuth2UserRequ
         }
 
         // --- 핵심 변경: 사용자 생성/업데이트 로직을 UserService로 위임 ---
-        User user = userService.findOrCreateUser(username, attributes.email(), attributes.getNickname());
+        User user = userService.findOrCreateUser(username, attributes.email(), attributes.nickname());
 
         log.info("DEBUG: User processed. Username: {}, ID: {}, Nickname: {}, isNewUser: {}", user.getUsername(), user.getId(), user.getNickname(), isNewUser);
 

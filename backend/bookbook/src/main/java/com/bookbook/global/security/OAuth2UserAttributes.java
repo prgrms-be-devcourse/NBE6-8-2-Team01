@@ -5,7 +5,7 @@ import java.util.Map;
 public record OAuth2UserAttributes(
         Map<String,Object> attributes,
         String nameAttributeKey,
-        String name,
+        String nickname,
         String email,
         String id
 ) {
@@ -61,9 +61,5 @@ public record OAuth2UserAttributes(
                 email, // 이메일 필드에 null 또는 빈 문자열 전달
                 id
         );
-    }
-
-    public String getNickname() { // 'name' 대신 'nickname'으로 통일성을 위해 변경
-        return name;
     }
 }
