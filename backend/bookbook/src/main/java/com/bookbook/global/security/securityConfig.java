@@ -32,7 +32,7 @@ public class securityConfig {
                                 "/bookbook/home",
                                 "/api/v1/bookbook/login/oauth2/code/**",
                                 "/api/v1/bookbook/home",
-                                "/api/v1/bookbook/user/**",
+                                "/api/v1/bookbook/users/**",
                                 "/api/v1/bookbook/users/isAuthenticated").permitAll()
                         .requestMatchers("api/*/admin/**").hasRole("ADMIN")
                         .requestMatchers("/favicon.ico").permitAll() // 파비콘 접근 허용

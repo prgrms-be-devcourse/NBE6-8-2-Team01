@@ -22,25 +22,6 @@ const SignupPage = () => {
     const [formError, setFormError] = useState<string>('');
     const [loading, setLoading] = useState<boolean>(false); // ✅ 로딩 상태 추가
 
-    useEffect(() => {
-        const checkRegistrationStatus = async () => {
-            try {
-                // API 호출: 현재 사용자 정보를 가져와 registrationCompleted 상태 확인
-                const response = await apiClient<{ registrationCompleted: boolean }>('/api/v1/bookbook/users/me'); // DTO 타입 명시
-                if (response.data && response.data.registrationCompleted) {
-                    router.push('/bookbook'); // 이미 완료되었으면 메인 페이지로 리다이렉트
-                }
-            } catch (error) {
-                // 에러 처리: 예를 들어, 로그인 상태가 아니거나 토큰이 만료되었으면 로그인 페이지로 리다이렉트
-                console.error("Failed to fetch user status:", error);
-                // 특정 에러 코드에 따라 로그인 페이지로 리다이렉트하는 로직 추가 가능
-                // 예: if (error.response && error.response.status === 401) router.push('/login');
-            }
-        };
-        checkRegistrationStatus();
-    }, [router]);
-
-
     const handleNicknameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const value = e.target.value;
         setNickname(value);
