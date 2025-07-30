@@ -116,4 +116,32 @@ public class UserController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("회원 탈퇴 처리 중 오류가 발생했습니다: " + e.getMessage());
         }
     }
+
+    @PatchMapping("/me")
+    public ResponseEntity<String> updateMyInfo(
+            @RequestBody UserSignupRequestDto updateRequest, // 닉네임, 주소를 담을 DTO 재사용
+            @AuthenticationPrincipal CustomOAuth2User customOAuth2User
+    ) {
+        Long userId = Objects.requireNonNullElse(customOAuth2User.getUserId(), -1L);
+
+        if (userId == -1L || customOAuth2User == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("로그인 정보가 유효하지 않습니다.");
+        }
+
+        // 닉네임과 주소 중 최소 하나는 제공되어야 한다고 가정
+        if ((updateRequest.getNickname() == null || updateRequest.getNickname().trim().isEmpty()) &&
+                (updateRequest.getAddress() == null || updateRequest.getAddress().trim().isEmpty())) {
+            return ResponseEntity.badRequest().body("수정할 닉네임 또는 주소를 제공해야 합니다.");
+        }
+
+        try {
+            // registerAddUserInfo 메서드가 이미 닉네임과 주소 변경을 처리하므로 재활용
+            userService.registerAddUserInfo(userId, updateRequest.getNickname(), updateRequest.getAddress());
+            return ResponseEntity.ok("회원 정보가 성공적으로 수정되었습니다.");
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("회원 정보 수정 중 오류가 발생했습니다: " + e.getMessage());
+        }
+    }
 }
