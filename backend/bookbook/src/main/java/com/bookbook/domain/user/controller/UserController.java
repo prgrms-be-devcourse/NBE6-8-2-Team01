@@ -3,16 +3,16 @@ package com.bookbook.domain.user.controller;
 import com.bookbook.domain.user.dto.UserResponseDto;
 import com.bookbook.domain.user.dto.UserSignupRequestDto;
 import com.bookbook.domain.user.service.UserService;
+import com.bookbook.global.exception.ServiceException;
+import com.bookbook.global.rsdata.RsData;
 import com.bookbook.global.security.CustomOAuth2User;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Objects;
 
 @RestController
 @RequiredArgsConstructor
@@ -21,112 +21,89 @@ public class UserController {
     private final UserService userService;
 
     @GetMapping("/check-nickname")
-    public ResponseEntity<Map<String, Boolean>> checkNickname(@RequestParam String nickname) {
+    public ResponseEntity<RsData<Map<String, Boolean>>> checkNickname(@RequestParam String nickname) {
         if(nickname == null || nickname.trim().isEmpty()){
-            Map<String, Boolean> errorResponse = new HashMap<>();
-            errorResponse.put("isAvailable", false);
-            return ResponseEntity.badRequest().body(errorResponse);
+            throw new ServiceException("400-NICKNAME-EMPTY", "닉네임을 입력해주세요.");
         }
 
         boolean isAvailable = userService.checkNicknameAvailability(nickname);
-        Map<String, Boolean> response = new HashMap<>();
-        response.put("isAvailable", isAvailable);
-        return ResponseEntity.ok(response);
+        Map<String, Boolean> responseData = new HashMap<>();
+        responseData.put("isAvailable", isAvailable);
+
+        RsData<Map<String, Boolean>> rsData = RsData.of("200-OK", "닉네임 중복 확인 완료", responseData);
+        return ResponseEntity.status(rsData.getStatusCode()).body(rsData);
     }
 
     @PostMapping("/signup")
-    public ResponseEntity<String> completeSignup(
+    public ResponseEntity<RsData<Void>> completeSignup(
             @RequestBody UserSignupRequestDto signupRequest,
             @AuthenticationPrincipal CustomOAuth2User customOAuth2User
     ){
-        Long userId = Objects.requireNonNullElse(customOAuth2User.getUserId(), -1L);
-
-        if(userId == -1L || customOAuth2User == null){
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("로그인 정보가 유효하지 않습니다.");
+        if(customOAuth2User == null || customOAuth2User.getUserId() == null || customOAuth2User.getUserId() == -1L){
+            throw new ServiceException("401-AUTH-INVALID", "로그인 정보가 유효하지 않습니다.");
         }
+        Long userId = customOAuth2User.getUserId();
 
         if(signupRequest.getNickname() == null || signupRequest.getNickname().trim().isEmpty()){
-            return ResponseEntity.badRequest().body("닉네임은 필수 입력 사항입니다.");
+            throw new ServiceException("400-NICKNAME-EMPTY", "닉네임은 필수 입력 사항입니다.");
         }
 
         if(signupRequest.getAddress() == null || signupRequest.getAddress().trim().isEmpty()){
-            return ResponseEntity.badRequest().body("주소는 필수 입력 사항입니다.");
+            throw new ServiceException("400-ADDRESS-EMPTY", "주소는 필수 입력 사항입니다.");
         }
 
-        try{
-            userService.registerAddUserInfo(userId, signupRequest.getNickname(), signupRequest.getAddress());
-            return ResponseEntity.ok("회원가입이 완료되었습니다.");
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("회원가입 처리 중 오류가 발생했습니다: " + e.getMessage());
-        }
+        userService.registerAddUserInfo(userId, signupRequest.getNickname(), signupRequest.getAddress());
+        RsData<Void> rsData = RsData.of("200-OK", "회원가입이 완료되었습니다.");
+        return ResponseEntity.status(rsData.getStatusCode()).body(rsData);
     }
 
     @GetMapping("/me")
-    public ResponseEntity<?> getCurrentUser(@AuthenticationPrincipal CustomOAuth2User customOAuth2User) {
+    public ResponseEntity<RsData<UserResponseDto>> getCurrentUser(@AuthenticationPrincipal CustomOAuth2User customOAuth2User) {
         if (customOAuth2User == null || customOAuth2User.getUserId() == null) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("로그인된 사용자가 없습니다.");
+            throw new ServiceException("401-AUTH-INVALID", "로그인된 사용자가 없습니다.");
         }
 
-        try {
-            // UserService를 통해 User 엔티티에서 상세 정보를 가져와 UserResponseDto로 반환
-            UserResponseDto userDetails = userService.getUserDetails(customOAuth2User.getUserId());
-            return ResponseEntity.ok(userDetails);
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("사용자 정보 조회 중 오류가 발생했습니다: " + e.getMessage());
-        }
+        UserResponseDto userDetails = userService.getUserDetails(customOAuth2User.getUserId());
+        RsData<UserResponseDto> rsData = RsData.of("200-OK", "사용자 정보 조회 성공", userDetails);
+        return ResponseEntity.status(rsData.getStatusCode()).body(rsData);
     }
 
-    @GetMapping("/isAuthenticated") // 간단한 로그인 여부 확인
-    public ResponseEntity<Boolean> isAuthenticated(@AuthenticationPrincipal CustomOAuth2User customOAuth2User) {
-        return ResponseEntity.ok(customOAuth2User != null);
+    @GetMapping("/isAuthenticated")
+    public ResponseEntity<RsData<Boolean>> isAuthenticated(@AuthenticationPrincipal CustomOAuth2User customOAuth2User) {
+        boolean authenticated = customOAuth2User != null;
+        RsData<Boolean> rsData = RsData.of("200-OK", "인증 여부 확인 완료", authenticated);
+        return ResponseEntity.status(rsData.getStatusCode()).body(rsData);
     }
 
 
-    @DeleteMapping("/me") // 회원 탈퇴 엔드포인트
-    public ResponseEntity<String> deactivateUser(@AuthenticationPrincipal CustomOAuth2User customOAuth2User) {
+    @DeleteMapping("/me")
+    public ResponseEntity<RsData<Void>> deactivateUser(@AuthenticationPrincipal CustomOAuth2User customOAuth2User) {
         if (customOAuth2User == null || customOAuth2User.getUserId() == null) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("로그인 정보가 유효하지 않습니다.");
+            throw new ServiceException("401-AUTH-INVALID", "로그인 정보가 유효하지 않습니다.");
         }
 
-        try {
-            userService.deactivateUser(customOAuth2User.getUserId());
-            return ResponseEntity.ok("회원 탈퇴가 성공적으로 처리되었습니다.");
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
-        } catch (IllegalStateException e) {
-            return ResponseEntity.status(HttpStatus.CONFLICT).body(e.getMessage()); // 409 Conflict
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("회원 탈퇴 처리 중 오류가 발생했습니다: " + e.getMessage());
-        }
+        userService.deactivateUser(customOAuth2User.getUserId());
+        RsData<Void> rsData = RsData.of("200-OK", "회원 탈퇴가 성공적으로 처리되었습니다.");
+        return ResponseEntity.status(rsData.getStatusCode()).body(rsData);
     }
 
     @PatchMapping("/me")
-    public ResponseEntity<String> updateMyInfo(
-            @RequestBody UserSignupRequestDto updateRequest, // 닉네임, 주소를 담을 DTO 재사용
+    public ResponseEntity<RsData<Void>> updateMyInfo(
+            @RequestBody UserSignupRequestDto updateRequest,
             @AuthenticationPrincipal CustomOAuth2User customOAuth2User
     ) {
-        Long userId = Objects.requireNonNullElse(customOAuth2User.getUserId(), -1L);
-
-        if (userId == -1L || customOAuth2User == null) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("로그인 정보가 유효하지 않습니다.");
+        if (customOAuth2User == null || customOAuth2User.getUserId() == null || customOAuth2User.getUserId() == -1L) {
+            throw new ServiceException("401-AUTH-INVALID", "로그인 정보가 유효하지 않습니다.");
         }
+        Long userId = customOAuth2User.getUserId();
 
-        // 닉네임과 주소 중 최소 하나는 제공되어야 한다고 가정
         if ((updateRequest.getNickname() == null || updateRequest.getNickname().trim().isEmpty()) &&
                 (updateRequest.getAddress() == null || updateRequest.getAddress().trim().isEmpty())) {
-            return ResponseEntity.badRequest().body("수정할 닉네임 또는 주소를 제공해야 합니다.");
+            throw new ServiceException("400-UPDATE-REQUIRED", "수정할 닉네임 또는 주소를 제공해야 합니다.");
         }
 
-        try {
-            // registerAddUserInfo 메서드가 이미 닉네임과 주소 변경을 처리하므로 재활용
-            userService.registerAddUserInfo(userId, updateRequest.getNickname(), updateRequest.getAddress());
-            return ResponseEntity.ok("회원 정보가 성공적으로 수정되었습니다.");
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("회원 정보 수정 중 오류가 발생했습니다: " + e.getMessage());
-        }
+        userService.registerAddUserInfo(userId, updateRequest.getNickname(), updateRequest.getAddress());
+        RsData<Void> rsData = RsData.of("200-OK", "회원 정보가 성공적으로 수정되었습니다.");
+        return ResponseEntity.status(rsData.getStatusCode()).body(rsData);
     }
 }

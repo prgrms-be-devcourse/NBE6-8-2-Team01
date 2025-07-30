@@ -5,6 +5,7 @@ import com.bookbook.domain.user.entity.User;
 import com.bookbook.domain.user.enums.Role;
 import com.bookbook.domain.user.enums.UserStatus;
 import com.bookbook.domain.user.repository.UserRepository;
+import com.bookbook.global.exception.ServiceException;
 import com.bookbook.global.util.NicknameGenerator;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
@@ -54,14 +55,18 @@ public class UserService {
     @Transactional
     public User registerAddUserInfo(Long userId, String nickname, String address){
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
+                .orElseThrow(() -> new ServiceException("404-USER-NOT-FOUND", "사용자를 찾을 수 없습니다."));
 
-        if(userRepository.existsByNickname(nickname) && !user.getNickname().equals(nickname)) {
-            throw new IllegalArgumentException("이미 사용 중인 닉네임입니다.");
+        if(nickname != null && !nickname.trim().isEmpty() && userRepository.existsByNickname(nickname) && !user.getNickname().equals(nickname)) {
+            throw new ServiceException("409-NICKNAME-DUPLICATED", "이미 사용 중인 닉네임입니다.");
         }
 
-        user.changeNickname(nickname);
-        user.changeAddress(address);
+        if (nickname != null && !nickname.trim().isEmpty()) {
+            user.changeNickname(nickname);
+        }
+        if (address != null && !address.trim().isEmpty()) {
+            user.changeAddress(address);
+        }
 
         return userRepository.save(user);
     }
@@ -69,30 +74,25 @@ public class UserService {
     @Transactional
     public void deactivateUser(Long userId) {
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new IllegalArgumentException("해당 ID의 사용자를 찾을 수 없습니다."));
+                .orElseThrow(() -> new ServiceException("404-USER-NOT-FOUND", "해당 ID의 사용자를 찾을 수 없습니다."));
 
-        // 사용자가 이미 비활성화 상태인 경우
         if (user.getUserStatus() == UserStatus.INACTIVE) {
-            throw new IllegalStateException("이미 탈퇴 처리된 사용자입니다.");
+            throw new ServiceException("409-USER-ALREADY-INACTIVE", "이미 탈퇴 처리된 사용자입니다.");
         }
 
-        // 사용자 상태를 INACTIVE로 변경
         user.changeUserStatus(UserStatus.INACTIVE);
-        // 사용자명, 이메일, 닉네임 등을 고유성이 유지되지 않도록 변경하여 재가입 시 문제 없도록 처리
-        // 예: 원래 username + "_deleted_" + UUID
         user.changeUsername(user.getUsername() + "_deleted_" + UUID.randomUUID().toString());
         if (user.getEmail() != null && !user.getEmail().isEmpty()) {
             user.setEmail(user.getEmail() + "_deleted_" + UUID.randomUUID().toString());
         }
         user.changeNickname(user.getNickname() + "_deleted_" + UUID.randomUUID().toString());
 
-
         userRepository.save(user);
     }
 
     public UserResponseDto getUserDetails(Long userId) {
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new IllegalArgumentException("해당 ID의 사용자를 찾을 수 없습니다."));
+                .orElseThrow(() -> new ServiceException("404-USER-NOT-FOUND", "해당 ID의 사용자를 찾을 수 없습니다."));
         return new UserResponseDto(user);
     }
 }
