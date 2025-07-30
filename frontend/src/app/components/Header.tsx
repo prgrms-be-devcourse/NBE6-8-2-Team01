@@ -56,12 +56,10 @@ const Header = () => {
       <>
         <header className="w-full py-6 shadow-md bg-white">
           <div className="max-w-7xl mx-auto flex items-center justify-between">
-            {/* 왼쪽: 로고 */}
             <Link href="/bookbook" className="text-3xl font-bold" style={{ color: "#D5BAA3" }}>
               북북
             </Link>
 
-            {/* 중앙: 메뉴 */}
             <nav className="flex items-center text-lg font-semibold text-gray-800">
               <Link href="/bookbook" className="mr-10 hover:text-blue-600">
                 홈
@@ -74,39 +72,32 @@ const Header = () => {
               </Link>
             </nav>
 
-            {/* 오른쪽: 로그인/로그아웃 버튼 및 아이콘 */}
             <div className="flex items-center space-x-6">
-              {isLoggedIn ? (
-                  // ️ 로그인 상태일 때: 로그아웃 버튼과 아이콘들
-                  <>
-                    <button
-                        onClick={handleLogout} // 로그아웃 핸들러 연결
-                        className="bg-red-500 text-white text-lg font-semibold px-5 py-2 rounded-md shadow hover:opacity-90 transition"
-                    >
-                      Logout
-                    </button>
-                    <Bell className="w-6 h-6 text-gray-700 hover:text-blue-600 cursor-pointer" />
-                    <Link href="/bookbook/wishlist">
-                      <Heart className="w-6 h-6 text-gray-700 hover:text-blue-600 cursor-pointer" />
-                    </Link>
-                    <Link href="/bookbook/user/profile"> {/*  마이페이지 링크 추가 권장 */}
-                      <User className="w-6 h-6 text-gray-700 hover:text-blue-600 cursor-pointer" />
-                    </Link>
-                  </>
-              ) : (
-                  // 로그인 상태가 아닐 때: 로그인 버튼만 표시
-                  <button
-                      onClick={() => setShowLoginModal(true)}
-                      className="bg-[#D5BAA3] text-white text-lg font-semibold px-5 py-2 rounded-md shadow hover:opacity-90 transition"
-                  >
-                    Login
-                  </button>
-              )}
+              {/* 항상 동일한 구조의 버튼과 아이콘 컨테이너를 유지 */}
+              <div className="flex items-center space-x-6">
+                <button
+                    onClick={isLoggedIn ? handleLogout : () => setShowLoginModal(true)}
+                    className={`text-lg font-semibold px-5 py-2 rounded-md shadow transition ${
+                        isLoggedIn ? 'bg-red-500 text-white hover:opacity-90' : 'bg-[#D5BAA3] text-white hover:opacity-90'
+                    }`}
+                >
+                  {isLoggedIn ? 'Logout' : 'Login'}
+                </button>
+
+                {/*  아이콘들은 `isLoggedIn` 상태에 따라 `invisible` 클래스를 토글합니다. */}
+                {/* `pointer-events-none`는 여전히 유효합니다. */}
+                <Bell className={`w-6 h-6 text-gray-700 hover:text-blue-600 cursor-pointer ${!isLoggedIn ? 'invisible pointer-events-none' : ''}`} />
+                <Link href="/bookbook/wishlist" className={!isLoggedIn ? 'invisible pointer-events-none' : ''}>
+                  <Heart className="w-6 h-6 text-gray-700 hover:text-blue-600 cursor-pointer" />
+                </Link>
+                <Link href="/bookbook/user/profile" className={!isLoggedIn ? 'invisible pointer-events-none' : ''}>
+                  <User className="w-6 h-6 text-gray-700 hover:text-blue-600 cursor-pointer" />
+                </Link>
+              </div>
             </div>
           </div>
         </header>
 
-        {/* 로그인 모달 */}
         {showLoginModal && (
             <LoginModal onClose={() => setShowLoginModal(false)} />
         )}
