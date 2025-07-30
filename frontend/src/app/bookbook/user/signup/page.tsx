@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react'; // ✅ useEffect 임포트
 import { useRouter } from 'next/navigation';
 import { FaUser, FaMapMarkerAlt } from 'react-icons/fa';
 
@@ -20,6 +20,26 @@ const SignupPage = () => {
     const debounceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
     const [formError, setFormError] = useState<string>('');
+    const [loading, setLoading] = useState<boolean>(false); // ✅ 로딩 상태 추가
+
+    useEffect(() => {
+        const checkRegistrationStatus = async () => {
+            try {
+                // API 호출: 현재 사용자 정보를 가져와 registrationCompleted 상태 확인
+                const response = await apiClient<{ registrationCompleted: boolean }>('/api/v1/bookbook/users/me'); // DTO 타입 명시
+                if (response.data && response.data.registrationCompleted) {
+                    router.push('/bookbook'); // 이미 완료되었으면 메인 페이지로 리다이렉트
+                }
+            } catch (error) {
+                // 에러 처리: 예를 들어, 로그인 상태가 아니거나 토큰이 만료되었으면 로그인 페이지로 리다이렉트
+                console.error("Failed to fetch user status:", error);
+                // 특정 에러 코드에 따라 로그인 페이지로 리다이렉트하는 로직 추가 가능
+                // 예: if (error.response && error.response.status === 401) router.push('/login');
+            }
+        };
+        checkRegistrationStatus();
+    }, [router]);
+
 
     const handleNicknameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const value = e.target.value;
@@ -63,7 +83,6 @@ const SignupPage = () => {
             }
         } catch (error) {
             const errorMessage = error instanceof Error ? error.message : '알 수 없는 오류가 발생했습니다.';
-
             setNicknameCheckStatus('unavailable');
             setNicknameError(`닉네임 중복 확인 중 오류가 발생했습니다: ${errorMessage}`);
             toast.error(`오류: ${errorMessage}`);
@@ -73,6 +92,9 @@ const SignupPage = () => {
 
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
+
+        // ✅ 로딩 중이면 중복 제출 방지
+        if (loading) return;
 
         if (!nickname.trim()) {
             setNicknameError('닉네임을 입력해주세요.');
@@ -96,28 +118,32 @@ const SignupPage = () => {
         }
 
         setFormError('');
+        setLoading(true); // ✅ 로딩 시작
 
         try {
-            await apiClient('/api/v1/bookbook/users/signup', {
-                method: 'POST',
-                body: JSON.stringify({ nickname, address }),
+            // ✅ 엔드포인트와 HTTP 메서드 변경 (PATCH /api/v1/bookbook/users/me)
+            await apiClient('/api/v1/bookbook/users/me', {
+                method: 'PATCH', // ✅ PATCH 메서드 사용
+                body: JSON.stringify({ nickname, address }), // 닉네임과 주소만 전송
             });
 
-            toast.success('회원가입이 성공적으로 완료되었습니다! 로그인 페이지로 이동합니다.');
-            router.push('/bookbook');
+            toast.success('회원 정보 업데이트가 성공적으로 완료되었습니다! 메인 페이지로 이동합니다.');
+            router.push('/bookbook'); // ✅ 메인 페이지로 리다이렉트
         } catch (error) {
             const errorMessage = error instanceof Error ? error.message : '알 수 없는 오류가 발생했습니다.';
 
-            setFormError(`회원가입에 실패했습니다: ${errorMessage}`);
-            toast.error(`회원가입 실패: ${errorMessage}`);
-            console.error('Signup failed:', error);
+            setFormError(`정보 업데이트에 실패했습니다: ${errorMessage}`);
+            toast.error(`정보 업데이트 실패: ${errorMessage}`);
+            console.error('User info update failed:', error);
+        } finally {
+            setLoading(false); // ✅ 로딩 종료
         }
     };
 
     return (
         <div className="font-sans bg-gray-100 flex items-center justify-center min-h-screen p-4">
             <div className="signup-container bg-white p-8 sm:px-10 rounded-lg shadow-lg w-full max-w-lg text-left">
-                <h1 className="text-3xl font-bold text-gray-800 mb-8 text-center">회원가입</h1>
+                <h1 className="text-3xl font-bold text-gray-800 mb-8 text-center">추가 정보 입력</h1> {/* ✅ 제목 변경 */}
 
                 <form onSubmit={handleSubmit}>
                     {/* 닉네임 입력 필드 */}
@@ -135,6 +161,7 @@ const SignupPage = () => {
                                 onChange={handleNicknameChange}
                                 className="flex-grow p-3 border border-gray-300 rounded-md text-base focus:border-blue-500 focus:ring focus:ring-blue-200 focus:ring-opacity-50 h-12"
                                 maxLength={10}
+                                disabled={loading} // ✅ 로딩 중일 때 비활성화
                             />
                         </div>
                         {nicknameCheckStatus === 'checking' && <p className="text-blue-500 text-sm mt-1">닉네임 중복 확인 중...</p>}
@@ -162,6 +189,7 @@ const SignupPage = () => {
                                 setFormError('');
                             }}
                             className="w-full p-3 border border-gray-300 rounded-md text-base focus:border-blue-500 focus:ring focus:ring-blue-200 focus:ring-opacity-50 h-12"
+                            disabled={loading} // ✅ 로딩 중일 때 비활성화
                         />
                     </div>
 
@@ -217,6 +245,7 @@ const SignupPage = () => {
                                     setFormError('');
                                 }}
                                 className="mr-2 h-5 w-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                                disabled={loading} // ✅ 로딩 중일 때 비활성화
                             />
                             이용약관에 동의합니다.
                         </label>
@@ -228,8 +257,9 @@ const SignupPage = () => {
                         type="submit"
                         className="w-full p-4 bg-gray-800 text-white font-bold text-lg rounded-md cursor-pointer
                       hover:bg-gray-700 transition-colors duration-300"
+                        disabled={loading} // ✅ 로딩 중일 때 비활성화
                     >
-                        동의하고 가입하기
+                        {loading ? '처리 중...' : '정보 업데이트 및 가입 완료'} {/* ✅ 버튼 텍스트 변경 */}
                     </button>
                 </form>
             </div>
