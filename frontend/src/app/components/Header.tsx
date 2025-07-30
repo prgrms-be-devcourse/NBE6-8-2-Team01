@@ -25,7 +25,7 @@ const Header = () => {
             <Link href="/bookbook/rent" className="mx-4 hover:text-blue-600">
               책 빌리러 가기
             </Link>
-            <Link href="/bookbook/register" className="ml-8 hover:text-blue-600">
+            <Link href="/bookbook/rent/create" className="ml-8 hover:text-blue-600">
               책 빌려주기
             </Link>
           </nav>

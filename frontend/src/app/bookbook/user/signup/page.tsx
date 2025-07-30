@@ -1,51 +1,100 @@
 'use client';
 
 import React, { useState } from 'react';
-import { FaUser, FaMapMarkerAlt } from 'react-icons/fa'; // react-icons에서 아이콘 임포트
+import { useRouter } from 'next/navigation';
+import { FaUser, FaMapMarkerAlt } from 'react-icons/fa';
 
 const SignupPage = () => {
+    const router = useRouter();
     const [nickname, setNickname] = useState('');
     const [address, setAddress] = useState('');
     const [agreedToTerms, setAgreedToTerms] = useState(false);
+    const [nicknameError, setNicknameError] = useState('');
+    const [formError, setFormError] = useState('');
 
-    // 닉네임 중복 확인 로직 (백엔드 API 호출 필요)
+    // API 기본 URL 설정 (환경 변수에서 가져오거나 로컬 개발용으로 설정)
+    const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8080';
+
+    // 닉네임 중복 확인 로직
     const handleNicknameCheck = async () => {
-        // TODO: 백엔드 API (예: /api/v1/users/check-nickname) 호출하여 닉네임 중복 확인
-        console.log('닉네임 중복 확인:', nickname);
-        alert(`'${nickname}' 닉네임 중복 확인 (구현 예정)`);
-        // 예시: const response = await fetch('/api/v1/users/check-nickname', { method: 'POST', body: JSON.stringify({ nickname }) });
-        // const data = await response.json();
-        // if (data.isAvailable) { alert('사용 가능한 닉네임입니다.'); } else { alert('이미 사용 중인 닉네임입니다.'); }
+        if (!nickname.trim()) {
+            setNicknameError('닉네임을 입력해주세요.');
+            return;
+        }
+        setNicknameError('');
+
+        try {
+            const response = await fetch(`${API_BASE_URL}/api/v1/bookbook/users/check-nickname?nickname=${encodeURIComponent(nickname)}`, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                    // Next.js에서 `Credentials` 옵션을 `include`로 설정해야
+                    // 백엔드에서 세션 쿠키를 보낼 수 있습니다.
+                    'Access-Control-Allow-Credentials': 'true', // CORS preflight 요청에 필요할 수 있음
+                },
+                credentials: 'include', // 세션 쿠키를 포함하여 요청
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                if (data.isAvailable) {
+                    alert('사용 가능한 닉네임입니다.');
+                } else {
+                    setNicknameError('이미 사용 중인 닉네임입니다.');
+                }
+            } else {
+                const errorText = await response.text(); // 오류 메시지를 텍스트로 받기
+                setNicknameError(`닉네임 중복 확인 중 오류가 발생했습니다: ${errorText}`);
+                console.error('Nickname check failed:', response.status, errorText);
+            }
+        } catch (error) {
+            setNicknameError('네트워크 오류가 발생했습니다. 서버가 실행 중인지 확인해주세요.');
+            console.error('Nickname check network error:', error);
+        }
     };
 
-    // 폼 제출 로직
-    const handleSubmit = (e: React.FormEvent) => {
-        e.preventDefault(); // 기본 폼 제출 동작 방지
+    // 폼 제출 로직 (회원 추가 정보 등록)
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+
+        setFormError('');
 
         if (!nickname.trim()) {
-            alert('닉네임을 입력해주세요.');
+            setFormError('닉네임을 입력해주세요.');
             return;
         }
         if (!address.trim()) {
-            alert('주소를 입력해주세요.');
+            setFormError('주소를 입력해주세요.');
             return;
         }
         if (!agreedToTerms) {
-            alert('약관에 동의해야 회원가입을 할 수 있습니다.');
+            setFormError('약관에 동의해야 회원가입을 할 수 있습니다.');
             return;
         }
 
-        // TODO: 백엔드 API 호출하여 회원가입 처리
-        console.log('회원가입 정보:', { nickname, address, agreedToTerms });
-        alert('회원가입 정보 제출 (구현 예정)');
-        // 예시: const response = await fetch('/api/v1/users/signup', { method: 'POST', body: JSON.stringify({ nickname, address }) });
-        // if (response.ok) {
-        //   alert('회원가입이 완료되었습니다!');
-        //   // 회원가입 성공 후 메인 페이지 등으로 리다이렉트
-        //   window.location.href = '/bookbook';
-        // } else {
-        //   alert('회원가입에 실패했습니다.');
-        // }
+        try {
+            const response = await fetch(`${API_BASE_URL}/api/v1/bookbook/users/signup`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    // 'Access-Control-Allow-Credentials': 'true', // CORS preflight 요청에 필요할 수 있음
+                },
+                credentials: 'include', // 세션 쿠키를 포함하여 요청
+                body: JSON.stringify({ nickname, address }),
+            });
+
+            if (response.ok) {
+                alert('회원가입이 성공적으로 완료되었습니다!');
+                router.push('/bookbook'); // 회원가입 성공 후 메인 페이지로 리다이렉트
+            } else {
+                const errorText = await response.text(); // 오류 메시지를 텍스트로 받기
+                setFormError(`회원가입에 실패했습니다: ${errorText}`);
+                console.error('Signup failed:', response.status, errorText);
+            }
+        } catch (error) {
+            setFormError('네트워크 오류가 발생했습니다. 서버가 실행 중인지 확인해주세요.');
+            console.error('Signup network error:', error);
+        }
     };
 
     return (
@@ -65,7 +114,10 @@ const SignupPage = () => {
                                 name="nickname"
                                 placeholder="닉네임을 입력하세요"
                                 value={nickname}
-                                onChange={(e) => setNickname(e.target.value)}
+                                onChange={(e) => {
+                                    setNickname(e.target.value);
+                                    setNicknameError('');
+                                }}
                                 className="flex-grow p-3 border border-gray-300 rounded-md text-base focus:border-blue-500 focus:ring focus:ring-blue-200 focus:ring-opacity-50 h-12"
                             />
                             <button
@@ -77,6 +129,7 @@ const SignupPage = () => {
                                 중복확인
                             </button>
                         </div>
+                        {nicknameError && <p className="text-red-500 text-sm mt-1">{nicknameError}</p>}
                     </div>
 
                     <div className="mb-6">
@@ -89,7 +142,10 @@ const SignupPage = () => {
                             name="address"
                             placeholder="주소를 입력하세요"
                             value={address}
-                            onChange={(e) => setAddress(e.target.value)}
+                            onChange={(e) => {
+                                setAddress(e.target.value);
+                                setFormError('');
+                            }}
                             className="w-full p-3 border border-gray-300 rounded-md text-base focus:border-blue-500 focus:ring focus:ring-blue-200 focus:ring-opacity-50 h-12"
                         />
                     </div>
@@ -151,13 +207,18 @@ const SignupPage = () => {
                             id="agreeTerms"
                             name="agreeTerms"
                             checked={agreedToTerms}
-                            onChange={(e) => setAgreedToTerms(e.target.checked)}
+                            onChange={(e) => {
+                                setAgreedToTerms(e.target.checked);
+                                setFormError('');
+                            }}
                             className="mr-2 w-5 h-5 cursor-pointer"
                         />
                         <label htmlFor="agreeTerms" className="font-bold cursor-pointer leading-tight text-gray-800 bg-yellow-50 px-3 py-2 rounded shadow-sm">
                             본인은 위 약관 내용을 확인하였으며, 동의합니다.
                         </label>
                     </div>
+
+                    {formError && <p className="text-red-500 text-center text-sm mb-4">{formError}</p>}
 
                     <button
                         type="submit"
