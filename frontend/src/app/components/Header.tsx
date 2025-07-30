@@ -52,6 +52,14 @@ const Header = () => {
     }
   };
 
+  const handleLendBookClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
+    if (!isLoggedIn) {
+      e.preventDefault(); // 기본 링크 이동 동작 방지
+      setShowLoginModal(true); // 로그인 모달 표시
+    }
+    // 로그인 상태라면 Link의 기본 동작 (페이지 이동)이 실행됩니다.
+  };
+
   return (
       <>
         <header className="w-full py-6 shadow-md bg-white">
@@ -67,13 +75,16 @@ const Header = () => {
               <Link href="/bookbook/rent" className="mx-4 hover:text-blue-600">
                 책 빌리러 가기
               </Link>
-              <Link href="/bookbook/rent/create" className="ml-8 hover:text-blue-600">
+              <Link
+                  href="/bookbook/rent/create"
+                  className="ml-8 hover:text-blue-600"
+                  onClick={handleLendBookClick}
+              >
                 책 빌려주기
               </Link>
             </nav>
 
             <div className="flex items-center space-x-6">
-              {/* 항상 동일한 구조의 버튼과 아이콘 컨테이너를 유지 */}
               <div className="flex items-center space-x-6">
                 <button
                     onClick={isLoggedIn ? handleLogout : () => setShowLoginModal(true)}
@@ -84,8 +95,6 @@ const Header = () => {
                   {isLoggedIn ? 'Logout' : 'Login'}
                 </button>
 
-                {/*  아이콘들은 `isLoggedIn` 상태에 따라 `invisible` 클래스를 토글합니다. */}
-                {/* `pointer-events-none`는 여전히 유효합니다. */}
                 <Bell className={`w-6 h-6 text-gray-700 hover:text-blue-600 cursor-pointer ${!isLoggedIn ? 'invisible pointer-events-none' : ''}`} />
                 <Link href="/bookbook/wishlist" className={!isLoggedIn ? 'invisible pointer-events-none' : ''}>
                   <Heart className="w-6 h-6 text-gray-700 hover:text-blue-600 cursor-pointer" />
