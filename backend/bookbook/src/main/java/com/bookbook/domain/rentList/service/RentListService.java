@@ -15,6 +15,11 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 import java.util.stream.Collectors;
 
+/**
+ * 내가 빌린 도서 목록 관리 서비스
+ * 
+ * 사용자의 도서 대여 신청, 대여 목록 조회 등의 비즈니스 로직을 처리합니다.
+ */
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
@@ -24,13 +29,29 @@ public class RentListService {
     private final UserRepository userRepository;
     private final RentRepository rentRepository;
     
-    
+    /**
+     * 사용자가 대여한 도서 목록 조회
+     * 
+     * @param borrowerUserId 대여받은 사용자 ID
+     * @return 대여한 도서 목록
+     */
     public List<RentListResponseDto> getRentListByUserId(Long borrowerUserId) {
         return rentListRepository.findByBorrowerUserId(borrowerUserId).stream()
                 .map(RentListResponseDto::from)
                 .collect(Collectors.toList());
     }
     
+    /**
+     * 도서 대여 신청 등록
+     * 
+     * 사용자가 원하는 도서에 대해 대여 신청을 등록합니다.
+     * 반납일은 대여일로부터 자동으로 14일 후로 설정됩니다.
+     * 
+     * @param borrowerUserId 대여받을 사용자 ID
+     * @param request 대여 신청 정보
+     * @return 생성된 대여 기록 정보
+     * @throws IllegalArgumentException 사용자나 게시글을 찾을 수 없는 경우
+     */
     @Transactional
     public RentListResponseDto createRentList(Long borrowerUserId, RentListCreateRequestDto request) {
         // User 엔티티 조회; 로그인하지 않은 사용자, 정지된 사용자 등

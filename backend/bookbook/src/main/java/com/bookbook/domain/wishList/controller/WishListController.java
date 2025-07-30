@@ -9,6 +9,11 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+/**
+ * 찜 목록 관리 컨트롤러
+ * 
+ * 사용자의 찜 목록 조회, 추가, 삭제 기능을 제공합니다.
+ */
 @RestController
 @RequestMapping("/api/v1/user/{userId}/wishlist")
 @RequiredArgsConstructor
@@ -16,6 +21,14 @@ public class WishListController {
 
     private final WishListService wishListService;
 
+    /**
+     * 찜 목록 조회
+     * 
+     * 사용자의 찜 목록을 생성일 역순으로 조회합니다.
+     * 
+     * @param userId 사용자 ID
+     * @return 찜 목록 리스트
+     */
     @GetMapping
     public ResponseEntity<List<WishListResponseDto>> getWishList(
             @PathVariable Long userId
@@ -24,6 +37,16 @@ public class WishListController {
         return ResponseEntity.ok(wishList);
     }
 
+    /**
+     * 찜 목록에 도서 추가
+     * 
+     * 사용자가 관심 있는 도서를 찜 목록에 추가합니다.
+     * 이미 찜한 도서는 중복 추가할 수 없습니다.
+     * 
+     * @param userId 사용자 ID
+     * @param request 찜 추가 요청 정보 (도서 게시글 ID)
+     * @return 생성된 찜 정보
+     */
     @PostMapping
     public ResponseEntity<WishListResponseDto> addWishList(
             @PathVariable Long userId,
@@ -33,6 +56,15 @@ public class WishListController {
         return ResponseEntity.ok(response);
     }
 
+    /**
+     * 찜 목록에서 도서 삭제
+     * 
+     * 사용자의 찜 목록에서 특정 도서를 제거합니다.
+     * 
+     * @param userId 사용자 ID
+     * @param rentId 삭제할 도서 게시글 ID
+     * @return 204 No Content
+     */
     @DeleteMapping("/{rentId}")
     public ResponseEntity<Void> deleteWishList(
             @PathVariable Long userId,
