@@ -1,13 +1,20 @@
-"use client"; // Next.js: 클라이언트 컴포넌트임을 명시 (useState 등 Hooks 사용 시 필수)
+"use client";
 
 import React, { useEffect, useState } from 'react';
 import { useRouter } from "next/navigation";
 
+interface BookSearchResult {
+    bookTitle: string;
+    author: string;
+    publisher: string;
+    pubDate: string;
+    coverImageUrl: string;
+    category: string;
+    bookDescription: string;
+}
 
 export default function BookRentPage() {
-    // 폼 필드 상태 관리 (React useState 훅 사용)
     const [title, setTitle] = useState('');
-    // bookImage 타입 명시: File 객체 또는 null. TypeScript 에러 방지.
     const [bookImage, setBookImage] = useState<File | null>(null);
     const [bookCondition, setBookCondition] = useState('');
     const [address, setAddress] = useState('');
@@ -16,35 +23,38 @@ export default function BookRentPage() {
     const [author, setAuthor] = useState('');
     const [publisher, setPublisher] = useState('');
     const [category, setCategory] = useState('');
+    const [description, setDescription] = useState('');
 
-    // 팝업 상태 관리
     const [showPopup, setShowPopup] = useState(false);
 
-    // 이미지 미리보기를 위한 상태
-    const defaultImageUrl = 'https://i.postimg.cc/pLC9D2vW/noimg.gif'; // 기본 이미지 URL
-    const [previewImageUrl, setPreviewImageUrl] = useState<string>(defaultImageUrl); // 이미지 미리보기 URL 상태
+    const [searchQuery, setSearchQuery] = useState('');
+    const [showBookSearchModal, setShowBookSearchModal] = useState(false);
+    const [searchResults, setSearchResults] = useState<BookSearchResult[]>([]);
 
-    // useEffect 훅: bookImage 상태가 변경될 때마다 실행
+    // 페이지네이션 관련 상태 추가 및 수정
+    const [currentPage, setCurrentPage] = useState(1);
+    const itemsPerPage = 10; // 백엔드 MaxResults와 동일하게 10으로 설정
+    const [hasMoreResults, setHasMoreResults] = useState(false);
+
+
+    const defaultImageUrl = 'https://i.postimg.cc/pLC9D2vW/noimg.gif';
+    const [previewImageUrl, setPreviewImageUrl] = useState<string>(defaultImageUrl);
+
     useEffect(() => {
         if (bookImage) {
-            // File 객체로부터 임시 URL 생성 (브라우저에서만 유효)
             const objectUrl = URL.createObjectURL(bookImage);
-            setPreviewImageUrl(objectUrl); // 미리보기 URL 업데이트
-
-            // 컴포넌트 언마운트 또는 bookImage 변경 시 이전 URL 해제 (메모리 누수 방지)
+            setPreviewImageUrl(objectUrl);
             return () => URL.revokeObjectURL(objectUrl);
         } else {
-            setPreviewImageUrl(defaultImageUrl); // 파일이 없으면 기본 이미지로 설정
+            setPreviewImageUrl(defaultImageUrl);
         }
-    }, [bookImage]); // bookImage 상태가 변경될 때마다 이 훅을 다시 실행
+    }, [bookImage]);
 
-    // 드롭다운 필드 데이터
     const conditions = ['최상 (깨끗함)', '상 (사용감 적음)', '중 (사용감 있음)', '하 (손상 있음)'];
     const addresses = ['서울특별시', '부산광역시', '대구광역시', '인천광역시', '광주광역시', '대전광역시', '울산광역시', '세종특별자치시', '경기도', '강원특별자치도', '충청북도', '충청남도', '전라북도', '전라남도', '경상북도', '경상남도', '제주특별자치도'];
 
     const router = useRouter();
 
-    // Form 초기화 함수
     const resetForm = () => {
         setTitle('');
         setBookImage(null);
@@ -55,9 +65,14 @@ export default function BookRentPage() {
         setAuthor('');
         setPublisher('');
         setCategory('');
+        setSearchQuery('');
+        setDescription('');
+        setSearchResults([]);
+        setShowBookSearchModal(false);
+        setCurrentPage(1); // 폼 초기화 시 페이지도 1로 초기화
+        setHasMoreResults(false);
     };
 
-    // 파일 입력 변경 처리: 선택된 파일을 bookImage 상태에 저장.
     const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files && e.target.files[0]) {
             setBookImage(e.target.files[0]);
@@ -66,45 +81,96 @@ export default function BookRentPage() {
         }
     };
 
+    // start 파라미터를 받는 handleBookSearch 함수로 변경
+    const handleBookSearch = async (pageNumber: number) => {
+        if(!searchQuery.trim()){
+            alert('검색어를 입력해주세요.');
+            return;
+        }
+
+        // 백엔드 책 검색 API 호출 시 start 파라미터 추가
+        const backendSearchApiUrl = `http://localhost:8080/api/v1/bookbook/searchbook?query=${encodeURIComponent(searchQuery)}&start=${pageNumber}`;
+
+        try{
+            const response = await fetch(backendSearchApiUrl);
+            if(!response.ok){
+                const errorData = await response.text();
+                console.error('백엔드 책 검색 API 요청 실패:', response.status, response.statusText, errorData);
+                alert(`책 검색 API 요청 실패: ${response.status} ${response.statusText}`);
+                return;
+            }
+
+            const data: BookSearchResult[] = await response.json(); 
+
+            if(data && data.length > 0){
+                setSearchResults(data);
+                // 가져온 결과 수가 itemsPerPage와 같으면 다음 페이지가 더 있을 수 있다고 가정
+                setHasMoreResults(data.length === itemsPerPage);
+                setShowBookSearchModal(true);
+                setCurrentPage(pageNumber); // 검색 성공 시 현재 페이지 업데이트
+            } else {
+                alert('검색 결과가 없습니다. 직접 입력해주세요.');
+                setSearchResults([]);
+                setHasMoreResults(false);
+                setShowBookSearchModal(false); // 결과 없으면 모달 닫기
+            }
+        } catch (error) {
+            console.error('책 검색 중 오류 발생', error);
+            alert('책 검색 중 오류가 발생했습니다. 잠시 후 다시 시도하세요');
+            setSearchResults([]);
+            setHasMoreResults(false);
+            setShowBookSearchModal(false);
+        }
+    };
+
+    // 책 선택 시 폼 필드 채우는 함수
+    const selectBook = (book: BookSearchResult) => {
+        setBookTitle(book.bookTitle);
+        setAuthor(book.author);
+        setPublisher(book.publisher);
+        setCategory(book.category || ''); // 카테고리 필드 추가
+        setDescription(book.bookDescription || ''); // 책 설명 필드 추가
+        setShowBookSearchModal(false); // 모달 닫기
+    };
+
     // 백엔드 API (POST /rent)로 데이터 전송.
-    // 1. 이미지 파일이 있다면 먼저 이미지 업로드 API로 전송하여 URL을 받습니다.
-    // 2. 받은 이미지 URL과 폼 데이터를 조합하여 대여글 생성 API로 전송합니다.
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-        e.preventDefault(); // 폼 기본 제출 동작(새로고침) 방지
+        e.preventDefault();
 
         let imageUrl = 'https://i.postimg.cc/pLC9D2vW/noimg.gif'; // 기본 이미지 URL
 
-        // 1. 이미지 파일 선택 시, 이미지 업로드 API에 전송
+        // ✅ 핵심 로직: bookImage가 null이고 previewImageUrl이 defaultImageUrl과 같으면 등록 막기
+        if (bookImage === null && previewImageUrl === defaultImageUrl) {
+            alert('책 사진을 등록해 주세요.'); // 메시지 표시
+            return;.
+        }
+
         if(bookImage){
-            const imageFormData = new FormData(); // FormData 객체 생성
-            imageFormData.append('file', bookImage); // 'file' 이름으로 File 객체 추가 (백엔드의 MultipartFile 이름과 같아야 함!)
+            const imageFormData = new FormData();
+            imageFormData.append('file', bookImage);
 
             try{
-                // 백엔드 이미지 업로드 API
-                // 파일을 받고 저장한 후, 저장된 이미지의 URL을 반환
                 const imageUploadRes = await fetch("http://localhost:8080/api/v1/bookbook/upload-image", {
                     method: "POST",
                     body: imageFormData,
                 });
 
-                // 이미지 업로드 응답이 정상적으로 동작할 경우
                 if(imageUploadRes.ok){
-                    const data = await imageUploadRes.json(); // 백엔드가 JSON 형태로 응답
-                    imageUrl = data.imageUrl; // 반환된 이미지 URL 저장
-                }else{ // 이미지 업로드 응답 실패 시
+                    const data = await imageUploadRes.json();
+                    imageUrl = data.imageUrl;
+                }else{
                     const errorText = await imageUploadRes.text();
                     console.error('이미지 업로드 실패', errorText);
                     alert(`이미지 업로드 실패: ${imageUploadRes.statusText || errorText}`);
-                    return; // 대여글 등록 중단
+                    return;
                 }
             }catch(error){
                 console.error('이미지 업로드 중 네트워크 오류', error);
                 alert('이미지 업로드 중 오류가 발생했습니다.');
-                return; // 대여글 등록 중단
+                return;
             }
         }
 
-        // 폼에 담을 데이터 준비
         const formData = {
             title: title,
             bookCondition: bookCondition,
@@ -115,15 +181,15 @@ export default function BookRentPage() {
             bookTitle: bookTitle,
             author: author,
             publisher: publisher,
-            category: category
+            category: category,
+            description: description
         };
 
         try{
-            // rent 테이블에 데이터 저장(POST 요청)
             const res = await fetch("http://localhost:8080/bookbook/rent/create", {
             method: "POST",
                 credentials: "include",
-                headers: {"Content-Type": "application/json"}, // JSON 형식으로 데이터 전송 명시
+                headers: {"Content-Type": "application/json"},
                 body: JSON.stringify(formData),
             });
 
@@ -131,10 +197,9 @@ export default function BookRentPage() {
                 resetForm();
                 setShowPopup(true);
             } else {
-                // 응답 실패 시 (HTTP 상태코드 4xx, 5xx)
                 const errorData = await res.json();
                 console.error('책 등록 실패', errorData);
-                alert(`책 등록에 실패했습니다. ${errorData.msg || res.statusText}`); // 상세 에러 메시지 표시
+                alert(`책 등록에 실패했습니다. ${errorData.msg || res.statusText}`);
             }
         } catch(error) {
             console.error('책 등록 중 네트워크 에러', error);
@@ -143,20 +208,14 @@ export default function BookRentPage() {
     };
 
     return (
-        // 전체 페이지 컨테이너: 중앙 정렬, 반응형 패딩
         <div className="min-h-screen bg-gray-100 flex items-center justify-center py-8 px-4 sm:py-12 sm:px-16 md:py-16 md:px-24 font-inter">
-            {/* 폼 컨테이너: 배경, 그림자, 반응형 내부 여백 */}
             <div className="bg-white py-6 px-8 sm:py-8 sm:px-10 md:py-10 md:px-12 rounded-xl shadow-lg w-full max-w-4xl">
-                {/* 페이지 제목 */}
                 <h1 className="text-2xl sm:text-3xl font-bold text-gray-800 mb-4 text-left">
                     중고 책 등록하기
                 </h1>
-                {/* 제목 아래 수평선 */}
                 <hr className="border-t-2 border-gray-300 mb-6 sm:mb-8" />
 
-                {/* 폼 섹션 */}
                 <form onSubmit={handleSubmit} className="space-y-6">
-                    {/* 글 제목 입력 필드 */}
                     <div>
                         <label htmlFor="postTitle" className="block text-gray-700 text-base font-medium mb-2 font-bold">
                             글 제목
@@ -168,32 +227,29 @@ export default function BookRentPage() {
                             placeholder="예: 식탁 위의 세계사 - 한번 읽어보세요!"
                             value={title}
                             onChange={(e) => setTitle(e.target.value)}
-                            required // HTML5 기본 유효성 검사: 필수 입력
+                            required
                         />
                     </div>
 
-                    {/* 책 이미지 업로드 필드 */}
                     <div>
                         <label htmlFor="bookImage" className="block text-gray-700 text-base font-medium mb-2 font-bold">
                             책 이미지 업로드
                         </label>
                         <div className="flex flex-col items-start space-y-3">
-                            {/* 숨겨진 파일 입력 필드와 연결된 '파일 선택' 버튼 */}
                             <input
                                 type="file"
                                 id="bookImage"
-                                className="hidden" // 기본 파일 입력을 숨김
+                                className="hidden"
                                 onChange={handleImageChange}
-                                accept="image/*" // 이미지 파일만 선택 가능하도록 제한
+                                accept="image/*"
                             />
                             <label
-                                htmlFor="bookImage" // '파일 선택' 버튼(label)을 클릭하면, 브라우저는 자동으로 숨겨진 <input type="file">을 클릭한 것처럼 동작
+                                htmlFor="bookImage"
                                 className="w-full sm:w-auto px-4 py-2 text-white font-semibold rounded-lg shadow-md focus:outline-none focus:ring-2 focus:ring-offset-2 cursor-pointer text-center
-                                bg-[#D5BAA3] hover:bg-[#C2A794] focus:ring-[#D5BAA3]" // Tailwind 임의 값 색상 및 호버 효과
+                                bg-[#D5BAA3] hover:bg-[#C2A794] focus:ring-[#D5BAA3]"
                             >
                                 파일 선택
                             </label>     
-                            {/* 이미지 미리보기 */}
                             <img
                                 src={previewImageUrl}
                                 alt="책 이미지"
@@ -202,7 +258,6 @@ export default function BookRentPage() {
                         </div>
                     </div>
 
-                    {/* 책 상태 및 주소 드롭다운 필드 */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div>
                             <label htmlFor="bookCondition" className="block text-gray-700 text-base font-medium mb-2 font-bold">
@@ -240,14 +295,13 @@ export default function BookRentPage() {
                         </div>
                     </div>
 
-                    {/* 글 내용 텍스트 영역 */}
                     <div>
                         <label htmlFor="contents" className="block text-gray-700 text-base font-medium mb-2 font-bold">
                             글 내용
                         </label>
                         <textarea
                             id="contents"
-                            rows={6} // JSX 규칙: 숫자 타입으로 전달
+                            rows={6}
                             className="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-gray-900 resize-y"
                             placeholder="책에 대한 설명, 상태 등을 최대한 자세히 적어주세요."
                             value={contents}
@@ -255,29 +309,32 @@ export default function BookRentPage() {
                             maxLength={500}
                             required
                         ></textarea>
-                        {/* 현재/최대 글자 수 표시 */}
                         <div className="text-right text-sm text-gray-500 mt-1">
                             {contents.length}/500
                         </div>
                     </div>
 
-                    {/* '책 검색하기' 기능 섹션 */}
-                    <div className="flex flex-col sm:flex-row items-end justify-end sm:space-x-3 space-y-3 sm:space-y-0">
-                        <p className="text-sm text-gray-600 text-right sm:text-left italic">
+                    <div className="flex flex-col items-center justify-end space-y-3 sm:space-y-0 sm:flex-row sm:space-x-3">
+                        <p className="text-sm italic text-blue-600 mb-2 sm:mb-0"> {/* 파란색 글씨 적용 */}
                             책 검색하기 기능으로 간편하게 입력하세요!
                         </p>
+                        <input
+                            type="text"
+                            placeholder="책 제목 또는 키워드 입력"
+                            className="w-full sm:w-auto p-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-gray-900"
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                        />
                         <button
-                            type="button" // 폼 제출 방지
+                            type="button"
                             className="px-6 py-2 text-white font-semibold rounded-lg shadow-md
-                            bg-[#D5BAA3] hover:bg-[#C2A794] focus:ring-[#D5BAA3]"
-                            onClick={() => alert('책 검색하기 기능은 아직 구현되지 않았습니다.')}
+                            bg-[#D5BAA3] hover:bg-[#C2A794]"
+                            onClick={() => handleBookSearch(1)}
                         >
                             책 검색하기
                         </button>
-                        {/* 향후 계획: 외부 도서 API 활용하여 정보 자동 채우기 */}
                     </div>
 
-                    {/* 책 제목 입력 필드 */}
                     <div>
                         <label htmlFor="bookTitle" className="block text-gray-700 text-base font-medium mb-2 font-bold">
                             책 제목
@@ -293,8 +350,7 @@ export default function BookRentPage() {
                         />
                     </div>
 
-                    {/* 저자 및 출판사 입력 필드 */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                         <div>
                             <label htmlFor="author" className="block text-gray-700 text-base font-medium mb-2 font-bold">
                                 저자
@@ -323,28 +379,44 @@ export default function BookRentPage() {
                                 required
                             />
                         </div>
+                        <div>
+                            <label htmlFor="category" className="block text-gray-700 text-base font-medium mb-2 font-bold">
+                                카테고리
+                            </label>
+                            <input
+                                type="text"
+                                id="category"
+                                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-gray-900"
+                                placeholder="예: 역사"
+                                value={category}
+                                onChange={(e) => setCategory(e.target.value)}
+                                required
+                            />
+                        </div>
                     </div>
 
-                    {/* 카테고리 입력 필드 */}
                     <div>
-                        <label htmlFor="category" className="block text-gray-700 text-base font-medium mb-2 font-bold">
-                            카테고리
+                        <label htmlFor="description" className="block text-gray-700 text-base font-medium mb-2 font-bold">
+                            책 설명
                         </label>
-                        <input
-                            type="text"
-                            id="category"
-                            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-gray-900"
-                            placeholder="예: 역사"
-                            value={category}
-                            onChange={(e) => setCategory(e.target.value)}
+                        <textarea
+                            id="description"
+                            rows={3}
+                            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-gray-900 resize-y"
+                            placeholder="책에 대한 간략한 설명을 입력하거나, 검색된 내용을 확인하세요."
+                            value={description}
+                            onChange={(e) => setDescription(e.target.value)}
+                            maxLength={500}
                             required
-                        />
+                        ></textarea>
+                        <div className="text-right text-sm text-gray-500 mt-1">
+                            {description.length}/500
+                        </div>
                     </div>
 
-                    {/* '등록하기' 제출 버튼 */}
                     <div className="pt-4 flex justify-center">
                         <button
-                            type="submit" // 폼 제출 역할
+                            type="submit"
                             className="w-64 py-3 text-white text-lg font-semibold rounded-lg shadow-md transition duration-200
                             bg-[#D5BAA3] hover:bg-[#C2A794]"
                         >
@@ -353,24 +425,107 @@ export default function BookRentPage() {
                     </div>
                 </form>
             </div>
+            {/* 책 검색 결과 팝업 모달 */}
+            {showBookSearchModal && (
+                <div
+                    className="fixed inset-0 flex items-center justify-center bg-black/50 z-50 p-4"
+                    onClick={() => setShowBookSearchModal(false)}
+                >
+                    <div
+                        className="bg-white rounded-xl p-6 sm:p-8 shadow-lg w-full max-w-3xl max-h-[90vh] overflow-y-auto"
+                        onClick={e => e.stopPropagation()}
+                    >
+                        <h2 className="text-xl sm:text-2xl font-bold text-gray-800 mb-4 text-center">
+                            책 검색 결과
+                        </h2>
+                        <hr className="border-t-2 border-gray-300 mb-6" />
+
+                        {searchResults.length > 0 ? (
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                                {searchResults.map((book, index) => (
+                                    <div
+                                        key={index}
+                                        className="border border-gray-200 rounded-lg p-4 flex flex-col items-center text-center shadow-sm hover:shadow-md transition duration-150 cursor-pointer"
+                                    >
+                                        <img
+                                            src={book.coverImageUrl || defaultImageUrl}
+                                            alt={book.bookTitle}
+                                            className="w-24 h-32 object-cover rounded-md mb-3"
+                                        />
+                                        <h3 className="font-semibold text-gray-800 text-base mb-1 line-clamp-2">
+                                            {book.bookTitle}
+                                        </h3>
+                                        <p className="text-sm text-gray-600 line-clamp-1">
+                                            {book.author} | {book.publisher}
+                                        </p>
+                                        <p className="text-xs text-gray-500 mt-1">
+                                            {book.pubDate}
+                                        </p>
+                                        <button
+                                            className="mt-4 px-4 py-2 text-white font-semibold rounded-lg bg-[#D5BAA3] hover:bg-[#C2A794] text-sm"
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                selectBook(book); // 책 선택 함수 호출
+                                            }}
+                                        >
+                                            선택하기
+                                        </button>
+                                    </div>
+                                ))}
+                            </div>
+                        ) : (
+                            <p className="text-center text-gray-600">검색 결과가 없습니다.</p>
+                        )}
+
+                        <div className="flex justify-center items-center mt-6 space-x-4">
+                            <button
+                                onClick={() => handleBookSearch(currentPage - 1)} // 이전 버튼 클릭 시
+                                disabled={currentPage === 1}
+                                className="px-4 py-2 rounded-lg bg-[#D5BAA3] text-white disabled:opacity-50"
+                            >
+                                이전
+                            </button>
+                            {/* 현재 페이지 번호와 총 페이지 수를 정확히 알 수 없으므로, 현재 페이지 정보만 표시하거나, 다음 페이지가 있는지 여부로 대체 */}
+                            <span>
+                                페이지 {currentPage}
+                            </span>
+                            <button
+                                onClick={() => handleBookSearch(currentPage + 1)} // 다음 버튼 클릭 시
+                                disabled={!hasMoreResults} // 다음 페이지 결과가 없을 경우 비활성화
+                                className="px-4 py-2 rounded-lg bg-[#D5BAA3] text-white disabled:opacity-50"
+                            >
+                                다음
+                            </button>
+                        </div>
+
+                        <div className="mt-6 flex justify-center">
+                            <button
+                                onClick={() => setShowBookSearchModal(false)}
+                                className="px-6 py-2 text-white rounded-lg font-bold bg-gray-500 hover:bg-gray-600"
+                            >
+                                닫기
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}            
             {/* 팝업 */}
             {showPopup && (
                 <div
-                  className="fixed inset-0 flex items-center justify-center bg-black/50 z-50" // 배경을 반투명 검은색으로 변경
-                  onClick={() => setShowPopup(false)} // 바깥 클릭 시 팝업 닫기
+                  className="fixed inset-0 flex items-center justify-center bg-black/50 z-50"
+                  onClick={() => setShowPopup(false)}
                 >
                   <div
                     className="bg-white rounded-xl p-8 shadow-lg flex flex-col items-center"
-                    onClick={e => e.stopPropagation()} // 내부 클릭 시 닫히지 않게
+                    onClick={e => e.stopPropagation()}
                   >
                     <div className="mb-6 text-lg font-semibold">
                       글이 작성되었습니다.
                     </div>
-                    {/* 글 목록 페이지로 이동하는 버튼 */}
                     <button
                       onClick={() => {
-                        setShowPopup(false); // 팝업 닫기
-                        router.push(`/bookbook/rent`); // rent 글 목록 페이지로 이동
+                        setShowPopup(false);
+                        router.push(`/bookbook/rent`);
                       }}
                       className="px-6 py-2 text-white rounded-lg font-bold bg-[#D5BAA3] hover:bg-[#C2A794]"
                     >
@@ -379,6 +534,6 @@ export default function BookRentPage() {
                   </div>
                 </div>
             )}
-            </div>
+        </div>
     )
 };

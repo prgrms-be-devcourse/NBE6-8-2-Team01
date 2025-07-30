@@ -25,14 +25,23 @@ public class securityConfig {
                 .csrf(csrf -> csrf.disable()) // REST API에서는 CSRF 비활성화 (토큰 기반 인증 시)
                 .authorizeHttpRequests(authorize -> authorize
                         // 로그인 관련 경로는 모두 허용
-
+                        .requestMatchers(
+                                "/api/*/admin/login", "/api/*/admin/logout",
+                                "api/v1/bookbook/users/login/dev",
+                                "api/v1/bookbook/users/social/callback",
+                                "/login/**",
+                                "/bookbook/home",
+                                "/api/v1/bookbook/login/oauth2/code/**",
+                                "/api/v1/users/dev/login",
+                                "/api/v1/bookbook/home",
+                                "/api/v1/bookbook/user/**").permitAll()
+                        .requestMatchers("api/*/admin/**").hasRole("ADMIN")
                         .requestMatchers("/api/admin/login", "api/v1/bookbook/users/login/dev", "api/v1/bookbook/users/social/callback", "/login/**", "/bookbook/home", "/api/v1/bookbook/login/oauth2/code/**","/api/v1/users/dev/login", "/api/v1/bookbook/home", "/api/v1/bookbook/user/**").permitAll()
-
-                        
                         .requestMatchers("/favicon.ico").permitAll() // 파비콘 접근 허용
                         .requestMatchers("/h2-console/**").permitAll() // H2 콘솔 접근 허용
                         .requestMatchers("/bookbook/rent/create").permitAll() // Rent 페이지 생성은 인증 필요, (임시)
-                        .requestMatchers("/api/v1/bookbook/upload-image").permitAll() //  이미지 업로드 API 경로 허용
+                        .requestMatchers("/api/v1/bookbook/upload-image").permitAll() // 이미지 업로드 API 경로 허용 추가
+                        .requestMatchers("/api/v1/bookbook/searchbook").permitAll() // 알라딘 책 검색 API 경로 허용 추가
                         .requestMatchers(org.springframework.http.HttpMethod.OPTIONS, "/**").permitAll() // OPTIONS 메서드 요청은 모든 경로에 대해 허용 (Preflight 요청)
                         .anyRequest().authenticated() // 나머지 모든 요청은 인증 필요
                 )
@@ -41,6 +50,12 @@ public class securityConfig {
                                 .userService(customOAuth2UserService) // 사용자 정보를 가져온 후 처리할 서비스 지정
                         )
                         .successHandler(loginSuccessHandler) // OAuth2 로그인 성공 후 처리할 핸들러 지정
+                )
+                .logout(logout -> logout
+                        .logoutUrl("/api/v1/bookbook/users/logout") // 로그아웃을 처리할 URL
+                        .logoutSuccessUrl("http://localhost:3000/bookbook") // 로그아웃 성공 시 리다이렉트될 URL
+                        .invalidateHttpSession(true) // HTTP 세션 무효화
+                        .deleteCookies("JSESSIONID") // JSESSIONID 쿠키 삭제 (필요한 경우 다른 쿠키도 추가)
                 )
                 .headers(headers -> headers.frameOptions(frameOptions -> frameOptions.sameOrigin())); // H2 Console 사용을 위함
         return http.build();

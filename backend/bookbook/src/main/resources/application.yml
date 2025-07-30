@@ -71,3 +71,5 @@ logging:
     org.hibernate.orm.jdbc.extract: TRACE
     org.springframework.transaction.interceptor: TRACE
     com.bookbook: DEBUG
+aladin:
+  ttbkey: ${ALADIN_API_KEY}
