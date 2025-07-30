@@ -134,4 +134,10 @@ public class UserService {
 
         userRepository.save(user);
     }
+
+    public UserResponseDto getUserDetails(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new IllegalArgumentException("해당 ID의 사용자를 찾을 수 없습니다."));
+        return new UserResponseDto(user);
+    }
 }

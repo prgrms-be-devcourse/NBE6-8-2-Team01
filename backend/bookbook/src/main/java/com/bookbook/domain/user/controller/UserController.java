@@ -78,19 +78,19 @@ public class UserController {
 
     @GetMapping("/me")
     public ResponseEntity<?> getCurrentUser(@AuthenticationPrincipal CustomOAuth2User customOAuth2User) {
-        if (customOAuth2User == null) {
+        if (customOAuth2User == null || customOAuth2User.getUserId() == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("로그인된 사용자가 없습니다.");
         }
 
-        Map<String, Object> userInfo = new HashMap<>();
-        userInfo.put("userId", customOAuth2User.getUserId());
-        userInfo.put("username", customOAuth2User.getUsername());
-        userInfo.put("nickname", customOAuth2User.getNickname());
-        userInfo.put("email", customOAuth2User.getEmail());
-        userInfo.put("isNewUser", customOAuth2User.isNewUser());
-        userInfo.put("role", customOAuth2User.getAuthorities().iterator().next().getAuthority());
-
-        return ResponseEntity.ok(userInfo);
+        try {
+            // UserService를 통해 User 엔티티에서 상세 정보를 가져와 UserResponseDto로 반환
+            UserResponseDto userDetails = userService.getUserDetails(customOAuth2User.getUserId());
+            return ResponseEntity.ok(userDetails);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("사용자 정보 조회 중 오류가 발생했습니다: " + e.getMessage());
+        }
     }
 
     @GetMapping("/isAuthenticated") // 간단한 로그인 여부 확인
