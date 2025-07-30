@@ -6,11 +6,11 @@ import { FaUser, FaMapMarkerAlt } from 'react-icons/fa';
 
 const SignupPage = () => {
     const router = useRouter();
-    const [nickname, setNickname] = useState('');
-    const [address, setAddress] = useState('');
-    const [agreedToTerms, setAgreedToTerms] = useState(false);
-    const [nicknameError, setNicknameError] = useState('');
-    const [formError, setFormError] = useState('');
+    const [nickname, setNickname] = useState<string>(''); // 타입 명시
+    const [address, setAddress] = useState<string>('');   // 타입 명시
+    const [agreedToTerms, setAgreedToTerms] = useState<boolean>(false); // 타입 명시
+    const [nicknameError, setNicknameError] = useState<string>('');     // 타입 명시
+    const [formError, setFormError] = useState<string>('');             // 타입 명시
 
     // API 기본 URL 설정 (환경 변수에서 가져오거나 로컬 개발용으로 설정)
     const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8080';
@@ -28,24 +28,22 @@ const SignupPage = () => {
                 method: 'GET',
                 headers: {
                     'Content-Type': 'application/json',
-                    // Next.js에서 `Credentials` 옵션을 `include`로 설정해야
-                    // 백엔드에서 세션 쿠키를 보낼 수 있습니다.
-                    'Access-Control-Allow-Credentials': 'true', // CORS preflight 요청에 필요할 수 있음
+                    'Access-Control-Allow-Credentials': 'true',
                 },
-                credentials: 'include', // 세션 쿠키를 포함하여 요청
+                credentials: 'include',
             });
 
             if (response.ok) {
-                const data = await response.json();
-                if (data.isAvailable) {
+                const rsData = await response.json(); // RsData 객체 전체를 받음
+                if (rsData.data && rsData.data.isAvailable) { // RsData의 data 필드에서 isAvailable 추출
                     alert('사용 가능한 닉네임입니다.');
                 } else {
                     setNicknameError('이미 사용 중인 닉네임입니다.');
                 }
             } else {
-                const errorText = await response.text(); // 오류 메시지를 텍스트로 받기
-                setNicknameError(`닉네임 중복 확인 중 오류가 발생했습니다: ${errorText}`);
-                console.error('Nickname check failed:', response.status, errorText);
+                const errorRsData = await response.json(); // 오류 응답도 RsData 형태일 수 있음
+                setNicknameError(`닉네임 중복 확인 중 오류가 발생했습니다: ${errorRsData.msg || response.statusText}`);
+                console.error('Nickname check failed:', response.status, errorRsData);
             }
         } catch (error) {
             setNicknameError('네트워크 오류가 발생했습니다. 서버가 실행 중인지 확인해주세요.');
@@ -54,7 +52,7 @@ const SignupPage = () => {
     };
 
     // 폼 제출 로직 (회원 추가 정보 등록)
-    const handleSubmit = async (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => { // 타입 추가
         e.preventDefault();
 
         setFormError('');
@@ -77,9 +75,8 @@ const SignupPage = () => {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    // 'Access-Control-Allow-Credentials': 'true', // CORS preflight 요청에 필요할 수 있음
                 },
-                credentials: 'include', // 세션 쿠키를 포함하여 요청
+                credentials: 'include',
                 body: JSON.stringify({ nickname, address }),
             });
 
@@ -87,9 +84,9 @@ const SignupPage = () => {
                 alert('회원가입이 성공적으로 완료되었습니다!');
                 router.push('/bookbook'); // 회원가입 성공 후 메인 페이지로 리다이렉트
             } else {
-                const errorText = await response.text(); // 오류 메시지를 텍스트로 받기
-                setFormError(`회원가입에 실패했습니다: ${errorText}`);
-                console.error('Signup failed:', response.status, errorText);
+                const errorRsData = await response.json(); // 오류 응답도 RsData 형태일 수 있음
+                setFormError(`회원가입에 실패했습니다: ${errorRsData.msg || response.statusText}`);
+                console.error('Signup failed:', response.status, errorRsData);
             }
         } catch (error) {
             setFormError('네트워크 오류가 발생했습니다. 서버가 실행 중인지 확인해주세요.');
@@ -114,7 +111,7 @@ const SignupPage = () => {
                                 name="nickname"
                                 placeholder="닉네임을 입력하세요"
                                 value={nickname}
-                                onChange={(e) => {
+                                onChange={(e: React.ChangeEvent<HTMLInputElement>) => { // 타입 추가
                                     setNickname(e.target.value);
                                     setNicknameError('');
                                 }}
@@ -142,7 +139,7 @@ const SignupPage = () => {
                             name="address"
                             placeholder="주소를 입력하세요"
                             value={address}
-                            onChange={(e) => {
+                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => { // 타입 추가
                                 setAddress(e.target.value);
                                 setFormError('');
                             }}
@@ -207,7 +204,7 @@ const SignupPage = () => {
                             id="agreeTerms"
                             name="agreeTerms"
                             checked={agreedToTerms}
-                            onChange={(e) => {
+                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => { // 타입 추가
                                 setAgreedToTerms(e.target.checked);
                                 setFormError('');
                             }}

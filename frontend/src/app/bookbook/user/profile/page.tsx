@@ -1,17 +1,18 @@
 'use client';
 
-import React, { useState, useEffect } from 'react'; // useEffect 추가
+import React, { useState, useEffect } from 'react';
 
 export default function App() {
-    //  서버에서 받아올 사용자 정보를 위한 초기 상태
+    // 서버에서 받아올 사용자 정보를 위한 초기 상태
     const [userData, setUserData] = useState({
-        userId: null, // 백엔드에서 받아올 ID
+        id: null, // UserResponseDto의 필드명은 'id'
         username: '', // 백엔드에서 받아올 사용자 이름 (이메일과 다를 수 있음)
         nickname: '로딩중...',
         address: '로딩중...',
         email: '로딩중...',
-        joinDate: '로딩중...',
-        // isNewUser와 role은 이 페이지에서 직접 사용되지 않을 수 있으나, 필요시 추가
+        rating: 0.0, // 매너 점수 추가
+        userStatus: '로딩중...', // 사용자 상태 추가
+        createAt: '로딩중...', // 가입일 필드명 변경
     });
 
     const [isEditing, setIsEditing] = useState(false); // 수정 모드 여부
@@ -22,7 +23,7 @@ export default function App() {
     const [originalNickname, setOriginalNickname] = useState('');
     const [originalAddress, setOriginalAddress] = useState('');
 
-    // ️ 컴포넌트 마운트 시 사용자 정보 로드
+    // 컴포넌트 마운트 시 사용자 정보 로드
     useEffect(() => {
         const fetchUserData = async () => {
             try {
@@ -31,15 +32,18 @@ export default function App() {
                 });
 
                 if (response.ok) {
-                    const data = await response.json(); // 이제 data는 UserResponseDto 형태
+                    const rsData = await response.json(); // RsData 객체 전체를 받음
+                    const data = rsData.data; // 실제 UserResponseDto는 data 필드 안에 있음
+
                     setUserData({
-                        userId: data.id, // UserResponseDto의 필드명은 'id'
+                        id: data.id,
                         username: data.username,
                         nickname: data.nickname,
                         address: data.address || '', // 백엔드에서 null로 올 수 있으니 대비
                         email: data.email,
-                        // 백엔드에서 LocalDateTime으로 넘어오므로 Date 객체로 변환하여 포맷팅
-                        joinDate: data.createAt ? new Date(data.createAt).toLocaleDateString('ko-KR', {
+                        rating: data.rating, // 매너 점수 설정
+                        userStatus: data.userStatus, // 사용자 상태 설정
+                        createAt: data.createAt ? new Date(data.createAt).toLocaleDateString('ko-KR', {
                             year: 'numeric',
                             month: 'numeric',
                             day: 'numeric',
@@ -51,15 +55,17 @@ export default function App() {
                     setOriginalAddress(data.address || '');
                 } else if (response.status === 401) {
                     console.log('로그인이 필요합니다.');
-                    //  로그인되지 않은 경우 처리: 로그인 페이지로 리다이렉트 권장
+                    alert('로그인이 필요합니다.'); // alert 사용
+                    // 로그인되지 않은 경우 처리: 로그인 페이지로 리다이렉트 권장
                     // window.location.href = '/bookbook/login'; // 예시
                 } else {
-                    console.error('사용자 정보 로드 실패:', response.statusText);
-                    alert('사용자 정보를 불러오는데 실패했습니다.');
+                    const errorRsData = await response.json(); // 에러 응답도 RsData 형태일 수 있음
+                    console.error('사용자 정보 로드 실패:', errorRsData.msg || response.statusText);
+                    alert(`사용자 정보를 불러오는데 실패했습니다: ${errorRsData.msg || '알 수 없는 오류'}`); // alert 사용
                 }
             } catch (error) {
                 console.error('사용자 정보 로드 중 오류 발생:', error);
-                alert('네트워크 오류가 발생했습니다.');
+                alert('네트워크 오류가 발생했습니다.'); // alert 사용
             }
         };
 
@@ -79,24 +85,29 @@ export default function App() {
     // 닉네임 변경 시 백엔드 닉네임 중복 확인 (선택 사항)
     const handleCheckNicknameAvailability = async () => {
         if (!editedNickname) {
-            alert('닉네임을 입력해주세요.');
+            alert('닉네임을 입력해주세요.'); // alert 사용
+            return;
+        }
+        if (editedNickname === originalNickname) {
+            alert('현재 닉네임과 동일합니다.'); // alert 사용
             return;
         }
         try {
             const response = await fetch(`/api/v1/bookbook/users/check-nickname?nickname=${editedNickname}`);
             if (response.ok) {
-                const data = await response.json();
-                if (data.isAvailable) {
-                    alert('사용 가능한 닉네임입니다.');
+                const rsData = await response.json();
+                if (rsData.data.isAvailable) { // RsData의 data 필드에서 isAvailable 추출
+                    alert('사용 가능한 닉네임입니다.'); // alert 사용
                 } else {
-                    alert('이미 사용 중인 닉네임입니다. 다른 닉네임을 사용해주세요.');
+                    alert('이미 사용 중인 닉네임입니다. 다른 닉네임을 사용해주세요.'); // alert 사용
                 }
             } else {
-                alert('닉네임 중복 확인 중 오류가 발생했습니다.');
+                const errorRsData = await response.json();
+                alert(`닉네임 중복 확인 중 오류가 발생했습니다: ${errorRsData.msg || '알 수 없는 오류'}`); // alert 사용
             }
         } catch (error) {
             console.error('닉네임 중복 확인 오류:', error);
-            alert('네트워크 오류로 닉네임 중복 확인에 실패했습니다.');
+            alert('네트워크 오류로 닉네임 중복 확인에 실패했습니다.'); // alert 사용
         }
     };
 
@@ -104,11 +115,19 @@ export default function App() {
     const handleConfirmClick = async () => {
         if (!isEditing) {
             console.log('수정 모드가 아닙니다.');
+            alert('수정 모드가 아닙니다.'); // alert 사용
+            return;
+        }
+
+        // 닉네임 또는 주소 중 하나라도 변경되지 않았다면 업데이트 요청을 보내지 않음
+        if (editedNickname === originalNickname && editedAddress === originalAddress) {
+            alert('변경할 내용이 없습니다.'); // alert 사용
+            setIsEditing(false); // 변경사항 없으면 수정 모드 종료
             return;
         }
 
         if (!editedNickname || !editedAddress) {
-            alert('닉네임과 주소를 모두 입력해주세요.');
+            alert('닉네임과 주소를 모두 입력해주세요.'); // alert 사용
             return;
         }
 
@@ -135,16 +154,16 @@ export default function App() {
                 setOriginalNickname(editedNickname); // 원본도 업데이트
                 setOriginalAddress(editedAddress);
                 setIsEditing(false); // 수정 모드 종료
-                alert('프로필 정보가 성공적으로 업데이트되었습니다.');
-            } else if (response.status === 400) {
-                const errorData = await response.json();
-                alert(`업데이트 실패: ${errorData.message || '입력값이 유효하지 않습니다.'}`);
+                alert('프로필 정보가 성공적으로 업데이트되었습니다.'); // alert 사용
+            } else if (response.status === 400 || response.status === 409) { // 400 Bad Request, 409 Conflict (닉네임 중복 등)
+                const errorRsData = await response.json();
+                alert(`업데이트 실패: ${errorRsData.msg || '입력값이 유효하지 않습니다.'}`); // alert 사용
             } else {
-                alert('프로필 업데이트에 실패했습니다.');
+                alert('프로필 업데이트에 실패했습니다.'); // alert 사용
             }
         } catch (error) {
             console.error('프로필 업데이트 중 오류 발생:', error);
-            alert('네트워크 오류로 프로필 업데이트에 실패했습니다.');
+            alert('네트워크 오류로 프로필 업데이트에 실패했습니다.'); // alert 사용
         }
     };
 
@@ -154,18 +173,18 @@ export default function App() {
             setEditedNickname(originalNickname); // 원본 값으로 되돌리기
             setEditedAddress(originalAddress);
             setIsEditing(false); // 수정 모드 비활성화
-            alert('변경 사항이 취소되었습니다.');
+            alert('변경 사항이 취소되었습니다.'); // alert 사용
         } else {
             // 수정 모드가 아닐 때 "취소" 버튼은 뒤로 가기 또는 홈으로 이동
             window.history.back(); // 또는 window.location.href = '/bookbook';
         }
     };
 
-    //  회원 탈퇴 핸들러
-    const handleDeactivateAccount = async (event: React.MouseEvent) => {
+    // 회원 탈퇴 핸들러
+    const handleDeactivateAccount = async (event: React.MouseEvent<HTMLAnchorElement>) => { // 타입 추가
         event.preventDefault(); // 기본 링크 동작 방지
 
-        if (confirm('정말로 계정을 비활성화(회원 탈퇴) 하시겠습니까? 이 작업은 되돌릴 수 없습니다.')) {
+        if (confirm('정말로 계정을 비활성화(회원 탈퇴) 하시겠습니까? 이 작업은 되돌릴 수 없습니다.')) { // confirm 사용
             try {
                 const response = await fetch('/api/v1/bookbook/users/me', {
                     method: 'DELETE',
@@ -173,21 +192,45 @@ export default function App() {
                 });
 
                 if (response.ok) {
-                    alert('회원 탈퇴가 성공적으로 처리되었습니다.');
-                    // 로그아웃 처리 및 홈으로 리다이렉트 (필요하다면 백엔드 logout 엔드포인트도 호출)
-                    // 현재 백엔드 DELETE /me는 세션 무효화까지는 안 하므로,
-                    window.location.href = '/api/v1/bookbook/users/logout'; // 로그아웃 URL로 이동
+                    alert('회원 탈퇴가 성공적으로 처리되었습니다.'); // alert 사용
+                    // 백엔드 DELETE /me는 세션 무효화까지는 안 하므로, 로그아웃 URL로 이동
+                    window.location.href = '/api/v1/bookbook/users/logout';
                 } else if (response.status === 401) {
-                    alert('로그인이 필요합니다.');
+                    alert('로그인이 필요합니다.'); // alert 사용
                     window.location.href = '/bookbook'; // 로그인 페이지로 리다이렉트
                 } else {
-                    const errorData = await response.json();
-                    alert(`회원 탈퇴 실패: ${errorData.message || '알 수 없는 오류'}`);
+                    const errorRsData = await response.json();
+                    alert(`회원 탈퇴 실패: ${errorRsData.msg || '알 수 없는 오류'}`); // alert 사용
                 }
             } catch (error) {
                 console.error('회원 탈퇴 중 오류 발생:', error);
-                alert('네트워크 오류로 회원 탈퇴에 실패했습니다.');
+                alert('네트워크 오류로 회원 탈퇴에 실패했습니다.'); // alert 사용
             }
+        }
+    };
+
+    // 매너 점수를 별표로 변환하는 함수
+    const renderRatingStars = (rating: number) => { // 타입 추가
+        const fullStars = Math.floor(rating);
+        const halfStar = rating % 1 >= 0.5;
+        const emptyStars = 5 - fullStars - (halfStar ? 1 : 0);
+
+        return (
+            <>
+                {[...Array(fullStars)].map((_, i) => <span key={`full-${i}`} className="text-yellow-400">★</span>)}
+                {halfStar && <span className="text-yellow-400">½</span>} {/* 반 별표 유니코드 */}
+                {[...Array(emptyStars)].map((_, i) => <span key={`empty-${i}`} className="text-gray-300">★</span>)}
+            </>
+        );
+    };
+
+    // 사용자 상태를 한국어로 변환하는 함수
+    const getUserStatusKorean = (status: string) => { // 타입 추가
+        switch (status) {
+            case 'ACTIVE': return '활동 중';
+            case 'INACTIVE': return '탈퇴';
+            case 'SUSPENDED': return '정지';
+            default: return status;
         }
     };
 
@@ -203,7 +246,7 @@ export default function App() {
                             isEditing ? 'bg-blue-500 text-white hover:bg-blue-600' : 'bg-gray-200 text-gray-800 hover:bg-gray-300'
                         }`}
                         onClick={handleEditClick}
-                        disabled={isEditing} //  수정 모드일 때는 "수정" 버튼 비활성화
+                        disabled={isEditing} // 수정 모드일 때는 "수정" 버튼 비활성화
                     >
                         수정
                     </button>
@@ -222,16 +265,16 @@ export default function App() {
                             type="text"
                             id="nickname"
                             className="flex-grow p-3 border border-gray-300 rounded-lg text-gray-800 focus:outline-none focus:border-gray-400 disabled:bg-gray-50 disabled:text-gray-500 disabled:cursor-not-allowed"
-                            value={isEditing ? editedNickname : userData.nickname} // ⭐️ 수정 모드에 따라 값 변경
-                            onChange={(e) => setEditedNickname(e.target.value)} // ⭐️ 수정 필드 상태 업데이트
-                            disabled={!isEditing} // isEditing이 false일 때 비활성화
+                            value={isEditing ? editedNickname : userData.nickname}
+                            onChange={(e) => setEditedNickname(e.target.value)}
+                            disabled={!isEditing}
                         />
                         <button
                             id="changeNicknameBtn"
                             className={`change-button px-5 py-3 rounded-lg font-medium whitespace-nowrap transition-colors ${
                                 isEditing ? 'bg-gray-700 text-white hover:bg-gray-800' : 'hidden'
                             }`}
-                            onClick={handleCheckNicknameAvailability} // ⭐️ 닉네임 중복 확인 기능
+                            onClick={handleCheckNicknameAvailability}
                         >
                             중복 확인
                         </button>
@@ -251,9 +294,9 @@ export default function App() {
                             type="text"
                             id="address"
                             className="flex-grow p-3 border border-gray-300 rounded-lg text-gray-800 focus:outline-none focus:border-gray-400 disabled:bg-gray-50 disabled:text-gray-500 disabled:cursor-not-allowed"
-                            value={isEditing ? editedAddress : userData.address} //  수정 모드에 따라 값 변경
-                            onChange={(e) => setEditedAddress(e.target.value)} //  수정 필드 상태 업데이트
-                            disabled={!isEditing} // isEditing이 false일 때 비활성화
+                            value={isEditing ? editedAddress : userData.address}
+                            onChange={(e) => setEditedAddress(e.target.value)}
+                            disabled={!isEditing}
                         />
                     </div>
                 </div>
@@ -270,7 +313,7 @@ export default function App() {
                         type="email"
                         id="email"
                         className="w-full p-3 border border-gray-300 rounded-lg bg-gray-50 text-gray-500 cursor-not-allowed"
-                        value={userData.email} //  서버에서 받아온 값 사용
+                        value={userData.email || ''} // null일 경우 빈 문자열 표시
                         disabled // 항상 비활성화
                     />
                 </div>
@@ -287,23 +330,23 @@ export default function App() {
                         type="text"
                         id="joinDate"
                         className="w-full p-3 border border-gray-300 rounded-lg bg-gray-50 text-gray-500 cursor-not-allowed"
-                        value={userData.joinDate} //  서버에서 받아온 값 사용
+                        value={userData.createAt}
                         disabled // 항상 비활성화
                     />
                 </div>
 
                 {/* 회원 상태 및 매너 점수 */}
                 <div className="text-gray-600 text-base mt-4">
-                    회원상태: <strong className="text-gray-800 font-semibold">일반회원</strong>
+                    회원상태: <strong className="text-gray-800 font-semibold">{getUserStatusKorean(userData.userStatus)}</strong>
                 </div>
-                <div className="text-gray-600 text-base mt-2">
-                    매너점수: <span className="text-yellow-400 text-xl ml-1">★★★★★</span> 0.0
+                <div className="text-gray-600 text-base mt-2 flex items-center">
+                    매너점수: <span className="text-xl ml-1">{renderRatingStars(userData.rating)}</span> <span className="ml-1">{userData.rating.toFixed(1)}</span>
                 </div>
 
                 {/* 하단 버튼 */}
                 <div className="flex justify-center gap-4 mt-8">
                     <button
-                        className="footer-button px-6 py-3 rounded-lg font-semibold transition-colors bg-gray-300 text-gray-800 hover:bg-gray-400"
+                        className="footer-button px-6 py-3 rounded-lg font-semibold transition-colors bg-gray-700 text-white hover:bg-gray-800"
                         onClick={handleConfirmClick}
                     >
                         확인
@@ -321,7 +364,7 @@ export default function App() {
                     <a
                         href="#"
                         className="text-gray-600 hover:text-gray-800 transition-colors"
-                        onClick={handleDeactivateAccount} //  회원 탈퇴 핸들러 연결
+                        onClick={handleDeactivateAccount}
                     >
                         회원탈퇴 &gt;
                     </a>

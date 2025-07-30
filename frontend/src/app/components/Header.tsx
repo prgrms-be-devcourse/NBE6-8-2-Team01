@@ -1,4 +1,4 @@
-'use client';
+'use client'; // 이 줄을 파일 맨 위에 추가해주세요.
 
 import React, { useState, useEffect } from 'react';
 import { Bell, Heart, User } from 'lucide-react';
@@ -10,15 +10,14 @@ const Header = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
 
   useEffect(() => {
-    // isAuthenticated 엔드포인트를 호출하여 로그인 상태 확인
     const checkLoginStatus = async () => {
       try {
         const response = await fetch('/api/v1/bookbook/users/isAuthenticated');
         if (response.ok) {
-          const data = await response.json();
-          setIsLoggedIn(data); // 응답 데이터가 true/false 형태라고 가정
+          const rsData = await response.json();
+          setIsLoggedIn(rsData.data);
         } else {
-          setIsLoggedIn(false); // 응답 실패 시 로그인되지 않은 상태로 간주
+          setIsLoggedIn(false);
         }
       } catch (error) {
         console.error('로그인 상태 확인 중 오류 발생:', error);
@@ -27,21 +26,18 @@ const Header = () => {
     };
 
     checkLoginStatus();
-  }, []); // 컴포넌트가 처음 렌더링될 때 한 번만 실행
+  }, []);
 
-  // 로그아웃 핸들러
   const handleLogout = async () => {
     try {
       const response = await fetch('/api/v1/bookbook/users/logout', {
         method: 'POST',
-        // Credentials를 포함하여 세션 쿠키가 전송되도록 설정
         credentials: 'include',
       });
 
       if (response.ok) {
-        setIsLoggedIn(false); // 로그아웃 성공 시 상태 업데이트
+        setIsLoggedIn(false);
         alert('로그아웃 되었습니다.');
-        // 로그아웃 후 홈으로 리다이렉트
         window.location.href = '/bookbook';
       } else {
         alert('로그아웃에 실패했습니다.');
@@ -54,10 +50,9 @@ const Header = () => {
 
   const handleLendBookClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
     if (!isLoggedIn) {
-      e.preventDefault(); // 기본 링크 이동 동작 방지
-      setShowLoginModal(true); // 로그인 모달 표시
+      e.preventDefault();
+      setShowLoginModal(true);
     }
-    // 로그인 상태라면 Link의 기본 동작 (페이지 이동)이 실행됩니다.
   };
 
   return (
