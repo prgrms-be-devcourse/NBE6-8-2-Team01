@@ -37,6 +37,7 @@ public class CustomOAuth2UserService implements OAuth2UserService<OAuth2UserRequ
 
         String username = registrationId + "_" + attributes.id();
         boolean isNewUser = false;
+        boolean isRegistrationCompleted = false;
 
         // DB에 해당 유저가 있는지 확인 (isNewUser 판단을 위해 유지)
         Optional<User> existingUser = userRepository.findByUsername(username);
@@ -47,7 +48,10 @@ public class CustomOAuth2UserService implements OAuth2UserService<OAuth2UserRequ
         // --- 핵심 변경: 사용자 생성/업데이트 로직을 UserService로 위임 ---
         User user = userService.findOrCreateUser(username, attributes.email(), attributes.nickname());
 
-        log.info("DEBUG: User processed. Username: {}, ID: {}, Nickname: {}, isNewUser: {}", user.getUsername(), user.getId(), user.getNickname(), isNewUser);
+        isRegistrationCompleted = user.isRegistrationCompleted();
+
+        log.info("DEBUG: User processed. Username: {}, ID: {}, Nickname: {}, Email: {}, isNewUser: {}, isRegistrationCompleted: {}",
+                user.getUsername(), user.getId(), user.getNickname(), user.getEmail(), isNewUser, isRegistrationCompleted);
 
         return new CustomOAuth2User(
                 Collections.singleton(new SimpleGrantedAuthority(user.getRole().name())),
@@ -57,7 +61,8 @@ public class CustomOAuth2UserService implements OAuth2UserService<OAuth2UserRequ
                 user.getNickname(),
                 user.getEmail(),
                 user.getId(),
-                isNewUser
+                isNewUser,
+                isRegistrationCompleted
         );
     }
 }

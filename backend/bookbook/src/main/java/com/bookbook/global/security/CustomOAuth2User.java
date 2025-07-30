@@ -13,6 +13,7 @@ public class CustomOAuth2User extends DefaultOAuth2User {
     private String email; // null 가능
     private Long userId; // DB에 저장된 User 엔티티의 고유 ID
     private boolean isNewUser; // 첫 로그인 여부
+    private boolean isRegistrationCompleted;
 
     public CustomOAuth2User(Collection<? extends GrantedAuthority> authorities,
                             Map<String, Object> attributes,
@@ -21,13 +22,15 @@ public class CustomOAuth2User extends DefaultOAuth2User {
                             String nickname,
                             String email,
                             Long userId,
-                            boolean isNewUser) {
+                            boolean isNewUser,
+                            boolean isRegistrationCompleted) {
         super(authorities, attributes, nameAttributeKey);
         this.username = username;
         this.nickname = nickname;
         this.email = email;
         this.userId = userId;
         this.isNewUser = isNewUser;
+        this.isRegistrationCompleted = isRegistrationCompleted;
     }
 
     // Getter 메서드들 (필요한 정보에 접근하기 위함)
