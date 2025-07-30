@@ -35,13 +35,13 @@ public class User extends BaseEntity {
     @Column(name = "password", nullable = false)
     private String password;
 
-    @Column(name = "nickname", unique = true, nullable = false)
+    @Column(name = "nickname", unique = true, nullable = true)
     private String nickname;
 
     @Column(name = "email", unique = true, nullable = true)
     private String email;
 
-    @Column(name = "address", nullable = false)
+    @Column(name = "address", nullable = true)
     private String address;
 
     // 별점 = (리뷰를 남긴 사람들의 별점들의 합) / (리뷰를 남긴 사람의 수)
@@ -71,6 +71,9 @@ public class User extends BaseEntity {
 
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL)
     private List<SuspendedUser> suspends;
+
+    @Column(name = "registration_completed", nullable = false)
+    private boolean registrationCompleted;
 
     @Builder
     public User(String username, String password, String nickname, String email, String address, Float rating, Role role, UserStatus userStatus) {
@@ -126,4 +129,18 @@ public class User extends BaseEntity {
     public void setEmail(String email) { // 이메일 변경 메서드 추가 (null 허용)
         this.email = email;
     }
+
+    public void setRegistrationCompleted(boolean registrationCompleted) {
+        this.registrationCompleted = registrationCompleted;
+    }
+
+    public void updateInfo(String nickname, String address) {
+        if (nickname != null && !nickname.trim().isEmpty()) {
+            this.nickname = nickname;
+        }
+        if (address != null && !address.trim().isEmpty()) {
+            this.address = address;
+        }
+    }
+
 }
