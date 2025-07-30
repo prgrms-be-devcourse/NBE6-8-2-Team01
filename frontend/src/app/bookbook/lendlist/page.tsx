@@ -5,7 +5,7 @@ import { Search, Book } from 'lucide-react';
 import Pagination from '../../components/Pagination';
 import UserSidebar from '../../components/UserSidebar';
 import LendListCard from './LendListCard';
-import ReviewModal from './ReviewModal';
+import ReviewModal from '../../components/ReviewModal';
 import { MyBook, PaginationInfo } from './types';
 import { dummyLendListBooks } from './dummyData';
 
