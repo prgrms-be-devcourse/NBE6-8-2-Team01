@@ -40,6 +40,12 @@ public class securityConfig {
                         )
                         .successHandler(loginSuccessHandler) // OAuth2 로그인 성공 후 처리할 핸들러 지정
                 )
+                .logout(logout -> logout
+                        .logoutUrl("/api/v1/bookbook/users/logout") // 로그아웃을 처리할 URL
+                        .logoutSuccessUrl("http://localhost:3000/bookbook") // 로그아웃 성공 시 리다이렉트될 URL
+                        .invalidateHttpSession(true) // HTTP 세션 무효화
+                        .deleteCookies("JSESSIONID") // JSESSIONID 쿠키 삭제 (필요한 경우 다른 쿠키도 추가)
+                )
                 .headers(headers -> headers.frameOptions(frameOptions -> frameOptions.sameOrigin())); // H2 Console 사용을 위함
         return http.build();
     }
