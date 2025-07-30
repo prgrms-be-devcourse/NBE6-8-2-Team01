@@ -39,7 +39,7 @@ export default function UserSidebar() {
             <h3 className="text-lg font-bold text-gray-600 mb-3">내 도서</h3>
             <div className="space-y-1">
               <SidebarItem href="/bookbook/lendlist" label="도서 등록 내역" />
-              <SidebarItem href="/user/rented" label="도서 대여 내역" />
+              <SidebarItem href="/bookbook/rentlist" label="도서 대여 내역" />
               <SidebarItem href="/bookbook/wishlist" label="찜한 도서" />
             </div>
           </div>
