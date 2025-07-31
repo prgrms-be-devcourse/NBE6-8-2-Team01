@@ -1,5 +1,4 @@
 // 25.07.31 현준
-
 "use client";
 
 import React, { useEffect, useState } from 'react';
@@ -453,7 +452,7 @@ export default function BookRentPage() {
                     {toastMessage}
                 </div>
             )}
-
+        
             {/* 책 검색 결과 팝업 모달 */}
             {showBookSearchModal && (
                 <div
@@ -564,7 +563,6 @@ export default function BookRentPage() {
                   </div>
                 </div>
             )}
-
         </div>
     )
 };
