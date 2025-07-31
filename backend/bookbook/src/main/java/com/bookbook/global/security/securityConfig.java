@@ -29,7 +29,9 @@ public class securityConfig {
     private final LoginSuccessHandler loginSuccessHandler;
 
     @Value("${jwt.cookie.name}")
-    private String jwtCookieName;
+    private String jwtAccessTokenCookieName;
+    @Value("${jwt.cookie.refresh-name}")
+    private String jwtRefreshTokenCookieName;
 
     @Value("${frontend.base-url}")
     private String frontendBaseUrl;
@@ -63,7 +65,8 @@ public class securityConfig {
                                 "/api/v1/bookbook/users/check-nickname",
                                 "/api/v1/bookbook/users/signup",
                                 "/api/v1/bookbook/users/isAuthenticated",
-                                "/api/v1/bookbook/users/logout" // ⭐ 로그아웃 경로 permitAll 추가
+                                "/api/v1/bookbook/users/logout",
+                                "/api/v1/bookbook/auth/refresh-token"
                         ).permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/bookbook/users/me").authenticated()
                         .requestMatchers(HttpMethod.PATCH, "/api/v1/bookbook/users/me").authenticated()
@@ -92,20 +95,34 @@ public class securityConfig {
                                     String method = request.getMethod();
                                     return "/api/v1/bookbook/users/logout".equals(uri) && "GET".equals(method);
                                 })
-                                .logoutSuccessHandler((request, response, authentication) -> {
-                                    // 쿠키 삭제 로직
-                                    Cookie deleteCookie = new Cookie(jwtCookieName, null);
-                                    deleteCookie.setHttpOnly(true);
-                                    deleteCookie.setSecure(false);
-                                    deleteCookie.setPath("/");
-                                    deleteCookie.setMaxAge(0);
-                                    response.addCookie(deleteCookie);
-                                    response.sendRedirect(frontendBaseUrl + mainPath);
-                                })
-                                .invalidateHttpSession(false)
-                                .deleteCookies(jwtCookieName)
+                        .logoutSuccessHandler((request, response, authentication) -> {
+                            // 액세스 토큰 쿠키 삭제
+                            Cookie deleteAccessTokenCookie = new Cookie(jwtAccessTokenCookieName, null);
+                            deleteAccessTokenCookie.setHttpOnly(true);
+                            deleteAccessTokenCookie.setSecure(false);
+                            deleteAccessTokenCookie.setPath("/");
+                            deleteAccessTokenCookie.setMaxAge(0);
+                            response.addCookie(deleteAccessTokenCookie);
+
+                            // 리프레시 토큰 쿠키 삭제
+                            Cookie deleteRefreshTokenCookie = new Cookie(jwtRefreshTokenCookieName, null);
+                            deleteRefreshTokenCookie.setHttpOnly(true);
+                            deleteRefreshTokenCookie.setSecure(false);
+                            deleteRefreshTokenCookie.setPath("/");
+                            deleteRefreshTokenCookie.setMaxAge(0);
+                            response.addCookie(deleteRefreshTokenCookie);
+
+                            // DB에서 리프레시 토큰 무효화
+                            if (authentication != null && authentication.getPrincipal() instanceof CustomOAuth2User) {
+                                CustomOAuth2User user = (CustomOAuth2User) authentication.getPrincipal();
+                                jwtProvider.deleteRefreshToken(user.getUserId());
+                            }
+
+                            response.sendRedirect(frontendBaseUrl + mainPath);
+                        })
+                        .invalidateHttpSession(false)
+                        .deleteCookies(jwtAccessTokenCookieName, jwtRefreshTokenCookieName)
                 )
-                // ⭐ 기본 로그인 페이지 사용 안함 (JWT 기반이므로)
                 .httpBasic(httpBasic -> httpBasic.disable())
                 .formLogin(formLogin -> formLogin.disable())
                 .headers(headers -> headers.frameOptions(frameOptions -> frameOptions.sameOrigin()));
