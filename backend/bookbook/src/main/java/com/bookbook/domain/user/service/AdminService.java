@@ -1,11 +1,13 @@
 package com.bookbook.domain.user.service;
 
+import com.bookbook.domain.user.dto.response.UserDetailResponseDto;
 import com.bookbook.domain.user.dto.UserBaseDto;
 import com.bookbook.domain.user.dto.UserLoginRequestDto;
-import com.bookbook.domain.user.dto.response.UserDetailResponseDto;
 import com.bookbook.domain.user.entity.User;
 import com.bookbook.domain.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -30,10 +32,11 @@ public class AdminService {
     }
 
     @Transactional(readOnly = true)
-    public List<UserBaseDto> getAllUsers() {
-        return userRepository.findAll().stream()
-                .map(UserBaseDto::from)
-                .toList();
+    public Page<UserBaseDto> getFilteredUsers(
+            Pageable pageable, List<String> status, Long userId
+    ) {
+        return userRepository.findFilteredUsers(pageable, status, userId)
+                .map(UserBaseDto::from);
     }
 
     @Transactional(readOnly = true)
