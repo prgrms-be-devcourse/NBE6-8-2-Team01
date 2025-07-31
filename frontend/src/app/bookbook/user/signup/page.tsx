@@ -1,108 +1,133 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react'; // ✅ useEffect 임포트
 import { useRouter } from 'next/navigation';
 import { FaUser, FaMapMarkerAlt } from 'react-icons/fa';
 
+import apiClient from '../utils/apiClient';
+import { toast, ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
+
 const SignupPage = () => {
     const router = useRouter();
-    const [nickname, setNickname] = useState('');
-    const [address, setAddress] = useState('');
-    const [agreedToTerms, setAgreedToTerms] = useState(false);
-    const [nicknameError, setNicknameError] = useState('');
-    const [formError, setFormError] = useState('');
 
-    // API 기본 URL 설정 (환경 변수에서 가져오거나 로컬 개발용으로 설정)
-    const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8080';
+    const [nickname, setNickname] = useState<string>('');
+    const [address, setAddress] = useState<string>('');
+    const [agreedToTerms, setAgreedToTerms] = useState<boolean>(false);
 
-    // 닉네임 중복 확인 로직
-    const handleNicknameCheck = async () => {
-        if (!nickname.trim()) {
-            setNicknameError('닉네임을 입력해주세요.');
-            return;
-        }
+    const [nicknameError, setNicknameError] = useState<string>('');
+    const [nicknameCheckStatus, setNicknameCheckStatus] = useState<'idle' | 'checking' | 'available' | 'unavailable'>('idle');
+    const debounceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+    const [formError, setFormError] = useState<string>('');
+    const [loading, setLoading] = useState<boolean>(false); // ✅ 로딩 상태 추가
+
+    const handleNicknameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const value = e.target.value;
+        setNickname(value);
         setNicknameError('');
+        setNicknameCheckStatus('idle');
 
-        try {
-            const response = await fetch(`${API_BASE_URL}/api/v1/bookbook/users/check-nickname?nickname=${encodeURIComponent(nickname)}`, {
-                method: 'GET',
-                headers: {
-                    'Content-Type': 'application/json',
-                    // Next.js에서 `Credentials` 옵션을 `include`로 설정해야
-                    // 백엔드에서 세션 쿠키를 보낼 수 있습니다.
-                    'Access-Control-Allow-Credentials': 'true', // CORS preflight 요청에 필요할 수 있음
-                },
-                credentials: 'include', // 세션 쿠키를 포함하여 요청
-            });
+        if (debounceTimeoutRef.current) {
+            clearTimeout(debounceTimeoutRef.current);
+        }
 
-            if (response.ok) {
-                const data = await response.json();
-                if (data.isAvailable) {
-                    alert('사용 가능한 닉네임입니다.');
-                } else {
-                    setNicknameError('이미 사용 중인 닉네임입니다.');
-                }
-            } else {
-                const errorText = await response.text(); // 오류 메시지를 텍스트로 받기
-                setNicknameError(`닉네임 중복 확인 중 오류가 발생했습니다: ${errorText}`);
-                console.error('Nickname check failed:', response.status, errorText);
-            }
-        } catch (error) {
-            setNicknameError('네트워크 오류가 발생했습니다. 서버가 실행 중인지 확인해주세요.');
-            console.error('Nickname check network error:', error);
+        if (value.trim()) {
+            setNicknameCheckStatus('checking');
+            debounceTimeoutRef.current = setTimeout(() => {
+                handleNicknameCheck(value);
+            }, 500);
         }
     };
 
-    // 폼 제출 로직 (회원 추가 정보 등록)
-    const handleSubmit = async (e: React.FormEvent) => {
+    const handleNicknameCheck = async (nicknameToCheck: string) => {
+        if (!nicknameToCheck.trim()) {
+            setNicknameError('닉네임을 입력해주세요.');
+            setNicknameCheckStatus('unavailable');
+            toast.error('닉네임을 입력해주세요!');
+            return;
+        }
+
+        try {
+            const rsData = await apiClient<{ isAvailable: boolean }>(
+                `/api/v1/bookbook/users/check-nickname?nickname=${encodeURIComponent(nicknameToCheck)}`
+            );
+
+            if (rsData.data && rsData.data.isAvailable) {
+                setNicknameCheckStatus('available');
+                setNicknameError('');
+                toast.success('사용 가능한 닉네임입니다!');
+            } else {
+                setNicknameCheckStatus('unavailable');
+                setNicknameError('이미 사용 중인 닉네임입니다. 다른 닉네임을 사용해주세요.');
+                toast.warn('이미 사용 중인 닉네임입니다.');
+            }
+        } catch (error) {
+            const errorMessage = error instanceof Error ? error.message : '알 수 없는 오류가 발생했습니다.';
+            setNicknameCheckStatus('unavailable');
+            setNicknameError(`닉네임 중복 확인 중 오류가 발생했습니다: ${errorMessage}`);
+            toast.error(`오류: ${errorMessage}`);
+            console.error('Nickname check error:', error);
+        }
+    };
+
+    const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
 
-        setFormError('');
+        // ✅ 로딩 중이면 중복 제출 방지
+        if (loading) return;
 
         if (!nickname.trim()) {
-            setFormError('닉네임을 입력해주세요.');
+            setNicknameError('닉네임을 입력해주세요.');
+            toast.error('닉네임을 입력해주세요!');
+            return;
+        }
+        if (nicknameCheckStatus !== 'available') {
+            setNicknameError('닉네임 중복 확인을 완료하거나 유효한 닉네임을 입력해주세요.');
+            toast.error('사용 가능한 닉네임인지 확인해주세요!');
             return;
         }
         if (!address.trim()) {
             setFormError('주소를 입력해주세요.');
+            toast.error('주소를 입력해주세요!');
             return;
         }
         if (!agreedToTerms) {
-            setFormError('약관에 동의해야 회원가입을 할 수 있습니다.');
+            setFormError('이용약관에 동의해야 합니다.');
+            toast.error('이용약관에 동의해야 합니다!');
             return;
         }
 
+        setFormError('');
+        setLoading(true); // ✅ 로딩 시작
+
         try {
-            const response = await fetch(`${API_BASE_URL}/api/v1/bookbook/users/signup`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    // 'Access-Control-Allow-Credentials': 'true', // CORS preflight 요청에 필요할 수 있음
-                },
-                credentials: 'include', // 세션 쿠키를 포함하여 요청
-                body: JSON.stringify({ nickname, address }),
+            // ✅ 엔드포인트와 HTTP 메서드 변경 (PATCH /api/v1/bookbook/users/me)
+            await apiClient('/api/v1/bookbook/users/me', {
+                method: 'PATCH', // ✅ PATCH 메서드 사용
+                body: JSON.stringify({ nickname, address }), // 닉네임과 주소만 전송
             });
 
-            if (response.ok) {
-                alert('회원가입이 성공적으로 완료되었습니다!');
-                router.push('/bookbook'); // 회원가입 성공 후 메인 페이지로 리다이렉트
-            } else {
-                const errorText = await response.text(); // 오류 메시지를 텍스트로 받기
-                setFormError(`회원가입에 실패했습니다: ${errorText}`);
-                console.error('Signup failed:', response.status, errorText);
-            }
+            toast.success('회원 정보 업데이트가 성공적으로 완료되었습니다! 메인 페이지로 이동합니다.');
+            router.push('/bookbook'); // ✅ 메인 페이지로 리다이렉트
         } catch (error) {
-            setFormError('네트워크 오류가 발생했습니다. 서버가 실행 중인지 확인해주세요.');
-            console.error('Signup network error:', error);
+            const errorMessage = error instanceof Error ? error.message : '알 수 없는 오류가 발생했습니다.';
+
+            setFormError(`정보 업데이트에 실패했습니다: ${errorMessage}`);
+            toast.error(`정보 업데이트 실패: ${errorMessage}`);
+            console.error('User info update failed:', error);
+        } finally {
+            setLoading(false); // ✅ 로딩 종료
         }
     };
 
     return (
         <div className="font-sans bg-gray-100 flex items-center justify-center min-h-screen p-4">
             <div className="signup-container bg-white p-8 sm:px-10 rounded-lg shadow-lg w-full max-w-lg text-left">
-                <h1 className="text-3xl font-bold text-gray-800 mb-8 text-center">회원가입</h1>
+                <h1 className="text-3xl font-bold text-gray-800 mb-8 text-center">추가 정보 입력</h1> {/* ✅ 제목 변경 */}
 
                 <form onSubmit={handleSubmit}>
+                    {/* 닉네임 입력 필드 */}
                     <div className="mb-6">
                         <label htmlFor="nickname" className="flex items-center font-bold text-gray-700 mb-2 text-lg">
                             <FaUser className="text-xl mr-2" /> 닉네임
@@ -112,26 +137,24 @@ const SignupPage = () => {
                                 type="text"
                                 id="nickname"
                                 name="nickname"
-                                placeholder="닉네임을 입력하세요"
+                                placeholder="닉네임을 입력하세요 (2~10자)"
                                 value={nickname}
-                                onChange={(e) => {
-                                    setNickname(e.target.value);
-                                    setNicknameError('');
-                                }}
+                                onChange={handleNicknameChange}
                                 className="flex-grow p-3 border border-gray-300 rounded-md text-base focus:border-blue-500 focus:ring focus:ring-blue-200 focus:ring-opacity-50 h-12"
+                                maxLength={10}
+                                disabled={loading} // ✅ 로딩 중일 때 비활성화
                             />
-                            <button
-                                type="button"
-                                onClick={handleNicknameCheck}
-                                className="check-button bg-gray-800 text-white px-5 py-3 rounded-md cursor-pointer text-base whitespace-nowrap
-                           hover:bg-gray-700 flex items-center justify-center h-12"
-                            >
-                                중복확인
-                            </button>
                         </div>
-                        {nicknameError && <p className="text-red-500 text-sm mt-1">{nicknameError}</p>}
+                        {nicknameCheckStatus === 'checking' && <p className="text-blue-500 text-sm mt-1">닉네임 중복 확인 중...</p>}
+                        {nicknameCheckStatus === 'available' && (
+                            <p className="text-green-500 text-sm mt-1">✔ 사용 가능한 닉네임입니다.</p>
+                        )}
+                        {nicknameCheckStatus === 'unavailable' && nicknameError && (
+                            <p className="text-red-500 text-sm mt-1">✖ {nicknameError}</p>
+                        )}
                     </div>
 
+                    {/* 주소 입력 필드 */}
                     <div className="mb-6">
                         <label htmlFor="address" className="flex items-center font-bold text-gray-700 mb-2 text-lg">
                             <FaMapMarkerAlt className="text-xl mr-2" /> 주소
@@ -147,74 +170,65 @@ const SignupPage = () => {
                                 setFormError('');
                             }}
                             className="w-full p-3 border border-gray-300 rounded-md text-base focus:border-blue-500 focus:ring focus:ring-blue-200 focus:ring-opacity-50 h-12"
+                            disabled={loading} // ✅ 로딩 중일 때 비활성화
                         />
                     </div>
 
-                    <div className="terms-agreement bg-gray-50 border border-gray-200 p-4 rounded-md mt-8 mb-4 max-h-52 overflow-y-auto text-left text-sm text-gray-700 leading-relaxed">
-                        <p className="font-bold text-gray-800 text-center mb-2 block text-base">복복 이용 약관</p>
-                        <div className="terms-content">
-                            <p className="mb-1">제 1조 (목적)</p>
-                            <p className="mb-1">본 약관은 복복 서비스(이하 &apos;서비스&apos;)의 이용 조건 및 절차에 관한 사항을 규정함을 목적으로 합니다.</p>
-                            <br/>
-                            <p className="mb-1">제 2조 (정의)</p>
-                            <p className="mb-1"><span className="list-num">①</span> &apos;회원&apos;은 본 약관에 동의하고 서비스를 이용하는 자를 의미합니다.</p>
-                            <p className="mb-1"><span className="list-num">②</span> &apos;서비스&apos;는 복복이 제공하는 모든 관련 제반 서비스를 말합니다.</p>
-                            <br/>
-                            <p className="mb-1">제 3조 (약관의 효력 및 변경)</p>
-                            <p className="mb-1"><span className="list-num">①</span> 본 약관은 서비스 웹사이트에 공시함으로써 효력이 발생합니다.</p>
-                            <p className="mb-1"><span className="list-num">②</span> 회사는 필요한 경우 본 약관을 변경할 수 있으며, 변경된 약관은 공시 후 7일이 경과하면 효력이 발생합니다.</p>
-                            <br/>
-                            <p className="mb-1">제 4조 (회원 가입 및 탈퇴)</p>
-                            <p className="mb-1"><span className="list-num">①</span> 회원이 되고자 하는 자는 본 약관에 동의하고, 회사가 정한 양식에 따라 개인정보를 기입하여 회원가입을 신청합니다.</p>
-                            <p className="mb-1"><span className="list-num">②</span> 회사는 제1항에 따라 회원가입을 신청한 자 중 다음 각 호에 해당하는 경우 승낙을 거부할 수 있습니다.</p>
-                            <p className="indent-item mb-1"><span className="list-num">1.</span> 가입신청자가 이전에 회원 자격을 상실한 적이 있는 경우 (단, 회사로부터 회원 재가입 승낙을 얻은 경우는 예외)</p>
-                            <p className="indent-item mb-1"><span className="list-num">2.</span> 허위 내용을 등록한 경우</p>
-                            <p className="indent-item mb-1"><span className="list-num">3.</span> 기타 본 약관에 위배되거나 위법 또는 부당한 이용 신청으로 판단되는 경우</p>
-                            <p className="mb-1"><span className="list-num">③</span> 회원은 언제든지 서비스 내 회원 탈퇴 기능을 통해 탈퇴할 수 있습니다.</p>
-                            <br/>
-                            <p className="mb-1">제 5조 (개인정보 보호 의무)</p>
-                            <p className="mb-1">회사는 관련 법령이 정하는 바에 따라 회원의 개인정보를 보호하기 위해 노력합니다. 개인정보의 보호 및 사용에 대해서는 관련 법령 및 회사의 개인정보처리방침이 적용됩니다.</p>
-                            <br/>
-                            <p className="mb-1">제 6조 (회원의 의무)</p>
-                            <p className="mb-1"><span className="list-num">①</span> 회원은 다음 행위를 하여서는 안 됩니다.</p>
-                            <p className="indent-item mb-1"><span className="list-num">1.</span> 신청 또는 변경 시 허위 내용 등록</p>
-                            <p className="indent-item mb-1"><span className="list-num">2.</span> 타인의 정보 도용</p>
-                            <p className="indent-item mb-1"><span className="list-num">3.</span> 회사가 게시한 정보의 변경</p>
-                            <p className="indent-item mb-1"><span className="list-num">4.</span> 회사 및 기타 제3자의 저작권 등 지적재산권에 대한 침해</p>
-                            <p className="indent-item mb-1"><span className="list-num">5.</span> 회사 및 기타 제3자의 명예를 손상시키거나 업무를 방해하는 행위</p>
-                            <p className="mb-1"><span className="list-num">②</span> 회원은 관계 법령, 본 약관의 규정, 이용 안내 및 서비스와 관련하여 공지한 주의사항 등을 준수하여야 하며, 기타 회사의 업무에 방해되는 행위를 하여서는 안 됩니다.</p>
-                            <br/>
-                            <p className="mb-1">제 7조 (서비스의 변경 및 중단)</p>
-                            <p className="mb-1"><span className="list-num">①</span> 회사는 상당한 이유가 있는 경우 운영상, 기술상의 필요에 따라 제공하고 있는 전부 또는 일부 서비스를 변경할 수 있습니다.</p>
-                            <p className="mb-1"><span className="list-num">②</span> 회사는 다음 각 호의 어느 하나에 해당하는 경우 서비스의 전부 또는 일부를 제한하거나 중단할 수 있습니다.</p>
-                            <p className="indent-item mb-1"><span className="list-num">1.</span> 서비스용 설비의 보수 등 공사로 인한 부득이한 경우</p>
-                            <p className="indent-item mb-1"><span className="list-num">2.</span> 전기통신사업법에 규정된 기간통신사업자가 전기통신 서비스를 중단했을 경우</p>
-                            <p className="indent-item mb-1"><span className="list-num">3.</span> 국가 비상사태, 정전, 서비스 설비의 장애 또는 이용 폭주 등으로 정상적인 서비스 이용에 지장이 있는 경우</p>
-                            <p className="mb-1"><span className="list-num">③</span> 회사는 서비스의 변경 또는 중단으로 인하여 이용자 또는 제3자가 입은 손해에 대하여 고의 또는 과실이 없는 한 책임을 부담하지 않습니다.</p>
-                            <br/>
-                            <p className="mb-1">제 8조 (손해배상)</p>
-                            <p className="mb-1">회원 또는 회사가 본 약관의 의무를 위반하여 상대방에게 손해를 입힌 경우, 위반한 당사자는 발생한 손해를 배상하여야 합니다.</p>
-                            <br/>
-                            <p className="mb-1">제 9조 (준거법 및 재판관할)</p>
-                            <p className="mb-1"><span className="list-num">①</span> 본 약관의 해석 및 회원과 회사 간의 분쟁에 대하여는 대한민국의 법률을 적용합니다.</p>
-                            <p className="mb-1"><span className="list-num">②</span> 서비스 이용 중 발생한 분쟁에 대하여는 회사의 본사 소재지를 관할하는 법원을 전속 관할법원으로 합니다.</p>
+                    {/* 이용약관 동의 섹션 */}
+                    <div className="mb-6">
+                        <h3 className="font-bold text-gray-700 mb-2 text-lg">이용약관 동의</h3>
+                        <div className="border border-gray-300 rounded-md p-4 bg-gray-50 max-h-48 overflow-y-auto text-sm text-gray-600 mb-4">
+                            <p className="mb-2">
+                                <strong>북북 서비스 이용약관</strong>
+                            </p>
+                            <p className="mb-2">
+                                <strong>제1조 (목적)</strong> 본 약관은 &quot;북북&quot; (이하 &quot;회사&quot;)이 제공하는 독서 기록, 커뮤니티 활동, 도서 정보 공유 등의 모든 서비스(이하 &quot;서비스&quot;)의 이용 조건 및 절차, 회사와 회원의 권리, 의무 및 책임 사항, 기타 필요한 사항을 규정함을 목적으로 합니다.
+                            </p>
+                            <p className="mb-2">
+                                <strong>제2조 (회원가입 및 자격)</strong> 1. 회원이 되고자 하는 자는 본 약관에 동의하고, 회사가 정하는 가입 양식에 따라 개인 정보를 기입함으로써 회원가입을 신청합니다. 2. 회사는 전항의 신청에 대하여 업무 수행상 또는 기술상 지장이 없는 경우에 한하여 승낙합니다. 3. 다음 각 호의 1에 해당하는 경우, 회사는 회원가입 승낙을 유보 또는 거절할 수 있습니다.
+                                <br /> (1) 다른 사람의 명의를 사용하거나 허위 정보를 기재한 경우
+                                <br /> (2) 사회의 안녕과 질서 또는 미풍양속을 저해할 목적으로 신청한 경우
+                                <br /> (3) 기타 회사가 정한 요건이 미비된 경우
+                            </p>
+                            <p className="mb-2">
+                                <strong>제3조 (서비스 이용 및 제한)</strong> 1. 회원은 본 약관 및 회사의 정책에 따라 서비스를 이용할 수 있습니다. 2. 회원은 서비스를 이용함에 있어 관계 법령, 본 약관의 규정, 이용 안내 및 서비스와 관련하여 회사가 통지하는 사항 등을 준수하여야 합니다. 3. 회원은 다음 각 호의 행위를 하여서는 안 됩니다.
+                                <br /> (1) 타인의 정보를 도용하는 행위
+                                <br /> (2) &quot;북북&quot; 서비스의 정상적인 운영을 방해하는 행위
+                                <br /> (3) 불법적인 홍보 또는 스팸 행위
+                                <br /> (4) 기타 관계 법령에 위배되거나 공서양속에 저해되는 행위
+                            </p>
+                            <p className="mb-2">
+                                <strong>제4조 (개인정보 보호)</strong> 회사는 관련 법령이 정하는 바에 따라 회원의 개인정보를 보호하기 위해 노력합니다. 개인정보의 보호 및 사용에 대해서는 관련 법령 및 회사의 개인정보처리방침이 적용됩니다.
+                            </p>
+                            <p className="mb-2">
+                                <strong>제5조 (게시물의 관리)</strong> 회원이 서비스에 게시하거나 등록하는 게시물로 인해 발생하는 모든 책임은 회원 본인에게 있으며, 회사는 회원의 게시물이 다음 각 호의 1에 해당한다고 판단되는 경우 사전 통지 없이 삭제할 수 있습니다.
+                                <br /> (1) 다른 회원 또는 제3자를 비방하거나 명예를 훼손하는 내용인 경우
+                                <br /> (2) 공공질서 및 미풍양속에 위반되는 내용인 경우
+                                <br /> (3) 범죄적 행위에 결부된다고 인정되는 내용인 경우
+                                <br /> (4) 회사의 저작권, 제3자의 저작권 등 기타 권리를 침해하는 내용인 경우
+                                <br /> (5) 기타 관계 법령에 위반된다고 판단되는 경우
+                            </p>
+                            <p className="mb-2">
+                                <strong>제6조 (계약 해지 및 이용 제한)</strong> 1. 회원은 언제든지 서비스 이용 계약 해지를 신청할 수 있으며, 회사는 관련 법령 등이 정하는 바에 따라 이를 즉시 처리하여야 합니다. 2. 회원이 다음 각 호의 1에 해당하는 경우, 회사는 서비스 이용을 제한하거나 해지할 수 있습니다.
+                                <br /> (1) 제2조 3항에 해당하는 경우
+                                <br /> (2) 제3조 3항에 해당하는 경우
+                                <br /> (3) 서비스 운영을 고의로 방해한 경우
+                            </p>
+                            <p className="text-center font-semibold mt-4">--- 약관 내용의 끝 ---</p>
                         </div>
-                    </div>
-
-                    <div className="terms-checkbox-group flex items-center justify-center mt-4 mb-8 text-base">
-                        <input
-                            type="checkbox"
-                            id="agreeTerms"
-                            name="agreeTerms"
-                            checked={agreedToTerms}
-                            onChange={(e) => {
-                                setAgreedToTerms(e.target.checked);
-                                setFormError('');
-                            }}
-                            className="mr-2 w-5 h-5 cursor-pointer"
-                        />
-                        <label htmlFor="agreeTerms" className="font-bold cursor-pointer leading-tight text-gray-800 bg-yellow-50 px-3 py-2 rounded shadow-sm">
-                            본인은 위 약관 내용을 확인하였으며, 동의합니다.
+                        <label htmlFor="agreeTerms" className="flex items-center text-gray-700">
+                            <input
+                                type="checkbox"
+                                id="agreeTerms"
+                                checked={agreedToTerms}
+                                onChange={(e) => {
+                                    setAgreedToTerms(e.target.checked);
+                                    setFormError('');
+                                }}
+                                className="mr-2 h-5 w-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                                disabled={loading} // ✅ 로딩 중일 때 비활성화
+                            />
+                            이용약관에 동의합니다.
                         </label>
                     </div>
 
@@ -223,12 +237,26 @@ const SignupPage = () => {
                     <button
                         type="submit"
                         className="w-full p-4 bg-gray-800 text-white font-bold text-lg rounded-md cursor-pointer
-                       hover:bg-gray-700 transition-colors duration-300"
+                      hover:bg-gray-700 transition-colors duration-300"
+                        disabled={loading} // ✅ 로딩 중일 때 비활성화
                     >
-                        동의하고 가입하기
+                        {loading ? '처리 중...' : '정보 업데이트 및 가입 완료'} {/* ✅ 버튼 텍스트 변경 */}
                     </button>
                 </form>
             </div>
+
+            <ToastContainer
+                position="top-center"
+                autoClose={3000}
+                hideProgressBar={false}
+                newestOnTop={false}
+                closeOnClick
+                rtl={false}
+                pauseOnFocusLoss
+                draggable
+                pauseOnHover
+                theme="light"
+            />
         </div>
     );
 };

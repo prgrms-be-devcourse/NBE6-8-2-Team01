@@ -18,6 +18,7 @@ public class UserResponseDto {
     private Role role;
     private UserStatus userStatus;
     private LocalDateTime createAt;
+    private boolean registrationCompleted; // 회원가입 완료 여부
 
     // Entity를 DTO로 변환하는 생성자
     public UserResponseDto(User user) {
@@ -30,5 +31,6 @@ public class UserResponseDto {
         this.role = user.getRole();
         this.userStatus = user.getUserStatus();
         this.createAt = user.getCreateAt();
+        this.registrationCompleted = user.isRegistrationCompleted(); // 회원가입 완료 여부
     }
 }
