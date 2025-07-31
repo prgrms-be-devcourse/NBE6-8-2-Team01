@@ -91,7 +91,7 @@ export default function LendListCard({ book, onDelete, onReview, formatDate }: L
             {(book.rentStatus === 'Loaned' || book.rentStatus === 'Finished') && book.borrowerNickname && (
               <div className="flex items-center gap-1">
                 <User className="h-4 w-4" />
-                <span>빌려간 사람: {book.borrowerNickname}</span>
+                <span>책방손님: {book.borrowerNickname}</span>
               </div>
             )}
           </div>
