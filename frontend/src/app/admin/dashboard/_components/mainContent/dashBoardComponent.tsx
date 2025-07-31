@@ -1,9 +1,9 @@
 "use client";
 
 import React from "react";
-import {BaseContentComponentProps} from "./baseContentComponentProps";
+import { ContentComponentProps } from "./baseContentComponentProps";
 
-export function DashBoardComponent({ responseData }: BaseContentComponentProps) {
+export function DashBoardComponent({ }: ContentComponentProps) {
   return (
     <>
       <h3 className="text-lg font-semibold text-gray-900 mb-4">
