@@ -35,27 +35,26 @@ export default function MyPage() {
     const [nicknameCheckMessage, setNicknameCheckMessage] = useState<string>('');
     const debounceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-    // ✅ useLoginModal 훅을 사용해 openLoginModal 함수를 가져옵니다.
     const { openLoginModal } = useLoginModal();
 
-    // ✅ useEffect 내 API 호출을 authFetch로 변경
     useEffect(() => {
         const fetchUserData = async () => {
             try {
                 const response = await authFetch('/api/v1/bookbook/users/me', {}, openLoginModal);
 
                 if (!response.ok) {
-                    const errorData = await response.json();
-                    throw new Error(errorData.message || '사용자 정보를 불러오지 못했습니다.');
+                    throw new Error('사용자 정보를 불러오지 못했습니다.');
                 }
 
-                const contentLength = response.headers.get('Content-Length');
-                if (contentLength === null || parseInt(contentLength, 10) === 0) {
-                    console.error("서버에서 빈 응답을 보냈습니다.");
-                    throw new Error("사용자 정보를 불러오는데 실패했습니다: 서버 응답이 비어있습니다.");
+                // JSON 응답을 안전하게 파싱합니다.
+                const responseData = await response.json();
+
+                // 백엔드 응답 구조에 따라 실제 데이터가 'data' 필드 안에 있는지 확인합니다.
+                if (!responseData || !responseData.data) {
+                    throw new Error("서버 응답이 유효하지 않습니다.");
                 }
 
-                const data = await response.json();
+                const data = responseData.data;
 
                 setUserData({
                     id: data.id,
@@ -85,7 +84,7 @@ export default function MyPage() {
         };
 
         void fetchUserData();
-    }, [router, openLoginModal]);
+    }, [openLoginModal]);
 
     const handleNicknameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const value = e.target.value;
@@ -108,7 +107,6 @@ export default function MyPage() {
         }
     };
 
-    // 닉네임 중복 확인 함수는 apiClient 유지
     const checkNicknameAvailability = async (nicknameToCheck: string) => {
         if (!nicknameToCheck.trim()) {
             setNicknameCheckMessage('닉네임을 입력해주세요.');
@@ -117,7 +115,6 @@ export default function MyPage() {
         }
 
         try {
-            // ✅ 이 API는 인증이 필요 없으므로 apiClient를 그대로 사용
             const response = await apiClient<{ isAvailable: boolean }>(`/api/v1/bookbook/users/check-nickname?nickname=${encodeURIComponent(nicknameToCheck)}`);
             const rsData = response.data;
             if (rsData && rsData.isAvailable) {
@@ -147,7 +144,6 @@ export default function MyPage() {
         }
     };
 
-    // ✅ handleConfirmClick 내 API 호출을 authFetch로 변경
     const handleConfirmClick = async () => {
         if (!isEditing) {
             toast.warn('수정 모드가 아닙니다.');
@@ -184,7 +180,6 @@ export default function MyPage() {
         }
 
         try {
-            // ✅ authFetch 사용 및 openLoginModal 전달
             const response = await authFetch('/api/v1/bookbook/users/me', {
                 method: 'PATCH',
                 body: JSON.stringify(requestBody),
@@ -195,15 +190,17 @@ export default function MyPage() {
                 throw new Error(errorData.message || '프로필 업데이트에 실패했습니다.');
             }
 
-            // userData 업데이트 로직은 동일
+            const responseData = await response.json();
+            const updatedData = responseData.data;
+
             setUserData(prev => prev ? {
                 ...prev,
-                ...(requestBody.nickname ? { nickname: requestBody.nickname } : {}),
-                ...(requestBody.address !== undefined ? { address: requestBody.address } : {}),
+                nickname: updatedData.nickname || prev.nickname,
+                address: updatedData.address !== undefined ? updatedData.address : prev.address,
             } : null);
 
-            setOriginalNickname(requestBody.nickname || originalNickname);
-            setOriginalAddress(requestBody.address || originalAddress);
+            setOriginalNickname(updatedData.nickname || originalNickname);
+            setOriginalAddress(updatedData.address || originalAddress);
 
             setIsEditing(false);
             setNicknameCheckStatus('idle');
@@ -229,14 +226,13 @@ export default function MyPage() {
         }
     };
 
-    // ✅ handleDeactivateAccount 내 API 호출을 authFetch로 변경
     const handleDeactivateAccount = async (event: React.MouseEvent<HTMLAnchorElement>) => {
         event.preventDefault();
 
         if (confirm('정말로 계정을 비활성화(회원 탈퇴) 하시겠습니까? 이 작업은 되돌릴 수 없습니다.')) {
             const promise = authFetch('/api/v1/bookbook/users/me', {
                 method: 'DELETE',
-            }, openLoginModal); // ✅ authFetch 사용 및 openLoginModal 전달
+            }, openLoginModal);
 
             toast.promise(
                 promise,
@@ -253,12 +249,9 @@ export default function MyPage() {
                 }
             )
                 .then(() => {
-                    // Promise가 성공적으로 완료되면 로그아웃 URL로 리다이렉트
-                    // authFetch는 200 응답을 그대로 전달하므로 여기서 리다이렉트합니다.
                     router.push('/api/v1/bookbook/users/logout');
                 })
                 .catch(() => {
-                    // authFetch는 토큰 갱신 실패 시 오류를 throw하므로 여기서 처리 가능
                     console.error('회원 탈퇴 실패 (catch 블록)');
                 });
         }
