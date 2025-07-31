@@ -6,7 +6,6 @@ import com.bookbook.domain.user.enums.Role;
 import com.bookbook.domain.user.enums.UserStatus;
 import com.bookbook.domain.user.repository.UserRepository;
 import com.bookbook.global.exception.ServiceException;
-import com.bookbook.global.util.NicknameGenerator;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -21,7 +20,6 @@ import java.util.UUID;
 public class UserService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
-    private final NicknameGenerator nicknameGenerator;
 
     @PostConstruct
     @Transactional
@@ -165,6 +163,11 @@ public class UserService {
                     userRepository.save(newUser);
                     return newUser;
                 });
+    }
+
+    public User getByIdOrThrow(Long id) {
+        return userRepository.findById(id)
+                .orElseThrow(() -> new ServiceException("404-USER-NOT-FOUND", "해당 사용자를 찾을 수 없습니다."));
     }
 
 }
