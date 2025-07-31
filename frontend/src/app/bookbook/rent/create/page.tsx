@@ -141,9 +141,9 @@ export default function BookRentPage() {
         let imageUrl = 'https://i.postimg.cc/pLC9D2vW/noimg.gif'; // 기본 이미지 URL
 
         // ✅ 핵심 로직: bookImage가 null이고 previewImageUrl이 defaultImageUrl과 같으면 등록 막기
-        if (bookImage === null && previewImageUrl === defaultImageUrl) {
-            alert('책 사진을 등록해 주세요.'); // 메시지 표시
-            return;.
+        if (!bookImage) {
+            alert('책 이미지를 등록해 주세요.'); // 메시지 표시
+            return;
         }
 
         if(bookImage){
