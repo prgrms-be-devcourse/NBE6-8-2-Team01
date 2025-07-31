@@ -44,6 +44,24 @@ interface RegionListResponse {
   statusCode: number;
 }
 
+// 이미지 URL 정규화 함수
+const normalizeImageUrl = (imageUrl: string): string => {
+  if (!imageUrl) return '';
+  
+  // 이미 완전한 URL인 경우 그대로 반환
+  if (imageUrl.startsWith('http://') || imageUrl.startsWith('https://')) {
+    return imageUrl;
+  }
+  
+  // 상대 경로인 경우 절대 경로로 변환
+  if (imageUrl.startsWith('/')) {
+    return `http://localhost:8080${imageUrl}`;
+  }
+  
+  // 그 외의 경우 uploads 경로로 처리
+  return `http://localhost:8080/uploads/${imageUrl}`;
+};
+
 // 메인페이지 API 호출 (인증 불필요)
 const fetchHomeData = async (region?: string): Promise<HomeApiResponse> => {
   try {
@@ -100,7 +118,12 @@ const fetchBooksWithId = async (region?: string): Promise<BookInfo[]> => {
     const data: BooksApiResponse = await response.json();
     
     if (data && (data.statusCode === 200 || data.resultCode.startsWith("200"))) {
-      return data.data || [];
+      // 이미지 URL 정규화 처리
+      const normalizedBooks = (data.data || []).map(book => ({
+        ...book,
+        imageUrl: normalizeImageUrl(book.imageUrl)
+      }));
+      return normalizedBooks;
     } else {
       console.warn('fetchBooksWithId API 응답 오류:', data);
       return [];
@@ -164,6 +187,7 @@ const BookRegionSection = () => {
   const [selectedRegion, setSelectedRegion] = useState<string>('전체');
   const [regions, setRegions] = useState<RegionInfo[]>([]);
   const [showRegionSelector, setShowRegionSelector] = useState(false);
+  const [failedImages, setFailedImages] = useState<Set<string>>(new Set());
   
   // 자동 지역 선택이 이미 한 번 실행되었는지 추적하는 ref
   const hasAutoSelectedRegion = useRef(false);
@@ -202,7 +226,12 @@ const BookRegionSection = () => {
         
         // 홈 데이터 처리
         if (homeResponse && (homeResponse.statusCode === 200 || homeResponse.resultCode.startsWith("200"))) {
-          setHomeData(homeResponse.data);
+          // 홈 데이터의 이미지 URL도 정규화
+          const normalizedHomeData = {
+            ...homeResponse.data,
+            bookImages: (homeResponse.data.bookImages || []).map(normalizeImageUrl)
+          };
+          setHomeData(normalizedHomeData);
           
           // 사용자 지역 정보가 있고 아직 자동 선택이 실행되지 않았으며 현재 선택된 지역이 전체인 경우에만 자동 선택
           if (homeResponse.data.userRegion && 
@@ -266,6 +295,9 @@ const BookRegionSection = () => {
     setSelectedRegion(region);
     setShowRegionSelector(false);
     
+    // 실패한 이미지 목록 초기화
+    setFailedImages(new Set());
+    
     // 사용자가 수동으로 지역을 변경했으므로 자동 선택 플래그를 true로 설정
     // (다시 자동 선택되지 않도록)
     hasAutoSelectedRegion.current = true;
@@ -281,7 +313,29 @@ const BookRegionSection = () => {
     const img = event.currentTarget;
     console.error('이미지 로드 실패:', imageUrl);
     
-    // 기본 책 placeholder 이미지로 대체
+    // 실패한 이미지 목록에 추가
+    setFailedImages(prev => new Set([...prev, imageUrl]));
+    
+    // 다른 경로들을 순차적으로 시도
+    const tryAlternativeUrls = [
+      imageUrl.replace('/images/', '/uploads/'),
+      imageUrl.replace('/uploads/', '/images/'),
+      imageUrl.replace('http://localhost:8080', ''),
+      imageUrl.includes('/uploads/') ? imageUrl : `http://localhost:8080/uploads/${imageUrl.split('/').pop()}`,
+      imageUrl.includes('/images/') ? imageUrl : `http://localhost:8080/images/${imageUrl.split('/').pop()}`
+    ];
+    
+    // 현재 URL이 아닌 다른 URL 시도
+    const currentUrl = img.src;
+    const nextUrl = tryAlternativeUrls.find(url => url !== currentUrl && !failedImages.has(url));
+    
+    if (nextUrl && !failedImages.has(nextUrl)) {
+      console.log('대체 URL 시도:', nextUrl);
+      img.src = nextUrl;
+      return;
+    }
+    
+    // 모든 대체 URL이 실패한 경우 기본 이미지로 대체
     img.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjI4MCIgdmlld0JveD0iMCAwIDIwMCAyODAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIyMDAiIGhlaWdodD0iMjgwIiBmaWxsPSIjRjNGNEY2Ii8+CjxwYXRoIGQ9Ik02MCA5MEgxNDBWMTkwSDYwVjkwWiIgZmlsbD0iIzlDQTNBRiIvPgo8cGF0aCBkPSJNODAgMTEwSDEyMFYxMzBIODBWMTEwWiIgZmlsbD0iI0Y5RkFGQiIvPgo8cGF0aCBkPSJNODAgMTQwSDEyMFYxNTBIODBWMTQwWiIgZmlsbD0iI0Y5RkFGQiIvPgo8cGF0aCBkPSJNODAgMTYwSDEwMFYxNzBIODBWMTYwWiIgZmlsbD0iI0Y5RkFGQiIvPgo8L3N2Zz4K';
     img.alt = '이미지를 불러올 수 없습니다';
   };
@@ -289,7 +343,14 @@ const BookRegionSection = () => {
   const handleImageLoad = (imageUrl: string, event: React.SyntheticEvent<HTMLImageElement>) => {
     const img = event.currentTarget;
     
-    // 이미지 표시 강제 설정 (이전에 작동했던 코드)
+    // 성공적으로 로드된 이미지는 실패 목록에서 제거
+    setFailedImages(prev => {
+      const newSet = new Set(prev);
+      newSet.delete(imageUrl);
+      return newSet;
+    });
+    
+    // 이미지 표시 강제 설정
     img.style.display = 'block';
     img.style.opacity = '1';
     img.style.zIndex = '25';
@@ -367,7 +428,7 @@ const BookRegionSection = () => {
             </button>
             
             {showRegionSelector && (
-              <div className="absolute right-0 mt-1 bg-white border border-gray-200 rounded-md shadow-lg z-10 max-h-60 overflow-y-auto">
+              <div className="absolute right-0 mt-1 bg-white border border-gray-200 rounded-md shadow-lg z-30 max-h-60 overflow-y-auto">
                 {regions.map((region) => (
                   <button
                     key={region.code}
