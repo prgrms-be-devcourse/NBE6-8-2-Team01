@@ -3,6 +3,7 @@ package com.bookbook.domain.rent.controller;
 import com.bookbook.domain.rent.service.ImageUploadService;
 import io.swagger.v3.oas.annotations.Operation;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -15,6 +16,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 // 실제 파일 업로드 시에는 파일 크기 제한, 파일 타입 검증(이미지 파일만 허용), 악성 코드 검사 등 추가적인 보안 조치
+@Slf4j
 @RestController
 @RequestMapping("/api/v1/bookbook")
 @RequiredArgsConstructor
@@ -31,7 +33,7 @@ public class ImageUploadController {
         }
 
         try{
-            String imageUrl = ImageUploadService.uploadImage(file);
+            String imageUrl = imageUploadService.uploadImage(file);
 
             Map<String, String> response = new HashMap<>();
             response.put("imageUrl", imageUrl);
@@ -39,10 +41,10 @@ public class ImageUploadController {
 
         } catch (IOException e){
             // 서비스 계층에서 발생한 IOException을 처리
-            e.printStackTrace();
-            return ResponseEntity.status(500).body("이미지 업로드 실패" + e.getMessage());
+            log.error("이미지 업로드 중 IOException 발생: {}", e.getMessage(), e);
+            return ResponseEntity.status(500).body("이미지 업로드 실패: " + e.getMessage());
         } catch (Exception e){ // 기타 예외 처리
-            e.printStackTrace();
+            log.error("이미지 업로드 중 예상치 못한 오류 발생: {}", e.getMessage(), e);
             return ResponseEntity.status(500).body("서버 오류: " + e.getMessage());
         }
     }
