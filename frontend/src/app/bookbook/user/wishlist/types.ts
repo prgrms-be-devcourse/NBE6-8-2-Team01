@@ -8,6 +8,9 @@ export interface WishListItem {
     rentStatus: string;
     lenderUserId: number;
     lenderUserName: string;
+    lenderNickname?: string;
     bookImage: string;
     createDate: string;
+    title?: string;
+    address?: string;
 }
