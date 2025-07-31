@@ -1,6 +1,7 @@
 package com.bookbook.domain.rentBookList.dto;
 
 import com.bookbook.domain.rent.entity.Rent;
+import com.bookbook.domain.rent.entity.RentStatus;
 import lombok.Getter;
 
 import java.time.LocalDateTime;
@@ -15,7 +16,7 @@ public class RentBookListResponseDto {
     private final String bookImage;
     private final String address;
     private final String category;
-    private final String rentStatus;
+    private final RentStatus rentStatus;
     private final Long lenderUserId;
     private final String title;
     private final String contents;

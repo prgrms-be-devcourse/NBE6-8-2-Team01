@@ -1,6 +1,7 @@
 package com.bookbook.domain.lendList.dto;
 
 import com.bookbook.domain.rent.entity.Rent;
+import com.bookbook.domain.rent.entity.RentStatus;
 import lombok.Builder;
 import lombok.Getter;
 
@@ -18,7 +19,7 @@ public class LendListResponseDto {
     private String publisher;
     private String bookCondition;
     private String bookImage;
-    private String rentStatus;
+    private RentStatus rentStatus;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 

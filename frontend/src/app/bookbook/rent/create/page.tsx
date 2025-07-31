@@ -1,3 +1,4 @@
+// 25.07.31 현준
 "use client";
 
 import React, { useEffect, useState } from 'react';
@@ -24,6 +25,20 @@ export default function BookRentPage() {
     const [publisher, setPublisher] = useState('');
     const [category, setCategory] = useState('');
     const [description, setDescription] = useState('');
+
+    // Toast 메시지 상태 추가
+    const [toastMessage, setToastMessage] = useState<string | null>(null);
+    const [toastType, setToastType] = useState<'success' | 'error' | null>(null);
+
+    // 토스트 메세지를 보여주는 함수
+    const showToast = (message: string, type: 'success' | 'error') => {
+        setToastMessage(message);
+        setToastType(type);
+        setTimeout(() => {
+            setToastMessage(null);
+            setToastType(null);
+        }, 3000); // 3초 후에 자동으로 사라짐
+    }
 
     const [showPopup, setShowPopup] = useState(false);
 
@@ -83,7 +98,7 @@ export default function BookRentPage() {
     // start 파라미터를 받는 handleBookSearch 함수로 변경
     const handleBookSearch = async (pageNumber: number) => {
         if(!searchQuery.trim()){
-            alert('검색어를 입력해주세요.');
+            showToast('검색어를 입력해주세요.', 'error');
             return;
         }
 
@@ -95,7 +110,7 @@ export default function BookRentPage() {
             if(!response.ok){
                 const errorData = await response.text();
                 console.error('백엔드 책 검색 API 요청 실패:', response.status, response.statusText, errorData);
-                alert(`책 검색 API 요청 실패: ${response.status} ${response.statusText}`);
+                showToast(`책 검색 API 요청 실패: ${response.status} ${response.statusText}`, 'error');
                 return;
             }
 
@@ -108,14 +123,14 @@ export default function BookRentPage() {
                 setShowBookSearchModal(true);
                 setCurrentPage(pageNumber); // 검색 성공 시 현재 페이지 업데이트
             } else {
-                alert('검색 결과가 없습니다. 직접 입력해주세요.');
+                showToast('검색 결과가 없습니다. 직접 입력해주세요.', 'error');
                 setSearchResults([]);
                 setHasMoreResults(false);
                 setShowBookSearchModal(false); // 결과 없으면 모달 닫기
             }
         } catch (error) {
             console.error('책 검색 중 오류 발생', error);
-            alert('책 검색 중 오류가 발생했습니다. 잠시 후 다시 시도하세요');
+            showToast('책 검색 중 오류가 발생했습니다. 잠시 후 다시 시도하세요.', 'error');
             setSearchResults([]);
             setHasMoreResults(false);
             setShowBookSearchModal(false);
@@ -141,8 +156,8 @@ export default function BookRentPage() {
         let imageUrl = 'https://i.postimg.cc/pLC9D2vW/noimg.gif'; // 기본 이미지 URL
 
         // ✅ 핵심 로직: bookImage가 null이고 previewImageUrl이 defaultImageUrl과 같으면 등록 막기
-        if (bookImage === null && previewImageUrl === defaultImageUrl) {
-            alert('책 사진을 등록해 주세요.'); // 메시지 표시
+        if (!bookImage) {
+            showToast('책 이미지를 등록해 주세요.', 'error');
             return;
         }
 
@@ -162,12 +177,12 @@ export default function BookRentPage() {
                 }else{
                     const errorText = await imageUploadRes.text();
                     console.error('이미지 업로드 실패', errorText);
-                    alert(`이미지 업로드 실패: ${imageUploadRes.statusText || errorText}`);
+                    showToast(`이미지 업로드 실패: ${imageUploadRes.statusText || errorText}`, 'error');
                     return;
                 }
             }catch(error){
                 console.error('이미지 업로드 중 네트워크 오류', error);
-                alert('이미지 업로드 중 오류가 발생했습니다.');
+                showToast('이미지 업로드 중 오류가 발생했습니다.', 'error');
                 return;
             }
         }
@@ -178,7 +193,7 @@ export default function BookRentPage() {
             bookImage: imageUrl,
             address: address,
             contents: contents,
-            rentStatus: 'AVAILABLE',
+            rentStatus: 'AVAILABLE', // 백엔드의 RentStatus.AVAILABLE과 동일한 문자열
             bookTitle: bookTitle,
             author: author,
             publisher: publisher,
@@ -201,11 +216,11 @@ export default function BookRentPage() {
 
                 const errorData = await res.json();
                 console.error('책 등록 실패', errorData);
-                alert(`책 등록에 실패했습니다. ${errorData.msg || res.statusText}`);
+                showToast(`책 등록에 실패했습니다. ${errorData.msg || res.statusText}`, 'error');
             }
         } catch(error) {
             console.error('책 등록 중 네트워크 에러', error);
-            alert('책 등록 중 네트워크 에러가 발생했습니다.');
+            showToast('책 등록 중 네트워크 에러가 발생했습니다.', 'error');
         }
     };
 
@@ -427,6 +442,17 @@ export default function BookRentPage() {
                     </div>
                 </form>
             </div>
+
+            {/* 토스트 메시지 컴포넌트 */}
+            {toastMessage && (
+                <div
+                    className={`fixed bottom-8 left-1/2 -translate-x-1/2 px-6 py-3 rounded-lg shadow-lg text-white font-semibold text-center z-50
+                        ${toastType === 'success' ? 'bg-green-500' : 'bg-red-500'}`}
+                >
+                    {toastMessage}
+                </div>
+            )}
+        
             {/* 책 검색 결과 팝업 모달 */}
             {showBookSearchModal && (
                 <div
@@ -510,8 +536,9 @@ export default function BookRentPage() {
                         </div>
                     </div>
                 </div>
-            )}            
-            {/* 팝업 */}
+            )}   
+
+            {/* 글 작성 팝업 */}
             {showPopup && (
                 <div
                   className="fixed inset-0 flex items-center justify-center bg-black/50 z-50"
