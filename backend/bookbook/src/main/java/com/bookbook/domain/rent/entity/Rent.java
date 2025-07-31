@@ -1,6 +1,8 @@
 package com.bookbook.domain.rent.entity;
 import com.bookbook.global.jpa.entity.BaseEntity;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import lombok.*;
 
 // 25.07.31 현준
@@ -19,7 +21,9 @@ public class Rent extends BaseEntity {
     private String bookImage; // 글쓴이가 올린 책 이미지 URL
     private String address; // 사용자 주소
     private String contents; // 대여 내용
-    private String rentStatus; // 대여 상태(Available, Loaned, Finished)
+
+    @Enumerated(EnumType.STRING) // enum 이름을 String으로 DB에 저장하도록 지정
+    private RentStatus rentStatus; // 대여 상태(Available, Loaned, Finished)
 
     // 알라딘 API로 받아온 책 관련 속성
     private String bookTitle; // 책 제목

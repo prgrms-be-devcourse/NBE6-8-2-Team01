@@ -178,7 +178,7 @@ export default function BookRentPage() {
             bookImage: imageUrl,
             address: address,
             contents: contents,
-            rentStatus: 'AVAILABLE',
+            rentStatus: 'AVAILABLE', // 백엔드의 RentStatus.AVAILABLE과 동일한 문자열
             bookTitle: bookTitle,
             author: author,
             publisher: publisher,
