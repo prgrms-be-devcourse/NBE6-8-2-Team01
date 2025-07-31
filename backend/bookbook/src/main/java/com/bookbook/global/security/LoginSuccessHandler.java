@@ -19,10 +19,11 @@ import java.io.IOException;
 @RequiredArgsConstructor
 public class LoginSuccessHandler implements AuthenticationSuccessHandler {
 
-    private final JwtProvider jwtProvider; // JwtProvider 주입
-
-    @Value("${jwt.cookie.name}") // application.yml에 정의된 JWT 쿠키 이름
-    private String jwtCookieName;
+    private final JwtProvider jwtProvider;
+    @Value("${jwt.cookie.name}")
+    private String jwtAccessTokenCookieName;
+    @Value("${jwt.cookie.refresh-name}")
+    private String jwtRefreshTokenCookieName;
 
     @Value("${frontend.base-url}")
     private String frontendBaseUrl;
@@ -42,19 +43,29 @@ public class LoginSuccessHandler implements AuthenticationSuccessHandler {
         log.info("DEBUG: Login success for username: {}, isRegistrationCompleted: {}",
                 oauth2User.getUsername(), oauth2User.isRegistrationCompleted());
 
-        // 1. JWT 토큰 생성
+        // 1. JWT Access Token 생성
         String accessToken = jwtProvider.generateAccessToken(oauth2User.getUserId(), oauth2User.getUsername(), oauth2User.getRole().name());
 
-        // 2. JWT를 HTTP Only 쿠키에 담아 전송
-        Cookie jwtCookie = new Cookie(jwtCookieName, accessToken);
-        jwtCookie.setHttpOnly(true); // JavaScript 접근 방지
-        jwtCookie.setSecure(false);  // ⭐ HTTP 환경을 위해 false로 설정 (운영 시 반드시 true로 변경)
-        jwtCookie.setPath("/");      // 모든 경로에서 쿠키 접근 가능
-        jwtCookie.setMaxAge(jwtProvider.getAccessTokenValidityInSeconds()); // 토큰 만료 시간과 동일하게 설정
+        // 2. JWT Refresh Token 생성 및 DB 저장
+        String refreshToken = jwtProvider.generateRefreshToken(oauth2User.getUserId());
 
-        response.addCookie(jwtCookie);
+        // 3. JWT Access Token을 HTTP Only 쿠키에 담아 전송
+        Cookie jwtAccessTokenCookie = new Cookie(jwtAccessTokenCookieName, accessToken);
+        jwtAccessTokenCookie.setHttpOnly(true);
+        jwtAccessTokenCookie.setSecure(false);
+        jwtAccessTokenCookie.setPath("/");
+        jwtAccessTokenCookie.setMaxAge(jwtProvider.getAccessTokenValidityInSeconds());
+        response.addCookie(jwtAccessTokenCookie);
 
-        // 3. 회원가입 완료 여부에 따라 프론트엔드로 리다이렉트
+        // 4. JWT Refresh Token을 HTTP Only 쿠키에 담아 전송
+        Cookie jwtRefreshTokenCookie = new Cookie(jwtRefreshTokenCookieName, refreshToken);
+        jwtRefreshTokenCookie.setHttpOnly(true);
+        jwtRefreshTokenCookie.setSecure(false);
+        jwtRefreshTokenCookie.setPath("/");
+        jwtRefreshTokenCookie.setMaxAge(jwtProvider.getRefreshTokenValidityInSeconds());
+        response.addCookie(jwtRefreshTokenCookie);
+
+        // 5. 회원가입 완료 여부에 따라 프론트엔드로 리다이렉트
         String redirectUrl;
         if (!oauth2User.isRegistrationCompleted()) {
             redirectUrl = frontendBaseUrl + signupPath;
