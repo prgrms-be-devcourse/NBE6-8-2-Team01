@@ -143,7 +143,7 @@ export default function BookRentPage() {
         // ✅ 핵심 로직: bookImage가 null이고 previewImageUrl이 defaultImageUrl과 같으면 등록 막기
         if (bookImage === null && previewImageUrl === defaultImageUrl) {
             alert('책 사진을 등록해 주세요.'); // 메시지 표시
-            return;.
+            return;
         }
 
         if(bookImage){
