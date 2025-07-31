@@ -4,7 +4,8 @@ import { ChevronDown, ChevronRight } from "lucide-react";
 import { menuItems } from "./consts";
 import { GoBook } from "react-icons/go";
 import Link from "next/link";
-import { UserLoginResponseDto } from "@/app/admin/_hook/useAuth";
+import { useAuthContext } from "@/app/admin/global/hooks/useAuth";
+import { useDashBoardContext } from "@/app/admin/dashboard/_hooks/useDashboard";
 
 interface SidebarMenuItemProps {
   item: MenuItem;
@@ -18,10 +19,7 @@ interface SidebarMenuItemProps {
 interface SidebarProps {
   expandedItems: Set<string>;
   onToggle: (id: string) => void;
-  activeItem: string;
-  onItemClick: (id: string, apiPath?: string) => void;
   onLogout: () => void;
-  loginMember: UserLoginResponseDto;
 }
 
 function SidebarMenuItem(props: SidebarMenuItemProps) {
@@ -92,7 +90,9 @@ function SidebarMenuItem(props: SidebarMenuItemProps) {
 }
 
 export function SideBar(props: SidebarProps) {
-  const { expandedItems, onToggle, activeItem, onItemClick, onLogout, loginMember } = props;
+  const { expandedItems, onToggle, onLogout } = props;
+  const { activeItem, setActiveItem } = useDashBoardContext();
+  const { loginMember } = useAuthContext();
 
   return (
     <div className="min-w-50 w-64 bg-slate-700 min-h-screen flex flex-col">
@@ -116,7 +116,7 @@ export function SideBar(props: SidebarProps) {
             expandedItems={expandedItems}
             onToggle={onToggle}
             activeItem={activeItem}
-            onItemClick={onItemClick}
+            onItemClick={setActiveItem}
           />
         ))}
       </nav>

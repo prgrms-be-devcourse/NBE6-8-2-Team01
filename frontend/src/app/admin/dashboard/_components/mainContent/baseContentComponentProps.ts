@@ -1,4 +1,6 @@
-export interface BaseContentComponentProps {
-    responseData: unknown | null;
-    onRefresh?: () => void;
+import { PageResponse } from "@/app/admin/dashboard/_types/page";
+
+export interface ContentComponentProps {
+    data: PageResponse<unknown>;
+    onRefresh?: (path?: string) => void;
 }

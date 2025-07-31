@@ -9,6 +9,27 @@ interface UserStatusFilterProps {
   onSelectAll: () => void;
 }
 
+interface UserStatusFilterState {
+  checked: boolean;
+  onChange: () => void;
+  value: string;
+  fontStyle: string
+}
+
+function UserStatusFilterItem({ checked, onChange, fontStyle, value} : UserStatusFilterState) {
+  return (
+      <label className="flex items-center">
+        <input
+            type="checkbox"
+            checked={checked}
+            onChange={onChange}
+            className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+        />
+        <span className={fontStyle}>{value}</span>
+      </label>
+  )
+}
+
 export function UserStatusFilter({
   selectedStatuses,
   onStatusToggle,
@@ -25,45 +46,33 @@ export function UserStatusFilter({
         회원 상태
       </label>
       <div className="flex flex-wrap gap-3">
-        <label className="flex items-center">
-          <input
-            type="checkbox"
-            checked={isAllSelected}
-            onChange={onSelectAll}
-            className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-          />
-          <span className="ml-2 text-sm text-gray-700 font-medium">전체</span>
-        </label>
+        <UserStatusFilterItem
+          checked={isAllSelected}
+          onChange={onSelectAll}
+          fontStyle="ml-2 text-sm text-gray-700 font-medium"
+          value="전체"
+        />
 
-        <label className="flex items-center">
-          <input
-            type="checkbox"
+        <UserStatusFilterItem
             checked={selectedStatuses.has("ACTIVE")}
             onChange={() => onStatusToggle("ACTIVE")}
-            className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-          />
-          <span className="ml-2 text-sm text-green-700">정상</span>
-        </label>
+            fontStyle="ml-2 text-sm text-green-700"
+            value="정상"
+        />
 
-        <label className="flex items-center">
-          <input
-            type="checkbox"
+        <UserStatusFilterItem
             checked={selectedStatuses.has("SUSPENDED")}
             onChange={() => onStatusToggle("SUSPENDED")}
-            className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-          />
-          <span className="ml-2 text-sm text-red-700">활동 정지</span>
-        </label>
+            fontStyle="ml-2 text-sm text-red-700"
+            value="활동 정지"
+        />
 
-        <label className="flex items-center">
-          <input
-            type="checkbox"
+        <UserStatusFilterItem
             checked={selectedStatuses.has("INACTIVE")}
             onChange={() => onStatusToggle("INACTIVE")}
-            className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-          />
-          <span className="ml-2 text-sm text-gray-700">비활성화</span>
-        </label>
+            fontStyle="ml-2 text-sm text-gray-700"
+            value="비활성화"
+        />
       </div>
     </div>
   );

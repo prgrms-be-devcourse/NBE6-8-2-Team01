@@ -1,21 +1,14 @@
 "use client";
 
-import React, { useEffect, useState, useMemo } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { DataTable, ColumnDefinition } from "../common/Table";
-import {
-  UserBaseResponseDto,
-  UserDetailResponseDto,
-  getStatus,
-  userStatus,
-} from "../../_types/userResponseDto";
+import { UserBaseResponseDto, UserDetailResponseDto, getStatus, userStatus} from "../../_types/userResponseDto";
 import { formatDate } from "../common/dateFormatter";
 import UserDetailModal from "../user/manage/userDetailModal";
-import { BaseContentComponentProps } from "./baseContentComponentProps";
-import {
-  UserFilterContainer,
-  FilterState,
-  SearchType,
-} from "../user/filter";
+import { ContentComponentProps } from "./baseContentComponentProps";
+import { UserFilterContainer, FilterState } from "../user/filter";
+import { PageResponse } from "../../_types/page";
+import {useDashBoardContext} from "@/app/admin/dashboard/_hooks/useDashboard";
 
 interface ManagementButtonProps {
   user: UserBaseResponseDto;
@@ -34,32 +27,64 @@ function ManagementButton({ user, onClick }: ManagementButtonProps) {
 }
 
 export function UserListComponent({
-  responseData,
+  data,
   onRefresh,
-}: BaseContentComponentProps) {
-  const [selectedUser, setSelectedUser] = useState<UserDetailResponseDto | null>(null);
+}: ContentComponentProps) {
+  const [selectedUser, setSelectedUser] = useState<UserDetailResponseDto>(
+      null as unknown as UserDetailResponseDto
+  );
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
+  const { currentItem, fetchData } = useDashBoardContext();
 
-  // 필터 상태
-  const [filters, setFilters] = useState<FilterState>({
-    userStatuses: new Set(["ACTIVE", "SUSPENDED", "INACTIVE"]), // 기본적으로 모든 상태 체크
-    searchType: "nickname",
-    searchTerm: "",
-  });
+  // sessionStorage에서 필터 상태 복원하는 함수
+  const getInitialFilters = (): FilterState => {
+    try {
+      const saved = sessionStorage.getItem('admin-user-list-filters');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        return {
+          userStatuses: new Set(parsed.userStatuses || ["ACTIVE", "SUSPENDED", "INACTIVE"]),
+          searchTerm: parsed.searchTerm || "",
+        };
+      }
+    } catch (error) {
+      console.warn('필터 상태 복원 실패:', error);
+    }
+    
+    return {
+      userStatuses: new Set(["ACTIVE", "SUSPENDED", "INACTIVE"]),
+      searchTerm: "",
+    };
+  };
+
+  const [filters, setFilters] = useState<FilterState>(getInitialFilters);
+
+  // 필터 상태를 sessionStorage에 저장하는 함수
+  const saveFilters = useCallback(() => {
+    try {
+      const toSave = {
+        userStatuses: Array.from(filters.userStatuses),
+        searchTerm: filters.searchTerm,
+      };
+      sessionStorage.setItem('admin-user-list-filters', JSON.stringify(toSave));
+    } catch (error) {
+      console.warn('필터 상태 저장 실패:', error);
+    }
+  }, [filters]);
 
   const handleManageClick = async (user: UserBaseResponseDto) => {
-    console.log(
-      `관리 버튼 클릭: 멤버 ID - ${user.id}, 닉네임 - ${user.nickname}`
-    );
-    setIsLoading(true);
+    console.log(`관리 버튼 클릭: 멤버 ID - ${user.id}, 닉네임 - ${user.nickname}`);
 
     fetch(`http://localhost:8080/api/v1/admin/users/${user.id}`, {
       method: "GET",
+      headers: {
+        "Content-Type": "application/json; charset=utf-8",
+      },
+      credentials: "include",
     })
       .then((response) => {
         if (!response.ok) {
-          setSelectedUser(null);
+          setSelectedUser(null as unknown as UserDetailResponseDto);
           return;
         }
 
@@ -75,49 +100,12 @@ export function UserListComponent({
 
   const handleModalClose = () => {
     setIsModalOpen(false);
-    setSelectedUser(null);
+    setSelectedUser(null as unknown as UserDetailResponseDto);
   };
 
-  const [users, setUsers] = useState<UserBaseResponseDto[]>([]);
-
   useEffect(() => {
-    if (responseData) {
-      const data = responseData as UserBaseResponseDto[];
-      setUsers(data.reverse());
-    }
-  }, [responseData]);
-
-  // 필터링된 멤버 목록
-  const filteredUsers = useMemo(() => {
-    return users.filter((user) => {
-      // 상태 필터링
-      if (!filters.userStatuses.has(user.userStatus)) {
-        return false;
-      }
-
-      // 검색어 필터링
-      if (filters.searchTerm.trim()) {
-        const searchTerm = filters.searchTerm.toLowerCase().trim();
-        let searchValue = "";
-
-        switch (filters.searchType) {
-          case "id":
-            searchValue = user.id.toString();
-            break;
-          case "username":
-            searchValue = user.username.toLowerCase();
-            break;
-          case "nickname":
-            searchValue = user.nickname.toLowerCase();
-            break;
-        }
-
-        return searchValue.includes(searchTerm);
-      }
-
-      return true;
-    });
-  }, [users, filters]);
+    saveFilters();
+  }, [saveFilters]);
 
   // 상태 체크박스 핸들러
   const handleStatusToggle = (status: userStatus) => {
@@ -127,7 +115,12 @@ export function UserListComponent({
     } else {
       newStatuses.add(status);
     }
-    setFilters((prev) => ({ ...prev, userStatuses: newStatuses }));
+
+    if (newStatuses.size === 0) {
+      setFilters((prev) => ({ ...prev, userStatuses: new Set(["ACTIVE", "SUSPENDED", "INACTIVE"])}));
+    } else {
+      setFilters((prev) => ({ ...prev, userStatuses: newStatuses }));
+    }
   };
 
   // 전체 선택/해제
@@ -149,18 +142,37 @@ export function UserListComponent({
     setFilters((prev) => ({ ...prev, searchTerm: value }));
   };
 
-  const handleSearchTypeChange = (type: SearchType) => {
-    setFilters((prev) => ({ ...prev, searchType: type }));
-  };
-
   // 필터 초기화
   const resetFilters = () => {
-    setFilters({
+    const resetState: FilterState = {
       userStatuses: new Set(["ACTIVE", "SUSPENDED", "INACTIVE"]),
-      searchType: "nickname",
       searchTerm: "",
-    });
+    };
+    setFilters(resetState);
   };
+
+  const searchFromFilter = () => {
+    const params = new URLSearchParams();
+
+    filters.userStatuses.forEach(status => params.append("status", status));
+
+    if (filters.searchTerm) {
+      const number = Number(filters.searchTerm.trim());
+      params.append("userId", `${number}`);
+    }
+
+    return params
+  }
+
+  const doSearch = () => {
+    if (!currentItem || !currentItem.apiPath || currentItem.apiPath.trim().length === 0) {
+      return;
+    }
+
+    const params = searchFromFilter();
+    const requestPath = `${currentItem.apiPath}?${params.toString()}`;
+    fetchData(requestPath);
+  }
 
   const columns: ColumnDefinition<UserBaseResponseDto>[] = [
     { key: "id", label: "No" },
@@ -211,9 +223,9 @@ export function UserListComponent({
           <h3 className="text-lg font-semibold text-gray-900">
             전체 멤버 목록
           </h3>
-          <div className="text-sm text-gray-500">
-            총 {users.length}명 중 {filteredUsers.length}명 표시
-          </div>
+            <div className="text-sm text-gray-500">
+              {data.data.length > 0 ? `총 ${data.data.length}명 검색 완료` : "검색 결과 없음"}
+            </div>
         </div>
 
         {/* 필터 및 검색 영역 */}
@@ -221,14 +233,18 @@ export function UserListComponent({
           filters={filters}
           onStatusToggle={handleStatusToggle}
           onSelectAll={handleSelectAll}
-          onSearchTypeChange={handleSearchTypeChange}
           onSearchTermChange={handleSearchChange}
           onReset={resetFilters}
+          onSearch={doSearch}
         />
 
         {/* 테이블 */}
         <div className="bg-white rounded-lg border border-gray-200">
-          <DataTable columns={columns} data={filteredUsers} />
+          <DataTable
+              columns={columns}
+              data={data}
+              pageFactory={searchFromFilter}
+          />
         </div>
       </div>
 

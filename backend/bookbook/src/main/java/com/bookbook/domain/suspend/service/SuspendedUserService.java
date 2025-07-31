@@ -4,13 +4,14 @@ import com.bookbook.domain.suspend.dto.request.UserSuspendRequestDto;
 import com.bookbook.domain.suspend.dto.response.UserSuspendResponseDto;
 import com.bookbook.domain.suspend.entity.SuspendedUser;
 import com.bookbook.domain.suspend.repository.SuspendedUserRepository;
-import com.bookbook.domain.user.entity.User;
 import com.bookbook.domain.user.service.AdminService;
+import com.bookbook.domain.user.entity.User;
+import com.bookbook.global.exception.ServiceException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -34,10 +35,9 @@ public class SuspendedUserService {
     }
 
     @Transactional(readOnly = true)
-    public List<UserSuspendResponseDto> getAllSuspendedHistory() {
-        return suspendedUserRepository.findAll().stream()
-                .map(UserSuspendResponseDto::from)
-                .toList();
+    public Page<UserSuspendResponseDto> getSuspendedHistoryPage(Pageable pageable) {
+        return suspendedUserRepository.findAllByOrderBySuspendedAtDesc(pageable)
+                .map(UserSuspendResponseDto::from);
     }
 
     @Transactional
@@ -49,7 +49,7 @@ public class SuspendedUserService {
 
     private void checkUserIsSuspended(User user) {
         if (user.isSuspended()) {
-            throw new RuntimeException("이 유저는 이미 정지 중입니다.");
+            throw new ServiceException("409-1", "이 유저는 이미 정지 중입니다.");
         }
     }
 }

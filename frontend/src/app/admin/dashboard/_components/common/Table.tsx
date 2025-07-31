@@ -1,8 +1,10 @@
 'use client';
 
 import React, { useState } from 'react';
+import { PageResponse } from "@/app/admin/dashboard/_types/page";
+import { useDashBoardContext } from "@/app/admin/dashboard/_hooks/useDashboard";
+import { PageButtonContainer } from "@/app/admin/dashboard/_components/common/pageButton";
 
-// --- Type Definitions ---
 
 /**
  * 테이블의 각 열(column)을 정의
@@ -23,22 +25,39 @@ export interface ColumnDefinition<T> {
  */
 interface DataTableProps<T> {
   columns: ColumnDefinition<T>[];
-  data: T[];
+  data: PageResponse<any | null>;
+  pageFactory?: () => URLSearchParams;
 }
 
 /**
  * 데이터를 받아 테이블 형태로 렌더링하는 재사용 가능한 컴포넌트
  * @template T - 데이터 객체는 'id' 프로퍼티를 가져야 함.
  */
-export function DataTable<T extends { id: string | number }>({ columns, data }: DataTableProps<T>) {
+export function DataTable<T extends { id: string | number }>(
+    { columns, data, pageFactory }: DataTableProps<T>
+) {
   const [page, setPage] = useState(1);
+  const { fetchData, currentItem } = useDashBoardContext();
 
   const PER_PAGE = 10;
-  const total = data ? data.length : 0;
-  const totalPages = Math.ceil(total / PER_PAGE);
-  const startIndex = (page - 1) * PER_PAGE;
-  const endIndex = startIndex + PER_PAGE;
-  const pagedData = data ? data.slice(startIndex, endIndex) : [];
+  const currentPage = data?.pageInfo?.currentPage || 1;
+  const pagedData = data ? data.data : [];
+
+  const getDataFromButton = (newPage: number) => {
+    if (!currentItem || !currentItem.apiPath || currentItem.apiPath.trim().length === 0) {
+      return;
+    }
+
+    setPage(newPage);
+
+    const params = pageFactory ? pageFactory() : new URLSearchParams();
+
+    params.set("page", `${newPage}`);
+    params.set("size", `${PER_PAGE}`);
+
+    const requestPath = `${currentItem.apiPath}?${params.toString()}`;
+    fetchData(requestPath);
+  }
 
   return (
     <>
@@ -79,24 +98,13 @@ export function DataTable<T extends { id: string | number }>({ columns, data }: 
           </tbody>
         </table>
       </div>
-      {total > 0 && total > PER_PAGE && (
-        <div className="flex justify-center gap-2 py-5">
-          <button
-              className="px-3 py-1 border rounded disabled:opacity-50"
-              onClick={() => setPage(page - 1)}
-              disabled={page <= 1}
-          >
-            이전
-          </button>
-          <span className="px-2 py-2">{page} / {totalPages}</span>
-          <button
-              className="px-3 py-1 border rounded disabled:opacity-50"
-              onClick={() => setPage(page + 1)}
-              disabled={page >= totalPages}
-          >
-            다음
-          </button>
-        </div>
+      {data.pageInfo.totalPages > 0 && (
+        <
+          PageButtonContainer
+            page={currentPage}
+            setPage={getDataFromButton}
+            pageInfo={data.pageInfo}
+        />
       )}
     </>
   );

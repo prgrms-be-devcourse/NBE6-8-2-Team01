@@ -1,27 +1,12 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React from "react";
 import { DataTable, ColumnDefinition } from "../common/Table";
 import { SuspendedUser } from "../../_types/suspendedUser";
-import { BaseContentComponentProps } from "./baseContentComponentProps";
+import { ContentComponentProps } from "./baseContentComponentProps";
 import { formatDate } from "@/app/admin/dashboard/_components/common/dateFormatter";
 
-export function SuspendedUserListComponent({ responseData }: BaseContentComponentProps) {
-  const handleManageClick = (userId: number) => {
-    console.log(`관리 버튼 클릭: 멤버 ID - ${userId}`);
-    // TODO: 멤버 관리 로직 구현 (예: 정지 해제 API 호출)
-  };
-
-  // 데이터를 호출한 이후 useState를 이용해 변환하기
-  const [suspendedUsers, setSuspendedUsers] = useState<SuspendedUser[]>([]);
-
-  useEffect(() => {
-    if (responseData) {
-      const data = responseData as SuspendedUser[];
-      setSuspendedUsers(data.reverse());
-    }
-  }, [responseData]);
-
+export function SuspendedUserListComponent({ data }: ContentComponentProps) {
   const columns: ColumnDefinition<SuspendedUser>[] = [
     { key: "id", label: "No" },
     { key: "userId", label: "아이디" },
@@ -45,7 +30,7 @@ export function SuspendedUserListComponent({ responseData }: BaseContentComponen
       <h3 className="text-lg font-semibold text-gray-900 mb-4">
         정지 멤버 목록
       </h3>
-      <DataTable columns={columns} data={suspendedUsers} />
+      <DataTable columns={columns} data={data} />
     </>
   );
 }
