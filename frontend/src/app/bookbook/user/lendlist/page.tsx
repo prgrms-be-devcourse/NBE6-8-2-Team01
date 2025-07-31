@@ -20,7 +20,6 @@ export default function LendListPage() {
     totalElements: 0,
     size: 10
   });
-  const [isDevelopment, setIsDevelopment] = useState(false);
   const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
   const [selectedBook, setSelectedBook] = useState<MyBook | null>(null);
 
@@ -31,34 +30,12 @@ export default function LendListPage() {
   }, [currentPage]);
 
   const fetchMyBooks = async (page: number = 1) => {
-    // 개발 모드에서는 더미 데이터를 사용
-    if (isDevelopment) {
-      setLoading(true);
-      
-      // 개발 모드에서 페이징 처리
-      const pageSize = 10;
-      const startIndex = (page - 1) * pageSize;
-      const endIndex = startIndex + pageSize;
-      const pageData = dummyLendListBooks.slice(startIndex, endIndex);
-      
-      setMyBooks(pageData);
-      setPagination({
-        currentPage: page,
-        totalPages: Math.ceil(dummyLendListBooks.length / pageSize),
-        totalElements: dummyLendListBooks.length,
-        size: pageSize
-      });
-      
-      setLoading(false);
-      return;
-    }
-
     try {
       setLoading(true);
       setError(null);
 
       const response = await fetch(
-        `http://localhost:8080/api/v1/user/${userId}/lendlist?page=${page - 1}&size=${pagination.size}&sort=createAt,desc`,
+        `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/user/${userId}/lendlist?page=${page - 1}&size=${pagination.size}&sort=createdDate,desc`,
         {
           method: 'GET',
           headers: {
@@ -96,29 +73,22 @@ export default function LendListPage() {
     } catch (err) {
       console.error('내가 등록한 도서 목록 조회 에러:', err);
       
-      if (err instanceof TypeError && err.message.includes('Failed to fetch')) {
-        console.log('백엔드 연결 실패 - 개발 모드로 전환');
-        setIsDevelopment(true);
-        
-        // 개발 모드에서 페이징 처리
-        const pageSize = 10;
-        const startIndex = (page - 1) * pageSize;
-        const endIndex = startIndex + pageSize;
-        const pageData = dummyLendListBooks.slice(startIndex, endIndex);
-        
-        setMyBooks(pageData);
-        setPagination({
-          currentPage: page,
-          totalPages: Math.ceil(dummyLendListBooks.length / pageSize),
-          totalElements: dummyLendListBooks.length,
-          size: pageSize
-        });
-        setError(null); // 개발 모드에서는 에러 메시지를 숨김
-      } else {
-        setError('도서 목록을 불러오는데 실패했습니다.');
-        setMyBooks([]);
-        setPagination(prev => ({ ...prev, currentPage: page, totalPages: 1, totalElements: 0 }));
-      }
+      // 백엔드 연동 실패 시 더미 데이터 사용
+      const pageSize = 10;
+      const startIndex = (page - 1) * pageSize;
+      const endIndex = startIndex + pageSize;
+      const pageData = dummyLendListBooks.slice(startIndex, endIndex);
+      
+      setMyBooks(pageData);
+      setPagination({
+        currentPage: page,
+        totalPages: Math.ceil(dummyLendListBooks.length / pageSize),
+        totalElements: dummyLendListBooks.length,
+        size: pageSize
+      });
+      
+      // 에러 메시지 표시 (개발 중임을 알림)
+      setError('백엔드 서버에 연결할 수 없어 샘플 데이터를 표시하고 있습니다.');
     } finally {
       setLoading(false);
     }
@@ -131,7 +101,7 @@ export default function LendListPage() {
 
     try {
       const response = await fetch(
-        `http://localhost:8080/api/v1/user/${userId}/lendlist/${rentId}`,
+        `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/user/${userId}/lendlist/${rentId}`,
         {
           method: 'DELETE',
           headers: {
@@ -165,7 +135,7 @@ export default function LendListPage() {
   const submitReview = async (rentId: number, rating: number) => {
     try {
       const response = await fetch(
-        `http://localhost:8080/api/v1/user/${userId}/lendlist/${rentId}/review`,
+        `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/user/${userId}/lendlist/${rentId}/review`,
         {
           method: 'POST',
           headers: {
@@ -201,26 +171,7 @@ export default function LendListPage() {
       }
     } catch (error) {
       console.error('리뷰 등록 실패:', error);
-      if (isDevelopment) {
-        // 개발 모드에서는 성공한 것으로 처리
-        console.log('개발 모드: 리뷰 등록 시뮬레이션');
-        setMyBooks(prevBooks => 
-          prevBooks.map(book => 
-            book.id === rentId 
-              ? { ...book, hasReview: true }
-              : book
-          )
-        );
-
-        // 개발 모드에서도 재등록 여부 확인
-        const shouldReregister = confirm('책을 다시 등록하시겠습니까?');
-        if (shouldReregister) {
-          // 도서 수정페이지로 이동
-          window.location.href = `/bookbook/lendlist/${rentId}/edit`;
-        }
-      } else {
-        throw error;
-      }
+      throw error;
     }
   };
 
@@ -235,12 +186,12 @@ export default function LendListPage() {
     );
   });
 
-  // 현재 페이지에 표시할 아이템 계산 (개발 모드에서는 이미 페이징된 데이터를 사용)
-  const currentPageBooks = isDevelopment ? filteredBooks : filteredBooks.slice((currentPage - 1) * pagination.size, currentPage * pagination.size);
+  // 현재 페이지에 표시할 아이템 계산
+  // 백엔드 연동 실패로 더미 데이터 사용 중일 때는 이미 페이징된 데이터를 사용
+  const currentPageBooks = error && error.includes('샘플 데이터') ? filteredBooks : filteredBooks;
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
-    // 페이지 변경 시 데이터를 다시 로드 (개발/프로덕션 모드 모두)
     fetchMyBooks(page);
   };
 
@@ -272,11 +223,6 @@ export default function LendListPage() {
           <p className="text-gray-600">
             총 <span className="font-semibold text-blue-600">{pagination.totalElements}권</span>의 도서를 등록했습니다.
           </p>
-          {isDevelopment && (
-            <p className="text-sm text-amber-600 mt-2">
-              ⚠️ 개발 모드: 백엔드 서버에 연결할 수 없어 샘플 데이터를 표시하고 있습니다.
-            </p>
-          )}
         </div>
 
         {/* 검색 입력 필드 */}
