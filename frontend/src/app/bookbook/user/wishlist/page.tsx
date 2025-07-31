@@ -13,6 +13,7 @@ export default function WishListPage() {
     const [error, setError] = useState<string | null>(null);
     const [currentPage, setCurrentPage] = useState(1);
     const [searchTerm, setSearchTerm] = useState('');
+    const [isDevelopment] = useState(true); // 개발 모드 상태
     const itemsPerPage = 10;
     const userId = 1; // TODO: 실제 로그인된 사용자 ID로 변경
 
@@ -95,56 +96,60 @@ export default function WishListPage() {
 
     return (
         <div className="w-full">
-                <div className="mb-8">
-                    <h1 className="text-3xl font-bold mb-2">찜</h1>
-                </div>
+            <div className="mb-8">
+                <h1 className="text-3xl font-bold mb-2">찜한 도서</h1>
+                <p className="text-gray-600">
+                    총 <span className="font-semibold text-blue-600">{wishList.length}권</span>의 도서를 찜했습니다.
+                </p>
+                {isDevelopment && (
+                    <p className="text-sm text-amber-600 mt-2">
+                        ⚠️ 개발 모드: 백엔드 서버에 연결할 수 없어 샘플 데이터를 표시하고 있습니다.
+                    </p>
+                )}
+            </div>
+            
 
-                {/* 검색 입력 필드 */}
-                <div className="mb-6">
-                    <div className="relative">
-                        <input
-                            type="text"
-                            placeholder="도서명, 저자, 출판사로 검색"
-                            value={searchTerm}
-                            onChange={handleSearch}
-                            className="w-full px-4 py-2 pl-10 pr-4 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500"
-                        />
-                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+            {/* 검색 입력 필드 */}
+            <div className="mb-6">
+                <div className="relative">
+                    <input
+                        type="text"
+                        placeholder="도서명, 저자, 출판사로 검색"
+                        value={searchTerm}
+                        onChange={handleSearch}
+                        className="w-full px-4 py-2 pl-10 pr-4 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500"
+                    />
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                </div>
+            </div>
+
+            {filteredWishList.length === 0 ? (
+                <div className="text-center py-12">
+                    <Heart className="mx-auto h-16 w-16 text-gray-300 mb-4" />
+                    <p className="text-gray-500 text-lg">
+                        {searchTerm ? '검색 결과가 없습니다.' : '아직 찜한 도서가 없습니다.'}
+                    </p>
+                    <p className="text-gray-400 mt-2">
+                        {searchTerm ? '다른 검색어를 사용해보세요.' : '마음에 드는 도서를 찜해보세요!'}
+                    </p>
+                </div>
+            ) : (
+                <>
+                    <div className="space-y-4">
+                        {currentItems.map((item) => (
+                            <WishListCard
+                                key={item.id}
+                                item={item}
+                                onRemove={removeFromWishList}
+                            />
+                        ))}
                     </div>
-                </div>
 
-                <div className="mb-8">
-                    <h1 className="text-3xl font-bold mb-2">찜한 도서</h1>
-                    <p className="text-gray-600">검색 결과</p>
-                </div>
-
-                {filteredWishList.length === 0 ? (
-                    <div className="text-center py-12">
-                        <Heart className="mx-auto h-16 w-16 text-gray-300 mb-4" />
-                        <p className="text-gray-500 text-lg">
-                            {searchTerm ? '검색 결과가 없습니다.' : '아직 찜한 도서가 없습니다.'}
-                        </p>
-                        <p className="text-gray-400 mt-2">
-                            {searchTerm ? '다른 검색어를 사용해보세요.' : '마음에 드는 도서를 찜해보세요!'}
-                        </p>
-                    </div>
-                ) : (
-                    <>
-                        <div className="space-y-4">
-                            {currentItems.map((item) => (
-                                <WishListCard
-                                    key={item.id}
-                                    item={item}
-                                    onRemove={removeFromWishList}
-                                />
-                            ))}
-                        </div>
-
-                        <Pagination
-                            currentPage={currentPage}
-                            totalPages={totalPages}
-                            onPageChange={handlePageChange}
-                        />
+                    <Pagination
+                        currentPage={currentPage}
+                        totalPages={totalPages}
+                        onPageChange={handlePageChange}
+                    />
                     </>
                 )}
         </div>
