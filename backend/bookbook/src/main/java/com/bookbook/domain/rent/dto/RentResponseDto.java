@@ -1,5 +1,7 @@
 package com.bookbook.domain.rent.dto;
 
+import com.bookbook.domain.rent.entity.RentStatus;
+
 import java.time.LocalDateTime;
 
 public record RentResponseDto(
@@ -8,7 +10,7 @@ public record RentResponseDto(
         String bookImage,
         String address,
         String contents,
-        String rentStatus,
+        RentStatus rentStatus,
 
         String title,
         String author,

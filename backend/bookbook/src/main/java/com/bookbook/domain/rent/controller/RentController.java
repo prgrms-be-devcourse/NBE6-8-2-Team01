@@ -8,13 +8,15 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
+// 25.07.31 현준
 @RestController // @Controller와 @ResponseBody를 합친 형태, RESTful 웹 서비스 컨트롤러
-@RequestMapping("/bookbook/rent") // HTTP 요청의 특정 경로를 메서드나 클래스에 매핑
+@RequestMapping({"/bookbook/rent", "/api/v1/bookbook/rent"}) // 기존 경로와 API 경로 모두 지원
 @RequiredArgsConstructor // final 필드에 대한 생성자를 자동으로 생성
 public class RentController {
     private final RentService rentService;
 
     // Rent 페이지 등록 Post 요청
+    // http://localhost:3000/bookbook/rent/create
     @PostMapping("/create") // /rent 경로로 POST 요청을 처리
     @Operation(summary = "Rent 페이지 등록") // Swagger 에서 API 문서화에 사용되는 설명
     public void createRentPage(@RequestBody @Valid RentRequestDto dto){
@@ -28,6 +30,4 @@ public class RentController {
     public RentResponseDto getRentPage(@PathVariable int id){ // 경로 변수로 전달된 id를 사용
         return rentService.getRentPage(id);
     }
-
-
 }

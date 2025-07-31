@@ -16,20 +16,29 @@ public class ReviewResponseDto {
     private Integer rentId;
     private Long reviewerId;
     private Long revieweeId;
+    private String reviewerNickname;
+    private String revieweeNickname;
+    private String bookTitle;
+    private String bookImage;
     private Integer rating;
     private String reviewType;
     private LocalDateTime createdDate;
-    
-    
-    public static ReviewResponseDto from(Review review) {
+
+
+    public static ReviewResponseDto from(Review review, String reviewerNickname, String revieweeNickname,
+                                         String bookTitle, String bookImage) {
         return new ReviewResponseDto(
-            review.getId(),
-            review.getRentId(),
-            review.getReviewerId(),
-            review.getRevieweeId(),
-            review.getRating(),
-            review.getReviewType(),
-            review.getCreatedDate()
+                review.getId(),
+                review.getRentId(),
+                review.getReviewerId(),
+                review.getRevieweeId(),
+                reviewerNickname,
+                revieweeNickname,
+                bookTitle,
+                bookImage,
+                review.getRating(),
+                review.getReviewType(),
+                review.getCreatedDate()
         );
     }
 }

@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from "react";
 import { DataTable, ColumnDefinition } from "../common/Table";
 import { RentPost } from "../../_types/rentPost";
-import { BaseContentComponentProps } from "./baseContentComponentProps";
+import { ContentComponentProps } from "./baseContentComponentProps";
 
 // --- Mock Data ---
 const mockRentPosts: RentPost[] = [
@@ -58,7 +58,7 @@ function ManagementButton({ rentPost, onClick }: ManagementButtonProps) {
     );
 }
 
-export function UserRentPostComponent({ responseData }: BaseContentComponentProps) {
+export function UserRentPostComponent({ data }: ContentComponentProps) {
     const handleManageClick = (postId: number) => {
         console.log(`관리 버튼 클릭: 글 ID - ${postId}`);
         // TODO: 작성된 글로 이동
@@ -67,12 +67,12 @@ export function UserRentPostComponent({ responseData }: BaseContentComponentProp
     const [suspendedMembers, setsuspendedMembers] = useState<RentPost[]>([]);
 
     useEffect(() => {
-        if (responseData) {
+        if (data) {
             // setSuspendedMembers(responseData);
         }
         // 테스트 목적으로 추가했습니다
         setsuspendedMembers(mockRentPosts);
-    }, [responseData]);
+    }, [data]);
 
     const columns: ColumnDefinition<RentPost>[] = [
         { key: "id", label: "No" },
@@ -98,7 +98,7 @@ export function UserRentPostComponent({ responseData }: BaseContentComponentProp
             <h3 className="text-lg font-semibold text-gray-900 mb-4">
                 글 작성 목록
             </h3>
-            <DataTable columns={columns} data={suspendedMembers} />
+            <DataTable columns={columns} data={data} />
         </>
     );
 }

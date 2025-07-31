@@ -1,6 +1,7 @@
 package com.bookbook.domain.review.service;
 
 import com.bookbook.domain.rent.entity.Rent;
+import com.bookbook.domain.rent.entity.RentStatus;
 import com.bookbook.domain.rent.repository.RentRepository;
 import com.bookbook.domain.rentList.entity.RentList;
 import com.bookbook.domain.rentList.repository.RentListRepository;
@@ -55,27 +56,14 @@ public class ReviewService {
         if (!rent.getLenderUserId().equals(lenderId)) {
             throw new IllegalArgumentException("본인이 작성한 게시글에만 리뷰를 작성할 수 있습니다.");
         }
-        
-        // 거래가 완료된 상태인지 확인
-        if (!"Finished".equals(rent.getRentStatus())) {
-            throw new IllegalStateException("거래가 완료된 경우에만 리뷰를 작성할 수 있습니다.");
-        }
-        
-        // 이미 리뷰를 작성했는지 확인
-        Optional<Review> existingReview = reviewRepository.findByRentIdAndReviewerId(rentId, lenderId);
-        if (existingReview.isPresent()) {
-            throw new IllegalStateException("이미 리뷰를 작성하셨습니다.");
-        }
-        
-        // 별점 유효성 검사
-        if (request.getRating() < 1 || request.getRating() > 5) {
-            throw new IllegalArgumentException("별점은 1점부터 5점까지 입력 가능합니다.");
-        }
-        
+
+        // 공통 검증 로직 호출
+        validateReviewCreation(rent, lenderId, rentId, request.getRating());
+
         // 빌려간 사람 ID 조회
         RentList rentList = rentListRepository.findByRentId(rentId)
                 .stream()
-                .filter(rl -> rl.getRent().getRentStatus().equals("Finished"))
+                .filter(rl -> rl.getRent().getRentStatus() == RentStatus.FINISHED)
                 .findFirst()
                 .orElseThrow(() -> new IllegalArgumentException("완료된 대여 기록을 찾을 수 없습니다."));
         
@@ -87,8 +75,17 @@ public class ReviewService {
         
         // 사용자 평점 업데이트
         updateUserRating(borrowerId);
-        
-        return ReviewResponseDto.from(savedReview);
+
+        // 추가 정보 조회
+        String lenderNickname = userRepository.findById(lenderId)
+                .map(user -> user.getNickname())
+                .orElse("알 수 없음");
+        String borrowerNickname = userRepository.findById(borrowerId)
+                .map(user -> user.getNickname())
+                .orElse("알 수 없음");
+
+        return ReviewResponseDto.from(savedReview, lenderNickname, borrowerNickname,
+                rent.getBookTitle(), rent.getBookImage());
     }
     
     /**
@@ -109,31 +106,62 @@ public class ReviewService {
         // 대여 게시글 조회
         Rent rent = rentRepository.findById(rentId)
                 .orElseThrow(() -> new IllegalArgumentException("대여 게시글을 찾을 수 없습니다. rentId: " + rentId));
-        
+
+        // 공통 검증 로직 호출
+        validateReviewCreation(rent, borrowerId, rentId, request.getRating());
+
+        // 본인이 해당 도서를 대여했는지 확인
+        boolean isBorrower = rentListRepository.findByRentId(rentId)
+                .stream()
+                .anyMatch(rl -> rl.getBorrowerUser().getId().equals(borrowerId));
+
+        if (!isBorrower) {
+            throw new IllegalArgumentException("해당 도서를 대여한 사용자만 리뷰를 작성할 수 있습니다.");
+        }
+
+        // 리뷰 생성 (빌려간 사람이 빌려준 사람을 평가)
+        Review review = new Review(rentId, borrowerId, rent.getLenderUserId(), request.getRating(), "BORROWER_TO_LENDER");
+        Review savedReview = reviewRepository.save(review);
+
+        // 사용자 평점 업데이트
+        updateUserRating(rent.getLenderUserId());
+
+        // 추가 정보 조회
+        String borrowerNickname = userRepository.findById(borrowerId)
+                .map(user -> user.getNickname())
+                .orElse("알 수 없음");
+        String lenderNickname = userRepository.findById(rent.getLenderUserId())
+                .map(user -> user.getNickname())
+                .orElse("알 수 없음");
+
+        return ReviewResponseDto.from(savedReview, borrowerNickname, lenderNickname,
+                rent.getBookTitle(), rent.getBookImage());
+    }
+
+    /**
+     * 리뷰 작성 공통 검증 로직
+     *
+     * @param rent 대여 게시글
+     * @param reviewerId 리뷰 작성자 ID
+     * @param rentId 대여 게시글 ID
+     * @param rating 평점
+     */
+    private void validateReviewCreation(Rent rent, Long reviewerId, Integer rentId, Integer rating) {
         // 거래가 완료된 상태인지 확인
-        if (!"Finished".equals(rent.getRentStatus())) {
+        if (rent.getRentStatus() != RentStatus.FINISHED) {
             throw new IllegalStateException("거래가 완료된 경우에만 리뷰를 작성할 수 있습니다.");
         }
         
         // 이미 리뷰를 작성했는지 확인
-        Optional<Review> existingReview = reviewRepository.findByRentIdAndReviewerId(rentId, borrowerId);
+        Optional<Review> existingReview = reviewRepository.findByRentIdAndReviewerId(rentId, reviewerId);
         if (existingReview.isPresent()) {
             throw new IllegalStateException("이미 리뷰를 작성하셨습니다.");
         }
         
         // 별점 유효성 검사
-        if (request.getRating() < 1 || request.getRating() > 5) {
+        if (rating < 1 || rating > 5) {
             throw new IllegalArgumentException("별점은 1점부터 5점까지 입력 가능합니다.");
         }
-        
-        // 리뷰 생성 (빌려간 사람이 빌려준 사람을 평가)
-        Review review = new Review(rentId, borrowerId, rent.getLenderUserId(), request.getRating(), "BORROWER_TO_LENDER");
-        Review savedReview = reviewRepository.save(review);
-        
-        // 사용자 평점 업데이트
-        updateUserRating(rent.getLenderUserId());
-        
-        return ReviewResponseDto.from(savedReview);
     }
     
     /**

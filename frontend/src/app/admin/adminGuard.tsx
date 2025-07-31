@@ -1,16 +1,15 @@
 'use client';
 
 import { useRouter, usePathname } from "next/navigation";
-import { useEffect, useState } from "react";
-import { useAuthContext } from "./_hook/useAuth";
+import { useEffect } from "react";
+import { useAuthContext } from "./global/hooks/useAuth";
 
 interface AdminGuardProps {
     children: React.ReactNode;
 }
 
 export default function AdminGuard({ children }: AdminGuardProps) {
-    const { isAdmin, isLogin, isInitialized } = useAuthContext();
-    const [showUnauthorizedModal, setShowUnauthorizedModal] = useState(false);
+    const { isLogin, isInitialized } = useAuthContext();
     const router = useRouter();
     const pathname = usePathname();
 
@@ -25,45 +24,26 @@ export default function AdminGuard({ children }: AdminGuardProps) {
         if (!isInitialized) return;
 
         // 로그인하지 않은 경우 로그인 페이지로 리다이렉트
-        if (!isLogin) {
-            router.replace("/admin/login");
-            return;
-        }
-
-        // 로그인했지만 관리자가 아닌 경우 권한 없음 모달 표시
-        if (!isAdmin) {
-            setShowUnauthorizedModal(true);
-            return;
-        }
-
-        // 정상적인 관리자인 경우 모달 숨김
-        setShowUnauthorizedModal(false);
-    }, [isAdmin, isLogin, isInitialized, isLoginPage, router]);
+        // if (!isLogin) {
+        //     router.replace("/admin/login");
+        //     return;
+        // }
+    }, [isLogin, isInitialized, isLoginPage, router]);
 
     // 로그인 페이지는 항상 렌더링
-    if (isLoginPage) {
-        return <>{children}</>;
-    }
-
-    // 초기화 전에는 로딩만 표시 (보안상 children 렌더링 금지)
-    if (!isInitialized) {
-        return <LoadingScreen message="인증 확인 중..." />;
-    }
-
-    // 로그인하지 않은 경우 로딩 표시 (리다이렉트 중)
-    if (!isLogin) {
-        return <LoadingScreen message="로그인 페이지로 이동 중..." />;
-    }
-
-    // 로그인했지만 관리자가 아닌 경우
-    if (!isAdmin) {
-        return (
-            <>
-                <LoadingScreen message="권한 확인 중..." />
-                {showUnauthorizedModal && <UnauthorizedModal />}
-            </>
-        );
-    }
+    // if (isLoginPage) {
+    //     return <>{children}</>;
+    // }
+    //
+    // // 초기화 전에는 로딩만 표시 (보안상 children 렌더링 금지)
+    // if (!isInitialized) {
+    //     return <LoadingScreen message="인증 확인 중..." />;
+    // }
+    //
+    // // 로그인하지 않은 경우 로딩 표시 (리다이렉트 중)
+    // if (!isLogin) {
+    //     return <LoadingScreen message="로그인 페이지로 이동 중..." />;
+    // }
 
     // 모든 검증을 통과한 관리자만 children 렌더링
     return <>{children}</>;
@@ -82,18 +62,15 @@ function LoadingScreen({ message }: { message: string }) {
 }
 
 // 권한 없음 모달 컴포넌트
-function UnauthorizedModal() {
+export function UnauthorizedModal() {
     const router = useRouter();
-    const { logout } = useAuthContext();
 
     const handleGoHome = () => {
-        router.replace('/');
+        router.replace("/bookbook");
     };
 
-    const handleLogout = () => {
-        logout(() => {
-            router.replace('/admin/login');
-        });
+    const handleRetry = () => {
+        router.replace('/admin/login');
     };
 
     return (
@@ -114,16 +91,16 @@ function UnauthorizedModal() {
                     </p>
                     <div className="flex space-x-4">
                         <button
-                            onClick={handleGoHome}
+                            onClick={handleRetry}
                             className="flex-1 bg-gray-500 hover:bg-gray-600 text-white font-medium py-3 px-6 rounded-lg transition-colors cursor-pointer"
                         >
-                            홈으로 가기
+                            다시 시도하기
                         </button>
                         <button
-                            onClick={handleLogout}
-                            className="flex-1 bg-red-600 hover:bg-red-700 text-white font-medium py-3 px-6 rounded-lg transition-colors cursor-pointer"
+                            onClick={handleGoHome}
+                            className="flex-1 bg-[#CCAD94] hover:bg-[#AA8B6F] text-white font-medium py-3 px-6 rounded-lg transition-colors cursor-pointer"
                         >
-                            다시 로그인
+                            북북 홈으로
                         </button>
                     </div>
                 </div>

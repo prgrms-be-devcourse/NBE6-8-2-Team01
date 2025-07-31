@@ -28,6 +28,11 @@ public class HomeResponseDto {
     private Long totalBooksInRegion;
     
     /**
+     * 사용자 지역 (IP 기반 또는 세션 기반)
+     */
+    private String userRegion;
+    
+    /**
      * 응답 메시지 (지역에 따라 동적 생성)
      */
     public String getMessage() {

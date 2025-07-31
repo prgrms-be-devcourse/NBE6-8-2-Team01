@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
-import { useAuthContext } from "./_hook/useAuth";
+import { useAuthContext } from "./global/hooks/useAuth";
 
 export default function AdminIndexPage() {
   const { isAdmin, isLogin, isInitialized } = useAuthContext();

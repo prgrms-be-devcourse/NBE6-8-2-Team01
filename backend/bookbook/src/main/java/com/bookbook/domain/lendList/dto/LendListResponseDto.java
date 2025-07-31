@@ -19,10 +19,11 @@ public class LendListResponseDto {
     private String bookCondition;
     private String bookImage;
     private String rentStatus;
-    private LocalDateTime createdAt;
-    private LocalDateTime updatedAt;
+    private String borrowerNickname;
+    private LocalDateTime createdDate;
+    private LocalDateTime modifiedDate;
 
-    public static LendListResponseDto from(Rent rent) {
+    public static LendListResponseDto from(Rent rent, String borrowerNickname) {
         return LendListResponseDto.builder()
                 .id(rent.getId())
                 .lenderUserId(rent.getLenderUserId())
@@ -32,9 +33,10 @@ public class LendListResponseDto {
                 .publisher(rent.getPublisher())
                 .bookCondition(rent.getBookCondition())
                 .bookImage(rent.getBookImage())
-                .rentStatus(rent.getRentStatus())
-                .createdAt(rent.getCreatedDate())
-                .updatedAt(rent.getModifiedDate())
+                .rentStatus(rent.getRentStatus().name())
+                .borrowerNickname(borrowerNickname)
+                .createdDate(rent.getCreatedDate())
+                .modifiedDate(rent.getModifiedDate())
                 .build();
     }
 }

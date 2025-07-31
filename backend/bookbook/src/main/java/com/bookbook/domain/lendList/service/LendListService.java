@@ -3,7 +3,10 @@ package com.bookbook.domain.lendList.service;
 import com.bookbook.domain.lendList.dto.LendListResponseDto;
 import com.bookbook.domain.lendList.repository.LendListRepository;
 import com.bookbook.domain.rent.entity.Rent;
+import com.bookbook.domain.rent.entity.RentStatus;
 import com.bookbook.domain.rent.repository.RentRepository;
+import com.bookbook.domain.rentList.repository.RentListRepository;
+import com.bookbook.domain.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -22,7 +25,9 @@ public class LendListService {
     
     private final LendListRepository lendListRepository;
     private final RentRepository rentRepository;
-    
+    private final RentListRepository rentListRepository;
+    private final UserRepository userRepository;
+
     /**
      * 사용자가 등록한 도서 목록을 페이징하여 조회
      * 
@@ -32,7 +37,18 @@ public class LendListService {
      */
     public Page<LendListResponseDto> getLendListByUserId(Long userId, Pageable pageable) {
         Page<Rent> rentPage = lendListRepository.findByLenderUserId(userId, pageable);
-        return rentPage.map(LendListResponseDto::from);
+        return rentPage.map(rent -> {
+            String borrowerNickname = null;
+            if (rent.getRentStatus() == RentStatus.LOANED || rent.getRentStatus() == RentStatus.FINISHED) {
+                borrowerNickname = rentListRepository.findByRentId(rent.getId())
+                        .stream()
+                        .findFirst()
+                        .flatMap(rentList -> userRepository.findById(rentList.getBorrowerUser().getId()))
+                        .map(user -> user.getNickname())
+                        .orElse(null);
+            }
+            return LendListResponseDto.from(rent, borrowerNickname);
+        });
     }
     
     /**
@@ -57,7 +73,7 @@ public class LendListService {
         }
         
         // 현재 대출 중인지 확인
-        if ("Loaned".equals(rent.getRentStatus())) {
+        if (rent.getRentStatus() == RentStatus.LOANED) {
             throw new IllegalStateException("현재 대출 중인 도서는 삭제할 수 없습니다.");
         }
         

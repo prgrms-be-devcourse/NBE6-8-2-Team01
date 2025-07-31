@@ -1,8 +1,12 @@
 package com.bookbook.domain.rent.dto;
 
+import com.bookbook.domain.rent.entity.RentStatus;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
+// 25.07.31 현준
+// 대여글 등록 시 필요한 정보를 담는 DTO(Data Transfer Object)
 public record RentRequestDto(
         @NotBlank(message = "대여글 제목을 입력해주세요.")
         String title,
@@ -20,8 +24,8 @@ public record RentRequestDto(
         @NotBlank(message = "내용을 입력해주세요.")
         String contents,
 
-        @NotBlank(message = "대여 상태를 입력해주세요.")
-        String rentStatus, // Enum으로 관리(Available, Loaned, Finished)
+        @NotNull(message = "대여 상태를 입력해주세요.")
+        RentStatus rentStatus, // Enum으로 관리(Available, Loaned, Finished)
 
         @NotBlank(message = "책 제목을 입력해주세요.")
         String bookTitle,
@@ -33,6 +37,10 @@ public record RentRequestDto(
         String publisher,
 
         @NotBlank(message = "카테고리를 입력해주세요.")
-        String category
+        String category,
+
+        @Size(max = 500, message = "내용은 500자를 초과할 수 없습니다.")
+        @NotBlank(message = "책 설명을 입력해주세요.")
+        String description
 ) {
 }

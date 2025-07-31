@@ -61,7 +61,7 @@ public class securityConfig {
                                 })
                 )
                 .authorizeHttpRequests(authorize -> authorize
-                        // ⭐ 로그아웃 경로도 permitAll()에 명시적으로 추가하여, 인증 없이 접근 가능하게 합니다.
+                      
                         .requestMatchers(
                                 "/api/*/admin/login", "/api/*/admin/logout",
                                 "api/v1/bookbook/users/social/callback",
@@ -73,20 +73,24 @@ public class securityConfig {
                                 "/api/v1/bookbook/users/signup",
                                 "/api/v1/bookbook/users/isAuthenticated",
                                 "/api/v1/bookbook/users/logout",
-                                "/api/v1/bookbook/auth/refresh-token"
+                                "/api/v1/bookbook/auth/refresh-token",
+                                "/api/v1/bookbook/home/**", // 홈 관련 모든 API 허용
+                                "/favicon.ico", // 파비콘 접근 허용
+                                "/h2-console/**", // H2 콘솔 접근 허용
+                                "/images/**", // 이미지 파일 접근 허용
+                                "/uploads/**", // uploads 폴더의 이미지 파일 접근 허용
+                                "/bookbook/rent/create", // Rent 페이지 생성은 인증 필요, (임시)
+                                "/bookbook/rent/**", // Rent 페이지 조회 허용 추가
+                                "/api/v1/bookbook/rent/**", // API 형태의 Rent 페이지 조회 허용 추가
+                                "/api/v1/bookbook/upload-image", // 이미지 업로드 API 경로 허용 추가
+                                "/api/v1/bookbook/searchbook" // 알라딘 책 검색 API 경로 허용 추가
                         ).permitAll()
+                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll() // OPTIONS 메서드 요청은 모든 경로에 대해 허용 (Preflight 요청)
                         .requestMatchers(HttpMethod.GET, "/api/v1/bookbook/users/me").authenticated()
                         .requestMatchers(HttpMethod.PATCH, "/api/v1/bookbook/users/me").authenticated()
                         .requestMatchers(HttpMethod.DELETE, "/api/v1/bookbook/users/me").authenticated()
-
                         .requestMatchers("api/*/admin/**").hasRole("ADMIN")
-                        .requestMatchers("/favicon.ico").permitAll()
-                        .requestMatchers("/h2-console/**").permitAll()
-                        .requestMatchers("/bookbook/rent/create").permitAll()
-                        .requestMatchers("/api/v1/bookbook/upload-image").permitAll()
-                        .requestMatchers("/api/v1/bookbook/searchbook").permitAll()
-                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-                        .anyRequest().authenticated()
+                        .anyRequest().authenticated() // 나머지 모든 요청은 인증 필요
                 )
                 .oauth2Login(oauth2 -> oauth2
                         .userInfoEndpoint(userInfo -> userInfo
@@ -96,12 +100,12 @@ public class securityConfig {
                 )
                 .addFilterBefore(jwtAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class)
                 .logout(logout -> logout
-                                .logoutRequestMatcher(request -> {
-                                    // 요청 URI와 메서드를 확인하여 매칭
-                                    String uri = request.getRequestURI();
-                                    String method = request.getMethod();
-                                    return "/api/v1/bookbook/users/logout".equals(uri) && "GET".equals(method);
-                                })
+                        .logoutRequestMatcher(request -> {
+                            // 요청 URI와 메서드를 확인하여 매칭
+                            String uri = request.getRequestURI();
+                            String method = request.getMethod();
+                            return "/api/v1/bookbook/users/logout".equals(uri) && "GET".equals(method);
+                        })
                         .logoutSuccessHandler((request, response, authentication) -> {
                             // 액세스 토큰 쿠키 삭제
                             Cookie deleteAccessTokenCookie = new Cookie(jwtAccessTokenCookieName, null);

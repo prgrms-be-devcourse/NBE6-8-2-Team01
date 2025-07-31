@@ -5,13 +5,13 @@ interface ConfirmModalProps {
   confirmText?: string;
   cancelText?: string;
   onConfirm: () => void;
-  onCancel: () => void;
+  onCancel?: () => void;
 }
 
 const ConfirmModal = ({
   message,
   confirmText = "확인",
-  cancelText = "취소",
+  cancelText,
   onConfirm,
   onCancel,
 }: ConfirmModalProps) => {

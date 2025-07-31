@@ -36,7 +36,7 @@ public class LendListController {
     @GetMapping
     public ResponseEntity<Page<LendListResponseDto>> getLendListByUserId(
             @PathVariable Long userId,
-            @PageableDefault(size = 10, sort = "createAt", direction = Sort.Direction.DESC) Pageable pageable) {
+            @PageableDefault(size = 10, sort = "createdDate", direction = Sort.Direction.DESC) Pageable pageable) {
         
         Page<LendListResponseDto> lendList = lendListService.getLendListByUserId(userId, pageable);
         return ResponseEntity.ok(lendList);

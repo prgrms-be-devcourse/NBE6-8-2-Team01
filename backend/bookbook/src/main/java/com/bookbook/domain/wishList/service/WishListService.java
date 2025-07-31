@@ -37,7 +37,12 @@ public class WishListService {
     public List<WishListResponseDto> getWishListByUserId(Long userId) {
         return wishListRepository.findByUserIdOrderByCreateDateDesc(userId)
                 .stream()
-                .map(WishListResponseDto::from)
+                .map(wishList -> {
+                    String lenderNickname = userRepository.findById(wishList.getRent().getLenderUserId())
+                            .map(user -> user.getNickname())
+                            .orElse("알 수 없음");
+                    return WishListResponseDto.from(wishList, lenderNickname);
+                })
                 .toList();
     }
 
@@ -73,7 +78,10 @@ public class WishListService {
 
         // 저장 및 반환
         WishList savedWishList = wishListRepository.save(wishList);
-        return WishListResponseDto.from(savedWishList);
+        String lenderNickname = userRepository.findById(rent.getLenderUserId())
+                .map(lenderUser -> lenderUser.getNickname())
+                .orElse("알 수 없음");
+        return WishListResponseDto.from(savedWishList, lenderNickname);
     }
 
     /**

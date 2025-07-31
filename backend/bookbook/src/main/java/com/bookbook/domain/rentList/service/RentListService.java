@@ -37,7 +37,12 @@ public class RentListService {
      */
     public List<RentListResponseDto> getRentListByUserId(Long borrowerUserId) {
         return rentListRepository.findByBorrowerUserId(borrowerUserId).stream()
-                .map(RentListResponseDto::from)
+                .map(rentList -> {
+                    String lenderNickname = userRepository.findById(rentList.getRent().getLenderUserId())
+                            .map(user -> user.getNickname())
+                            .orElse("알 수 없음");
+                    return RentListResponseDto.from(rentList, lenderNickname);
+                })
                 .collect(Collectors.toList());
     }
     
@@ -71,6 +76,9 @@ public class RentListService {
         rentList.setRent(rent);
         
         RentList savedRentList = rentListRepository.save(rentList);
-        return RentListResponseDto.from(savedRentList);
+        String lenderNickname = userRepository.findById(rent.getLenderUserId())
+                .map(user -> user.getNickname())
+                .orElse("알 수 없음");
+        return RentListResponseDto.from(savedRentList, lenderNickname);
     }
 }

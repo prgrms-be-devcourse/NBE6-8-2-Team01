@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from "react";
 import { DataTable, ColumnDefinition } from "../common/Table";
 import { Report } from "../../_types/report";
-import { BaseContentComponentProps } from "./baseContentComponentProps";
+import { ContentComponentProps } from "./baseContentComponentProps";
 
 // --- Mock Data ---
 const mockReports: Report[] = [
@@ -51,7 +51,7 @@ function ManagementButton({ report, onClick }: ManagementButtonProps) {
   );
 }
 
-export function ReportHistoryComponent({ responseData }: BaseContentComponentProps) {
+export function ReportHistoryComponent({ data }: ContentComponentProps) {
   const handleManageClick = (reportId: number) => {
     console.log(`관리 버튼 클릭: 신고 ID - ${reportId}`);
     /** TODO: 멤버 관리 로직 구현 (예: 정지 해제 API 호출)
@@ -63,12 +63,12 @@ export function ReportHistoryComponent({ responseData }: BaseContentComponentPro
   const [suspendedMembers, setSuspendedMembers] = useState<Report[]>([]);
 
   useEffect(() => {
-    if (responseData) {
+    if (data) {
       // setSuspendedMembers(responseData);
     }
     // TODO: 테스트 목적으로 추가. 수정 필요
     setSuspendedMembers(mockReports);
-  }, [responseData]);
+  }, [data]);
 
   const columns: ColumnDefinition<Report>[] = [
     { key: "id", label: "No" },
@@ -91,7 +91,7 @@ export function ReportHistoryComponent({ responseData }: BaseContentComponentPro
       <h3 className="text-lg font-semibold text-gray-900 mb-4">
         신고 목록
       </h3>
-        <DataTable columns={columns} data={suspendedMembers} />
+        <DataTable columns={columns} data={data} />
     </>
   );
 }

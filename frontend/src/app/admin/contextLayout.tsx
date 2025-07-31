@@ -1,6 +1,6 @@
 "use client";
 
-import { AuthProvider } from "./_hook/useAuth";
+import { AuthProvider } from "./global/hooks/useAuth";
 import ClientLayout from "./clientLayout";
 
 export default function ContextLayout({
