@@ -3,6 +3,7 @@ package com.bookbook.global.security;
 import com.bookbook.global.security.jwt.JwtAuthenticationFilter;
 import com.bookbook.global.security.jwt.JwtProvider;
 import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -52,6 +53,12 @@ public class securityConfig {
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .sessionManagement(sessionManagement ->
                         sessionManagement.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+                )
+                .exceptionHandling(exceptionHandling ->
+                        exceptionHandling
+                                .authenticationEntryPoint((request, response, authException) -> {
+                                    response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Unauthorized");
+                                })
                 )
                 .authorizeHttpRequests(authorize -> authorize
                         // ⭐ 로그아웃 경로도 permitAll()에 명시적으로 추가하여, 인증 없이 접근 가능하게 합니다.

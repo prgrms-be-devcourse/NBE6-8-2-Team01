@@ -3,14 +3,13 @@
 import React from 'react';
 import { usePathname } from 'next/navigation';
 import UserSidebar from '../components/UserSidebar';
+import Header from '../components/Header'; // ✅ Header 임포트
 import { LoginModalProvider, useLoginModal } from '../context/LoginModalContext';
 import LoginModal from '../components/LoginModal';
 
 function LoginModalContainer() {
     const { isLoginModalOpen, closeLoginModal } = useLoginModal();
-
     if (!isLoginModalOpen) return null;
-
     return <LoginModal onClose={closeLoginModal} />;
 }
 
@@ -20,14 +19,13 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
 
     return (
         <LoginModalProvider>
+            <Header />
             {isUserPage ? (
-                // 사용자 페이지 레이아웃
                 <div className="flex min-h-screen">
                     <UserSidebar />
                     <div className="flex-1 p-8">{children}</div>
                 </div>
             ) : (
-                // 일반 페이지 레이아웃
                 <main className="flex-grow">{children}</main>
             )}
             <LoginModalContainer />
