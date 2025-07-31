@@ -10,7 +10,7 @@ import org.springframework.web.bind.annotation.*;
 
 // 25.07.31 현준
 @RestController // @Controller와 @ResponseBody를 합친 형태, RESTful 웹 서비스 컨트롤러
-@RequestMapping("/bookbook/rent") // HTTP 요청의 특정 경로를 메서드나 클래스에 매핑
+@RequestMapping({"/bookbook/rent", "/api/v1/bookbook/rent"}) // 기존 경로와 API 경로 모두 지원
 @RequiredArgsConstructor // final 필드에 대한 생성자를 자동으로 생성
 public class RentController {
     private final RentService rentService;
