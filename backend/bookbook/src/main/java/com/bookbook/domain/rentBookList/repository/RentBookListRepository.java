@@ -16,7 +16,7 @@ public interface RentBookListRepository extends JpaRepository<Rent, Integer> {  
            "(:region IS NULL OR r.address LIKE %:region%) AND " +
            "(:category IS NULL OR r.category = :category) AND " +
            "(:search IS NULL OR r.bookTitle LIKE %:search% OR r.author LIKE %:search% OR r.publisher LIKE %:search%) AND " +
-           "(r.rentStatus = '대여가능' OR r.rentStatus = 'Available') " +
+           "r.rentStatus = com.bookbook.domain.rent.entity.RentStatus.AVAILABLE " +
            "ORDER BY r.createdDate DESC")
     Page<Rent> findAvailableBooks(
             @Param("region") String region,
@@ -27,7 +27,7 @@ public interface RentBookListRepository extends JpaRepository<Rent, Integer> {  
 
     // 대여 가능한 책 목록 조회 (필터링 없음)
     @Query("SELECT r FROM Rent r WHERE " +
-           "(r.rentStatus = '대여가능' OR r.rentStatus = 'Available') " +
+           "r.rentStatus = com.bookbook.domain.rent.entity.RentStatus.AVAILABLE " +
            "ORDER BY r.createdDate DESC")
     Page<Rent> findAllAvailableBooks(Pageable pageable);
 

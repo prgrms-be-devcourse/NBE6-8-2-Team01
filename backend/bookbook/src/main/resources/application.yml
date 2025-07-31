@@ -9,6 +9,11 @@ spring:
   datasource:
     hikari:
       auto-commit: false
+  servlet:
+    multipart:
+      max-file-size: 10MB      # 개별 파일 크기 제한
+      max-request-size: 50MB   # 전체 요청 크기 제한
+      location: src/main/resources/static/images
   jackson:
     serialization:
       fail-on-empty-beans: false

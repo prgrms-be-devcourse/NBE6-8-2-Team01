@@ -32,13 +32,18 @@ public class securityConfig {
                                 "/bookbook/home",
                                 "/api/v1/bookbook/login/oauth2/code/**",
                                 "/api/v1/bookbook/home",
+                                "/api/v1/bookbook/home/**", // 홈 관련 모든 API 허용
 
                                 "/api/v1/bookbook/users/**",
                                 "/api/v1/bookbook/users/isAuthenticated").permitAll()
                         .requestMatchers("api/*/admin/**").hasRole("ADMIN")
                         .requestMatchers("/favicon.ico").permitAll() // 파비콘 접근 허용
                         .requestMatchers("/h2-console/**").permitAll() // H2 콘솔 접근 허용
+                        .requestMatchers("/images/**").permitAll() // 이미지 파일 접근 허용 (로그아웃 상태에서도 이미지 보기 가능)
+                        .requestMatchers("/uploads/**").permitAll() // uploads 폴더의 이미지 파일 접근 허용 (로그아웃 상태에서도 이미지 보기 가능)
                         .requestMatchers("/bookbook/rent/create").permitAll() // Rent 페이지 생성은 인증 필요, (임시)
+                        .requestMatchers("/bookbook/rent/**").permitAll() // Rent 페이지 조회 허용 추가
+                        .requestMatchers("/api/v1/bookbook/rent/**").permitAll() // API 형태의 Rent 페이지 조회 허용 추가
                         .requestMatchers("/api/v1/bookbook/upload-image").permitAll() // 이미지 업로드 API 경로 허용 추가
                         .requestMatchers("/api/v1/bookbook/searchbook").permitAll() // 알라딘 책 검색 API 경로 허용 추가
                         .requestMatchers(org.springframework.http.HttpMethod.OPTIONS, "/**").permitAll() // OPTIONS 메서드 요청은 모든 경로에 대해 허용 (Preflight 요청)
