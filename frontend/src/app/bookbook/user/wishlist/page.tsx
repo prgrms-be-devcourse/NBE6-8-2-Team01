@@ -5,8 +5,7 @@ import { Heart, Search } from 'lucide-react';
 import { WishListItem } from './types';
 import { dummyWishList } from './dummyData';
 import WishListCard from './WishListCard';
-import Pagination from '../../components/Pagination';
-import UserSidebar from '../../components/UserSidebar';
+import Pagination from '../../../components/Pagination';
 
 export default function WishListPage() {
     const [wishList, setWishList] = useState<WishListItem[]>(dummyWishList);
@@ -25,7 +24,7 @@ export default function WishListPage() {
     const fetchWishList = async () => {
         try {
             setLoading(true);
-            const response = await fetch(`/api/bookbook/wishList?userId=${userId}`);
+            const response = await fetch(`/api/bookbook/user/wishList?userId=${userId}`);
             
             if (!response.ok) {
                 throw new Error('찜 목록을 불러오는데 실패했습니다.');
@@ -95,9 +94,7 @@ export default function WishListPage() {
     }
 
     return (
-        <div className="flex">
-            <UserSidebar />
-            <div className="flex-1 p-6">
+        <div className="w-full">
                 <div className="mb-8">
                     <h1 className="text-3xl font-bold mb-2">찜</h1>
                 </div>
@@ -150,7 +147,6 @@ export default function WishListPage() {
                         />
                     </>
                 )}
-            </div>
         </div>
     );
 }
