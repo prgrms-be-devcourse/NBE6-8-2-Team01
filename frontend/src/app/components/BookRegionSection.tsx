@@ -1,6 +1,14 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import { useRouter } from 'next/navigation';
+
+interface BookInfo {
+  id: number;
+  imageUrl: string;
+  title: string;
+  bookTitle: string;
+}
 
 interface HomeApiResponse {
   resultCode: string;
@@ -12,6 +20,14 @@ interface HomeApiResponse {
     message: string;
     userRegion?: string;
   };
+  success?: boolean;
+  statusCode: number;
+}
+
+interface BooksApiResponse {
+  resultCode: string;
+  msg: string;
+  data: BookInfo[];
   success?: boolean;
   statusCode: number;
 }
@@ -55,6 +71,43 @@ const fetchHomeData = async (region?: string): Promise<HomeApiResponse> => {
   } catch (error) {
     console.error('fetchHomeData 에러:', error);
     throw error;
+  }
+};
+
+// 도서 정보 (ID 포함) API 호출
+const fetchBooksWithId = async (region?: string): Promise<BookInfo[]> => {
+  try {
+    const url = new URL('http://localhost:8080/api/v1/bookbook/home/books-with-id');
+    if (region && region !== '전체') {
+      url.searchParams.append('region', region);
+    }
+    
+    const response = await fetch(url.toString(), {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+      },
+      mode: 'cors',
+      credentials: 'include'
+    });
+    
+    if (!response.ok) {
+      console.warn(`fetchBooksWithId API 오류: HTTP ${response.status}: ${response.statusText}`);
+      return []; // 오류 시 빈 배열 반환
+    }
+    
+    const data: BooksApiResponse = await response.json();
+    
+    if (data && (data.statusCode === 200 || data.resultCode.startsWith("200"))) {
+      return data.data || [];
+    } else {
+      console.warn('fetchBooksWithId API 응답 오류:', data);
+      return [];
+    }
+  } catch (error) {
+    console.warn('fetchBooksWithId 네트워크 오류:', error);
+    return []; // 네트워크 오류 시 빈 배열 반환 (오류 발생시키지 않음)
   }
 };
 
@@ -103,12 +156,17 @@ const fetchRegions = async (): Promise<RegionInfo[]> => {
 };
 
 const BookRegionSection = () => {
+  const router = useRouter();
   const [homeData, setHomeData] = useState<HomeApiResponse['data'] | null>(null);
+  const [books, setBooks] = useState<BookInfo[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedRegion, setSelectedRegion] = useState<string>('전체');
   const [regions, setRegions] = useState<RegionInfo[]>([]);
   const [showRegionSelector, setShowRegionSelector] = useState(false);
+  
+  // 자동 지역 선택이 이미 한 번 실행되었는지 추적하는 ref
+  const hasAutoSelectedRegion = useRef(false);
 
   // 지역 목록 로드
   useEffect(() => {
@@ -131,51 +189,92 @@ const BookRegionSection = () => {
 
   // 메인 데이터 로드
   useEffect(() => {
-    const loadHomeData = async () => {
+    const loadData = async () => {
       try {
         setLoading(true);
         setError(null);
         
-        const response = await fetchHomeData(selectedRegion === '전체' ? undefined : selectedRegion);
+        // 기본 홈 데이터와 도서 정보를 동시에 로드
+        const [homeResponse, booksData] = await Promise.all([
+          fetchHomeData(selectedRegion === '전체' ? undefined : selectedRegion),
+          fetchBooksWithId(selectedRegion === '전체' ? undefined : selectedRegion)
+        ]);
         
-        // 백엔드 응답 구조에 맞게 성공 조건 확인
-        if (response && (response.statusCode === 200 || response.resultCode.startsWith("200"))) {
-          setHomeData(response.data);
+        // 홈 데이터 처리
+        if (homeResponse && (homeResponse.statusCode === 200 || homeResponse.resultCode.startsWith("200"))) {
+          setHomeData(homeResponse.data);
           
-          // 사용자 지역 정보가 있고 현재 선택된 지역이 전체인 경우 자동 선택
-          if (response.data.userRegion && selectedRegion === '전체') {
-            setSelectedRegion(response.data.userRegion);
+          // 사용자 지역 정보가 있고 아직 자동 선택이 실행되지 않았으며 현재 선택된 지역이 전체인 경우에만 자동 선택
+          if (homeResponse.data.userRegion && 
+              !hasAutoSelectedRegion.current && 
+              selectedRegion === '전체') {
+            console.log('사용자 지역으로 자동 선택:', homeResponse.data.userRegion);
+            hasAutoSelectedRegion.current = true; // 자동 선택 실행 표시
+            setSelectedRegion(homeResponse.data.userRegion);
             return; // 자동 선택 후 다시 로드할 것이므로 여기서 return
           }
         } else {
-          setError('데이터를 불러오는데 실패했습니다.');
+          console.warn('홈 데이터 로드 실패, 기본 데이터 사용');
+          // 홈 데이터 로드 실패 시에도 기본 데이터 설정
+          setHomeData({
+            region: selectedRegion,
+            bookImages: [],
+            totalBooksInRegion: 0,
+            message: '최근 등록된 도서'
+          });
         }
-      } catch (err) {
-        console.error('API 호출 에러:', err);
         
-        // 에러 유형에 따른 다른 메시지 표시
-        if (err instanceof TypeError && err.message.includes('Failed to fetch')) {
-          setError('백엔드 서버에 연결할 수 없습니다. 서버가 실행 중인지 확인해주세요.');
-        } else if (err instanceof Error && err.message.includes('HTTP 403')) {
-          setError('서버 접근 권한 오류가 발생했습니다. 관리자에게 문의해주세요.');
-        } else if (err instanceof Error && err.message.includes('HTTP 404')) {
-          setError('API 경로를 찾을 수 없습니다. 백엔드 서버 설정을 확인해주세요.');
-        } else if (err instanceof Error && err.message.includes('HTTP')) {
-          setError(`서버 오류: ${err.message}`);
-        } else {
-          setError('알 수 없는 오류가 발생했습니다.');
+        // 도서 데이터 설정 (성공/실패 관계없이)
+        setBooks(booksData);
+        
+      } catch (err) {
+        console.error('데이터 로드 에러:', err);
+        
+        // 에러 발생 시에도 기본 데이터 설정하여 화면이 깨지지 않도록 함
+        setHomeData({
+          region: selectedRegion,
+          bookImages: [],
+          totalBooksInRegion: 0,
+          message: '최근 등록된 도서'
+        });
+        setBooks([]);
+        
+        // 네트워크 오류가 아닌 경우에만 에러 메시지 표시
+        if (!(err instanceof TypeError && err.message.includes('Failed to fetch'))) {
+          if (err instanceof Error && err.message.includes('HTTP 403')) {
+            setError('서버 접근 권한 오류가 발생했습니다. 관리자에게 문의해주세요.');
+          } else if (err instanceof Error && err.message.includes('HTTP 404')) {
+            setError('API 경로를 찾을 수 없습니다. 백엔드 서버 설정을 확인해주세요.');
+          } else if (err instanceof Error && err.message.includes('HTTP')) {
+            setError(`서버 오류: ${err.message}`);
+          } else {
+            setError('알 수 없는 오류가 발생했습니다.');
+          }
         }
+        // Failed to fetch 오류는 로그아웃 상태에서 정상적인 현상이므로 에러 메시지 표시하지 않음
       } finally {
         setLoading(false);
       }
     };
 
-    loadHomeData();
+    loadData();
   }, [selectedRegion]);
 
   const handleRegionChange = (region: string) => {
+    // 사용자가 수동으로 지역을 변경하는 경우
+    console.log('사용자가 지역 변경:', selectedRegion, '→', region);
     setSelectedRegion(region);
     setShowRegionSelector(false);
+    
+    // 사용자가 수동으로 지역을 변경했으므로 자동 선택 플래그를 true로 설정
+    // (다시 자동 선택되지 않도록)
+    hasAutoSelectedRegion.current = true;
+  };
+
+  // 도서 이미지 클릭 시 rent 페이지로 이동
+  const handleBookClick = (bookId: number) => {
+    console.log('도서 클릭 - ID:', bookId);
+    router.push(`/bookbook/rent/${bookId}`);
   };
 
   const handleImageError = (imageUrl: string, event: React.SyntheticEvent<HTMLImageElement>) => {
@@ -239,6 +338,16 @@ const BookRegionSection = () => {
     );
   }
 
+  // 새로운 books 배열을 사용, 없으면 기존 bookImages 사용 (하위 호환성)
+  const displayBooks = books && books.length > 0 
+    ? books 
+    : homeData?.bookImages?.map((imageUrl, index) => ({
+        id: 0, // 기존 방식에서는 ID를 알 수 없으므로 0으로 설정 (클릭 불가)
+        imageUrl,
+        title: `도서 ${index + 1}`,
+        bookTitle: `도서 ${index + 1}`
+      })) || [];
+
   return (
     <section className="w-full max-w-7xl mx-auto px-4 mt-12 mb-16">
       <div className="flex justify-between items-center mb-6">
@@ -283,18 +392,25 @@ const BookRegionSection = () => {
 
       {/* 도서 이미지 그리드 */}
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6">
-        {homeData?.bookImages && homeData.bookImages.length > 0 ? (
-          homeData.bookImages.map((imageUrl, index) => (
-            <div key={index} className="w-full h-[280px] relative overflow-hidden rounded-lg shadow-lg hover:shadow-xl transition-shadow duration-300 group">
+        {displayBooks && displayBooks.length > 0 ? (
+          displayBooks.map((book, index) => (
+            <div 
+              key={`${book.id}-${index}`} 
+              className={`w-full h-[280px] relative overflow-hidden rounded-lg shadow-lg hover:shadow-xl transition-all duration-300 group ${
+                book.id > 0 ? 'cursor-pointer hover:scale-[1.02]' : 'cursor-default'
+              }`}
+              onClick={() => book.id > 0 && handleBookClick(book.id)}
+              title={book.id > 0 ? `${book.bookTitle || book.title} - 클릭하여 상세보기` : book.title}
+            >
               <img
-                src={imageUrl}
-                alt={`추천 도서 ${index + 1}`}
+                src={book.imageUrl}
+                alt={book.bookTitle || book.title || `추천 도서 ${index + 1}`}
                 className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
                 loading="lazy"
                 referrerPolicy="no-referrer-when-downgrade"
                 decoding="async"
-                onError={(e) => handleImageError(imageUrl, e)}
-                onLoad={(e) => handleImageLoad(imageUrl, e)}
+                onError={(e) => handleImageError(book.imageUrl, e)}
+                onLoad={(e) => handleImageLoad(book.imageUrl, e)}
                 style={{
                   position: 'absolute',
                   top: 0,
@@ -309,9 +425,25 @@ const BookRegionSection = () => {
               {/* 호버 시 오버레이 효과 */}
               <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all duration-300 flex items-center justify-center" style={{zIndex: 20}}>
                 <div className="text-white text-sm opacity-0 group-hover:opacity-100 transition-opacity duration-300 text-center px-2">
-                  {selectedRegion !== '전체' ? selectedRegion : '전국'} 도서
+                  {book.id > 0 ? (
+                    <div>
+                      <div className="font-semibold mb-1">{book.bookTitle || book.title}</div>
+                      <div className="text-xs">클릭하여 상세보기</div>
+                    </div>
+                  ) : (
+                    <div>
+                      {selectedRegion !== '전체' ? selectedRegion : '전국'} 도서
+                    </div>
+                  )}
                 </div>
               </div>
+
+              {/* 클릭 가능한 도서에 대한 시각적 표시 */}
+              {book.id > 0 && (
+                <div className="absolute top-2 right-2 bg-blue-500 text-white text-xs px-2 py-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300" style={{zIndex: 25}}>
+                  상세보기
+                </div>
+              )}
             </div>
           ))
         ) : (
@@ -342,11 +474,18 @@ const BookRegionSection = () => {
           <div className="text-sm text-gray-600 text-center">
             💡 현재 <strong className="text-blue-700">{homeData.region}</strong> 지역의 도서를 보고 계십니다.
             <div className="text-xs text-gray-500 mt-1">
-              다른 지역의 도서도 위의 지역 선택에서 확인하실 수 있어요!
+              도서 이미지를 클릭하면 상세 정보를 확인할 수 있어요!
             </div>
           </div>
         </div>
       )}
+
+      {/* 사용 안내 */}
+      <div className="mt-6 p-3 bg-gray-50 rounded-lg border border-gray-200">
+        <div className="text-sm text-gray-600 text-center">
+          💬 <strong>이용 안내:</strong> 도서 이미지를 클릭하면 상세 정보와 대여 신청을 할 수 있습니다.
+        </div>
+      </div>
 
       {/* 새로고침 버튼 */}
       <div className="mt-8 text-center">
