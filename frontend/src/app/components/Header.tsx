@@ -1,4 +1,4 @@
-'use client';
+'use client'; // 이 줄을 파일 맨 위에 추가해주세요.
 
 import React, { useState, useEffect } from 'react';
 import { Bell, Heart, User } from 'lucide-react';
@@ -19,8 +19,8 @@ const Header = () => {
       try {
         const response = await fetch('/api/v1/bookbook/users/isAuthenticated');
         if (response.ok) {
-          const data = await response.json();
-          setIsLoggedIn(data);
+          const rsData = await response.json();
+          setIsLoggedIn(rsData.data);
         } else {
           setIsLoggedIn(false);
         }

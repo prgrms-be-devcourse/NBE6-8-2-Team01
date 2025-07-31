@@ -3,13 +3,15 @@ package com.bookbook.domain.user.entity;
 import com.bookbook.domain.suspend.entity.SuspendedUser;
 import com.bookbook.domain.user.enums.Role;
 import com.bookbook.domain.user.enums.UserStatus;
-import com.bookbook.global.entity.BaseEntity;
+import com.bookbook.global.entity.BaseEntity; // BaseEntity 임포트 유지
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
+import lombok.AllArgsConstructor; // ✅ AllArgsConstructor 추가
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
@@ -19,9 +21,11 @@ import java.util.List;
 
 @Entity
 @Getter
+@Setter
 @Table(name = "users") // 예약어 충돌 방지
 @EntityListeners(AuditingEntityListener.class)
 @NoArgsConstructor(access = lombok.AccessLevel.PROTECTED)
+@AllArgsConstructor
 public class User extends BaseEntity {
 
     @Id
@@ -35,17 +39,15 @@ public class User extends BaseEntity {
     @Column(name = "password", nullable = false)
     private String password;
 
-    @Column(name = "nickname", unique = true, nullable = false)
+    @Column(name = "nickname", unique = true, nullable = true)
     private String nickname;
 
     @Column(name = "email", unique = true, nullable = true)
     private String email;
 
-    @Column(name = "address", nullable = false)
+    @Column(name = "address", nullable = true)
     private String address;
 
-    // 별점 = (리뷰를 남긴 사람들의 별점들의 합) / (리뷰를 남긴 사람의 수)
-    // 리뷰 수를 우리가 어떻게 처리할 수 있을까요?
     @Min(0)
     @Max(5)
     @Column(name = "rating", nullable = false)
@@ -72,24 +74,25 @@ public class User extends BaseEntity {
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL)
     private List<SuspendedUser> suspends;
 
+    @Column(name = "registration_completed", nullable = false)
+    private boolean registrationCompleted;
+
     @Builder
-    public User(String username, String password, String nickname, String email, String address, Float rating, Role role, UserStatus userStatus) {
+    public User(Long id, String username, String password, String nickname, String email, String address,
+                Float rating, Role role, UserStatus userStatus, LocalDateTime createAt, LocalDateTime updateAt,
+                boolean registrationCompleted) {
+        this.id = id; // id도 빌더로 생성될 수 있도록 추가
         this.username = username;
         this.password = password;
         this.nickname = nickname;
         this.email = email;
         this.address = address;
-        this.rating = rating != null ? rating : 0.0f; // 기본값은 0.0f
-        this.role = role != null ? role : Role.USER; // 기본값은 USER
-        this.userStatus = userStatus != null ? userStatus : UserStatus.ACTIVE; // 기본값은 ACTIVE
-    }
-
-    public void changeAddress(String address) {
-        this.address = address;
-    }
-
-    public void changeNickname(String nickname) {
-        this.nickname = nickname;
+        this.rating = (rating != null) ? rating : 0.0f;
+        this.role = (role != null) ? role : Role.USER;
+        this.userStatus = (userStatus != null) ? userStatus : UserStatus.ACTIVE;
+        this.createAt = createAt;
+        this.updateAt = updateAt;
+        this.registrationCompleted = registrationCompleted;
     }
 
     public void changeUserStatus(UserStatus userStatus) {
@@ -104,15 +107,15 @@ public class User extends BaseEntity {
     }
 
     public void suspend(Integer periodDays) {
-        userStatus = UserStatus.SUSPENDED;
-        suspendedAt = LocalDateTime.now();
-        resumedAt = suspendedAt.plusDays(periodDays);
+        this.setUserStatus(UserStatus.SUSPENDED);
+        this.setSuspendedAt(LocalDateTime.now());
+        this.setResumedAt(suspendedAt.plusDays(periodDays));
     }
 
     public void resume() {
-        userStatus = UserStatus.ACTIVE;
-        suspendedAt = null;
-        resumedAt = null;
+        this.setUserStatus(UserStatus.ACTIVE);
+        this.setSuspendedAt(null);
+        this.setResumedAt(null);
     }
 
     public boolean isSuspended() {
@@ -123,7 +126,12 @@ public class User extends BaseEntity {
         this.username = username;
     }
 
-    public void setEmail(String email) { // 이메일 변경 메서드 추가 (null 허용)
-        this.email = email;
+    public void updateInfo(String nickname, String address) {
+        if (nickname != null && !nickname.trim().isEmpty()) {
+            this.setNickname(nickname);
+        }
+        if (address != null && !address.trim().isEmpty()) {
+            this.setAddress(address);
+        }
     }
 }
