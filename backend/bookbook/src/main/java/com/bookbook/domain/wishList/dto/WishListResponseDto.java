@@ -1,6 +1,5 @@
 package com.bookbook.domain.wishList.dto;
 
-import com.bookbook.domain.rent.entity.RentStatus;
 import com.bookbook.domain.wishList.entity.WishList;
 
 import java.time.LocalDateTime;
@@ -13,11 +12,13 @@ public record WishListResponseDto(
         String author,
         String publisher,
         String bookCondition,
-        RentStatus rentStatus,
+        String rentStatus,
         String bookImage,
+        String address,
+        String lenderNickname,
         LocalDateTime createDate
 ) {
-    public static WishListResponseDto from(WishList wishList) {
+    public static WishListResponseDto from(WishList wishList, String lenderNickname) {
         return new WishListResponseDto(
                 wishList.getId(),
                 wishList.getRent().getId(),
@@ -26,8 +27,10 @@ public record WishListResponseDto(
                 wishList.getRent().getAuthor(),
                 wishList.getRent().getPublisher(),
                 wishList.getRent().getBookCondition(),
-                wishList.getRent().getRentStatus(),
+                wishList.getRent().getRentStatus().name(),
                 wishList.getRent().getBookImage(),
+                wishList.getRent().getAddress(),
+                lenderNickname,
                 wishList.getCreateDate()
         );
     }
