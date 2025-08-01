@@ -26,13 +26,32 @@ export default function WishListPage() {
         fetchWishList(currentPage);
     }, [currentPage]);
 
-    const fetchWishList = async (page: number = 1) => {
+    useEffect(() => {
+        console.log('검색어 변경됨:', searchTerm);
+        const timer = setTimeout(() => {
+            console.log('디바운싱 완료, API 호출 시작');
+            if (currentPage === 1) {
+                fetchWishList(1, searchTerm);
+            } else {
+                setCurrentPage(1);
+            }
+        }, 1500); // 1500ms 후에 검색 실행
+        return () => clearTimeout(timer);
+    }, [searchTerm]);
+
+
+    const fetchWishList = async (page: number = 1, search?: string) => {
         try {
             setLoading(true);
             setError(null);
 
+            let url = `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/user/${userId}/wishlist?page=${page - 1}&size=${itemsPerPage}&sort=createdDate,desc`;
+            if (search && search.trim()) {
+                url += `&search=${encodeURIComponent(search.trim())}`;
+            }
+
             const response = await fetch(
-                `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/user/${userId}/wishlist?page=${page - 1}&size=${itemsPerPage}&sort=createdDate,desc`,
+                url,
                 {
                     method: 'GET',
                     headers: {
@@ -49,7 +68,7 @@ export default function WishListPage() {
             if (!response.ok) {
                 if (response.status === 404) {
                     setWishList([]);
-                    setPagination(prev => ({ ...prev, currentPage: page, totalPages: 1, totalElements: 0 }));
+                    setPagination(prev => ({ ...prev, currentPage: 1, totalPages: 1, totalElements: 0 }));
                     return;
                 }
                 throw new Error(`HTTP ${response.status}: ${response.statusText}`);
@@ -58,7 +77,10 @@ export default function WishListPage() {
             const data = await response.json();
             console.log('찜 목록 API 응답:', data);
 
-            if (data.content) {
+            if (Array.isArray(data)) {
+                setWishList(data);
+                setPagination(prev => ({ ...prev, currentPage: 1, totalPages: 1, totalElements: data.length }));
+            } else if (data.content) {
                 setWishList(data.content);
                 setPagination({
                     currentPage: data.number + 1,
@@ -69,22 +91,9 @@ export default function WishListPage() {
             }
         } catch (err) {
             console.error('찜 목록 조회 에러:', err);
-            
-            // 백엔드 연동 실패 시 더미 데이터 사용
-            const startIndex = (page - 1) * itemsPerPage;
-            const endIndex = startIndex + itemsPerPage;
-            const pageData = dummyWishList.slice(startIndex, endIndex);
-            
-            setWishList(pageData);
-            setPagination({
-                currentPage: page,
-                totalPages: Math.ceil(dummyWishList.length / itemsPerPage),
-                totalElements: dummyWishList.length,
-                size: itemsPerPage
-            });
-            
-            // 에러 메시지 표시 (개발 중임을 알림)
-            setError('백엔드 서버에 연결할 수 없어 샘플 데이터를 표시하고 있습니다.');
+            setError(`찜 목록을 불러오는데 실패했습니다: ${err instanceof Error ? err.message : '알 수 없는 오류'}`);
+            setWishList([]);
+            setPagination(prev => ({ ...prev, currentPage: page, totalPages: 1, totalElements: 0 }));
         } finally {
             setLoading(false);
         }
@@ -117,30 +126,12 @@ export default function WishListPage() {
             alert('찜 목록에서 성공적으로 삭제되었습니다.');
         } catch (err) {
             console.error('찜 목록 삭제 에러:', err);
-            
-            // 더미 데이터 사용 중일 때는 UI에서만 삭제
-            if (error && error.includes('샘플 데이터')) {
-                setWishList(wishList.filter(item => item.id !== id));
-                alert('샘플 데이터에서 삭제되었습니다.');
-            } else {
-                alert('찜 목록에서 삭제에 실패했습니다.');
-            }
+            alert('찜 목록에서 삭제에 실패했습니다.');
         }
     };
 
-    // 검색 필터링
-    const filteredWishList = wishList.filter(item => {
-        const searchLower = searchTerm.toLowerCase();
-        return (
-            item.bookTitle.toLowerCase().includes(searchLower) ||
-            item.bookAuthor.toLowerCase().includes(searchLower) ||
-            item.bookPublisher.toLowerCase().includes(searchLower)
-        );
-    });
-
-    // 현재 페이지에 표시할 아이템 계산
-    // 백엔드 연동 실패로 더미 데이터 사용 중일 때는 이미 페이징된 데이터를 사용
-    const currentItems = error && error.includes('샘플 데이터') ? filteredWishList : filteredWishList;
+    // 서버에서 이미 필터링된 데이터이므로 클라이언트 필터링 제거
+    const currentItems = wishList;
 
     const handlePageChange = (page: number) => {
         setCurrentPage(page);
@@ -149,7 +140,6 @@ export default function WishListPage() {
 
     const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
         setSearchTerm(e.target.value);
-        setCurrentPage(1); // 검색 시 첫 페이지로 이동
     };
 
     if (loading) {
@@ -198,7 +188,7 @@ export default function WishListPage() {
                 </div>
             )}
 
-            {filteredWishList.length === 0 && !loading ? (
+            {wishList.length === 0 && !loading ? (
                 <div className="text-center py-12">
                     <Heart className="mx-auto h-16 w-16 text-gray-300 mb-4" />
                     <p className="text-gray-500 text-lg">
