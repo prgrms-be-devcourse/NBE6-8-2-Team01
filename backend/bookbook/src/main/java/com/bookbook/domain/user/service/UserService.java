@@ -1,5 +1,6 @@
 package com.bookbook.domain.user.service;
 
+import com.bookbook.domain.user.dto.UserProfileResponseDto;
 import com.bookbook.domain.user.dto.UserResponseDto;
 import com.bookbook.domain.user.entity.User;
 import com.bookbook.domain.user.enums.Role;
@@ -168,6 +169,18 @@ public class UserService {
     public User getByIdOrThrow(Long id) {
         return userRepository.findById(id)
                 .orElseThrow(() -> new ServiceException("404-USER-NOT-FOUND", "해당 사용자를 찾을 수 없습니다."));
+    }
+
+    public UserProfileResponseDto getUserProfileDetails(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ServiceException("404-USER-NOT-FOUND", "사용자를 찾을 수 없습니다."));
+
+        // TODO: 매너점수(평점) 계산 로직 구현 필요
+        // 현재는 임시로 고정된 값을 반환합니다.
+        double mannerScore = 4.8;
+        int mannerScoreCount = 25;
+
+        return UserProfileResponseDto.from(user, mannerScore, mannerScoreCount);
     }
 
 }
