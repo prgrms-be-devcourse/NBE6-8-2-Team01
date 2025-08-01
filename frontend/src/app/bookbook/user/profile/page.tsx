@@ -4,9 +4,10 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
-import apiClient from '../utils/apiClient'; // apiClient 경로에 맞게 조정
+import { authFetch } from '@/app/util/authFetch';
+import apiClient from '../utils/apiClient';
+import { useLoginModal } from '@/app/context/LoginModalContext';
 
-// UserResponseDto 타입 정의
 interface UserResponseDto {
     id: number;
     username: string;
@@ -25,20 +26,35 @@ export default function MyPage() {
 
     const [isEditing, setIsEditing] = useState(false);
     const [editedNickname, setEditedNickname] = useState<string>('');
-    const [editedAddress, setEditedAddress] = useState<string>(''); // string 타입 유지
+    const [editedAddress, setEditedAddress] = useState<string>('');
 
     const [originalNickname, setOriginalNickname] = useState<string>('');
-    const [originalAddress, setOriginalAddress] = useState<string>(''); // string 타입 유지
+    const [originalAddress, setOriginalAddress] = useState<string>('');
 
     const [nicknameCheckStatus, setNicknameCheckStatus] = useState<'idle' | 'checking' | 'available' | 'unavailable'>('idle');
     const [nicknameCheckMessage, setNicknameCheckMessage] = useState<string>('');
     const debounceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
+    const { openLoginModal } = useLoginModal();
+
     useEffect(() => {
         const fetchUserData = async () => {
             try {
-                const rsData = await apiClient<UserResponseDto>('/api/v1/bookbook/users/me');
-                const data = rsData.data;
+                const response = await authFetch('/api/v1/bookbook/users/me', {}, openLoginModal);
+
+                if (!response.ok) {
+                    throw new Error('사용자 정보를 불러오지 못했습니다.');
+                }
+
+                // JSON 응답을 안전하게 파싱합니다.
+                const responseData = await response.json();
+
+                // 백엔드 응답 구조에 따라 실제 데이터가 'data' 필드 안에 있는지 확인합니다.
+                if (!responseData || !responseData.data) {
+                    throw new Error("서버 응답이 유효하지 않습니다.");
+                }
+
+                const data = responseData.data;
 
                 setUserData({
                     id: data.id,
@@ -54,11 +70,11 @@ export default function MyPage() {
                         day: 'numeric',
                     }) : '날짜 없음',
                 });
-                // setEditedNickname, setEditedAddress 등에도 null 방지
+
                 setEditedNickname(data.nickname);
-                setEditedAddress(data.address || ''); // 여기서 string | null -> string으로 변환
+                setEditedAddress(data.address || '');
                 setOriginalNickname(data.nickname);
-                setOriginalAddress(data.address || ''); // 여기서 string | null -> string으로 변환
+                setOriginalAddress(data.address || '');
                 setNicknameCheckStatus('idle');
             } catch (error) {
                 const errorMessage = error instanceof Error ? error.message : '알 수 없는 오류가 발생했습니다.';
@@ -68,9 +84,8 @@ export default function MyPage() {
         };
 
         void fetchUserData();
-    }, [router]);
+    }, [openLoginModal]);
 
-    // 닉네임 입력 변경 핸들러 (디바운싱 적용)
     const handleNicknameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const value = e.target.value;
         setEditedNickname(value);
@@ -84,7 +99,6 @@ export default function MyPage() {
         if (value.trim() && value !== originalNickname) {
             setNicknameCheckStatus('checking');
             debounceTimeoutRef.current = setTimeout(() => {
-                // 비동기 함수 호출 시 반환되는 Promise를 명시적으로 무시 (ESLint 경고 방지)
                 void checkNicknameAvailability(value);
             }, 500);
         } else if (value.trim() === originalNickname) {
@@ -93,7 +107,6 @@ export default function MyPage() {
         }
     };
 
-    // 닉네임 중복 확인 비동기 함수
     const checkNicknameAvailability = async (nicknameToCheck: string) => {
         if (!nicknameToCheck.trim()) {
             setNicknameCheckMessage('닉네임을 입력해주세요.');
@@ -102,8 +115,9 @@ export default function MyPage() {
         }
 
         try {
-            const rsData = await apiClient<{ isAvailable: boolean }>(`/api/v1/bookbook/users/check-nickname?nickname=${encodeURIComponent(nicknameToCheck)}`);
-            if (rsData.data && rsData.data.isAvailable) {
+            const response = await apiClient<{ isAvailable: boolean }>(`/api/v1/bookbook/users/check-nickname?nickname=${encodeURIComponent(nicknameToCheck)}`);
+            const rsData = response.data;
+            if (rsData && rsData.isAvailable) {
                 setNicknameCheckStatus('available');
                 setNicknameCheckMessage('사용 가능한 닉네임입니다.');
             } else {
@@ -118,21 +132,18 @@ export default function MyPage() {
         }
     };
 
-
-    // "수정" 버튼 클릭 핸들러
     const handleEditClick = () => {
         if (userData) {
             setEditedNickname(userData.nickname);
-            setEditedAddress(userData.address || ''); // null일 경우 빈 문자열로 대체
+            setEditedAddress(userData.address || '');
             setOriginalNickname(userData.nickname);
-            setOriginalAddress(userData.address || ''); // null일 경우 빈 문자열로 대체
+            setOriginalAddress(userData.address || '');
             setIsEditing(true);
             setNicknameCheckStatus('idle');
             setNicknameCheckMessage('');
         }
     };
 
-    // "확인" 버튼 클릭 핸들러 (수정 사항 저장)
     const handleConfirmClick = async () => {
         if (!isEditing) {
             toast.warn('수정 모드가 아닙니다.');
@@ -142,7 +153,6 @@ export default function MyPage() {
         const trimmedNickname = editedNickname.trim();
         const trimmedAddress = editedAddress.trim();
 
-        // 닉네임 유효성 검사 (변경이 있을 경우에만 중복 확인 상태 확인)
         if (trimmedNickname !== originalNickname && nicknameCheckStatus !== 'available') {
             toast.error('닉네임 중복 확인이 필요하거나 유효하지 않습니다.');
             return;
@@ -159,7 +169,7 @@ export default function MyPage() {
             return;
         }
 
-        const requestBody : {nickname?: string; address?: string} = {};
+        const requestBody: { nickname?: string; address?: string } = {};
 
         if (trimmedNickname !== originalNickname) {
             requestBody.nickname = trimmedNickname;
@@ -170,22 +180,27 @@ export default function MyPage() {
         }
 
         try {
-            await apiClient('/api/v1/bookbook/users/me', {
+            const response = await authFetch('/api/v1/bookbook/users/me', {
                 method: 'PATCH',
                 body: JSON.stringify(requestBody),
-            });
+            }, openLoginModal);
 
-            // userData 업데이트 시에도 string | null -> string으로 변환
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.message || '프로필 업데이트에 실패했습니다.');
+            }
+
+            const responseData = await response.json();
+            const updatedData = responseData.data;
+
             setUserData(prev => prev ? {
                 ...prev,
-                ...(requestBody.nickname ? { nickname: requestBody.nickname } : {}),
-                // address는 항상 string으로 저장되도록 보장
-                ...(requestBody.address !== undefined ? { address: requestBody.address } : {}),
+                nickname: updatedData.nickname || prev.nickname,
+                address: updatedData.address !== undefined ? updatedData.address : prev.address,
             } : null);
 
-            // originalNickname/Address 업데이트 시에도 string | null -> string으로 변환
-            setOriginalNickname(requestBody.nickname || originalNickname);
-            setOriginalAddress(requestBody.address || originalAddress); // null을 string으로 처리
+            setOriginalNickname(updatedData.nickname || originalNickname);
+            setOriginalAddress(updatedData.address || originalAddress);
 
             setIsEditing(false);
             setNicknameCheckStatus('idle');
@@ -198,7 +213,6 @@ export default function MyPage() {
         }
     };
 
-    // "취소" 버튼 클릭 핸들러
     const handleCancelClick = () => {
         if (isEditing) {
             setEditedNickname(originalNickname);
@@ -212,16 +226,13 @@ export default function MyPage() {
         }
     };
 
-    // 회원 탈퇴 핸들러
     const handleDeactivateAccount = async (event: React.MouseEvent<HTMLAnchorElement>) => {
         event.preventDefault();
 
-        // 사용자에게 최종 확인을 요청 (기존 confirm 유지)
         if (confirm('정말로 계정을 비활성화(회원 탈퇴) 하시겠습니까? 이 작업은 되돌릴 수 없습니다.')) {
-            // toast.promise를 사용하여 비동기 작업 진행 상황 표시
-            const promise = apiClient('/api/v1/bookbook/users/me', {
+            const promise = authFetch('/api/v1/bookbook/users/me', {
                 method: 'DELETE',
-            });
+            }, openLoginModal);
 
             toast.promise(
                 promise,
@@ -230,29 +241,26 @@ export default function MyPage() {
                     success: '✅ 회원 탈퇴가 성공적으로 완료되었습니다! 북북과 함께해주셔서 감사합니다.',
                     error: {
                         render({ data }) {
-                            // data는 catch 블록에서 던져진 Error 객체입니다.
                             const errorMessage = data instanceof Error ? data.message : '알 수 없는 오류가 발생했습니다.';
-                            console.error('회원 탈퇴 중 오류:', data); // 원본 에러 로깅
+                            console.error('회원 탈퇴 중 오류:', data);
                             return `❌ 회원 탈퇴 실패: ${errorMessage}`;
                         }
                     }
                 }
             )
                 .then(() => {
-                    // Promise가 성공적으로 완료되면 로그인 페이지로 리다이렉트
-                    // (백엔드 DELETE /me는 세션 무효화까지는 안 하므로, 로그아웃 URL로 이동)
                     router.push('/api/v1/bookbook/users/logout');
                 })
-                .catch(() => { // 'error'를 '_error'로 변경하여 의도적으로 사용되지 않음을 표시
+                .catch(() => {
+                    console.error('회원 탈퇴 실패 (catch 블록)');
                 });
         }
     };
 
-    // 매너 점수를 별표로 변환하는 함수
     const renderRatingStars = (rating: number) => {
         const fullStars = Math.floor(rating);
         const halfStar = rating % 1 >= 0.5;
-        const emptyStars = 5 - fullStars - (halfStar ? 1 : 0);
+        const emptyStars = Math.max(0, 5 - fullStars - (halfStar ? 1 : 0));
 
         return (
             <>
@@ -263,7 +271,6 @@ export default function MyPage() {
         );
     };
 
-    // 사용자 상태를 한국어로 변환하는 함수
     const getUserStatusKorean = (status: UserResponseDto['userStatus']) => {
         switch (status) {
             case 'ACTIVE': return '활동 중';
@@ -298,7 +305,6 @@ export default function MyPage() {
                     </button>
                 </div>
 
-                {/* 닉네임 입력 필드 */}
                 <div className="mb-5">
                     <label htmlFor="nickname" className="flex items-center font-medium text-gray-600 mb-2">
                         <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 text-gray-500" viewBox="0 0 24 24" fill="currentColor">
@@ -330,7 +336,6 @@ export default function MyPage() {
                     </div>
                 </div>
 
-                {/* 주소 입력 필드 */}
                 <div className="mb-5">
                     <label htmlFor="address" className="flex items-center font-medium text-gray-600 mb-2">
                         <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 text-gray-500" viewBox="0 0 24 24" fill="currentColor">
@@ -343,14 +348,13 @@ export default function MyPage() {
                             type="text"
                             id="address"
                             className="flex-grow p-3 border border-gray-300 rounded-lg text-gray-800 focus:outline-none focus:border-gray-400 disabled:bg-gray-50 disabled:text-gray-500 disabled:cursor-not-allowed"
-                            value={isEditing ? editedAddress : userData.address || ''} // ★★★ 이 부분 수정 ★★★
+                            value={isEditing ? editedAddress : userData.address || ''}
                             onChange={(e) => setEditedAddress(e.target.value)}
                             disabled={!isEditing}
                         />
                     </div>
                 </div>
 
-                {/* E-mail 입력 필드 (항상 비활성화) */}
                 <div className="mb-5">
                     <label htmlFor="email" className="flex items-center font-medium text-gray-600 mb-2">
                         <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 text-gray-500" viewBox="0 0 24 24" fill="currentColor">
@@ -362,12 +366,11 @@ export default function MyPage() {
                         type="email"
                         id="email"
                         className="w-full p-3 border border-gray-300 rounded-lg bg-gray-50 text-gray-500 cursor-not-allowed"
-                        value={userData.email || ''} // ★★★ 이 부분 수정 (명시적으로 || '' 추가) ★★★
+                        value={userData.email || ''}
                         disabled
                     />
                 </div>
 
-                {/* 가입일 입력 필드 (항상 비활성화) */}
                 <div className="mb-5">
                     <label htmlFor="joinDate" className="flex items-center font-medium text-gray-600 mb-2">
                         <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 text-gray-500" viewBox="0 0 24 24" fill="currentColor">
@@ -379,12 +382,11 @@ export default function MyPage() {
                         type="text"
                         id="joinDate"
                         className="w-full p-3 border border-gray-300 rounded-lg bg-gray-50 text-gray-500 cursor-not-allowed"
-                        value={userData.createAt || ''} // ★★★ 이 부분 수정 (명시적으로 || '' 추가) ★★★
+                        value={userData.createAt || ''}
                         disabled
                     />
                 </div>
 
-                {/* 회원 상태 및 매너 점수 */}
                 <div className="text-gray-600 text-base mt-4">
                     회원상태: <strong className="text-gray-800 font-semibold">{getUserStatusKorean(userData.userStatus)}</strong>
                 </div>
@@ -392,7 +394,6 @@ export default function MyPage() {
                     매너점수: <span className="text-xl ml-1">{renderRatingStars(userData.rating)}</span> <span className="ml-1">{userData.rating.toFixed(1)}</span>
                 </div>
 
-                {/* 하단 버튼 */}
                 <div className="flex justify-center gap-4 mt-8">
                     <button
                         className="footer-button px-6 py-3 rounded-lg font-semibold transition-colors bg-gray-700 text-white hover:bg-gray-800"
@@ -408,7 +409,6 @@ export default function MyPage() {
                     </button>
                 </div>
 
-                {/* 회원 탈퇴 링크 */}
                 <div className="text-right mt-5 text-sm">
                     <a
                         href="#"

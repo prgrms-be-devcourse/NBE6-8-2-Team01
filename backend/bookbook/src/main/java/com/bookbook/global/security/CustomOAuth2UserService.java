@@ -62,7 +62,8 @@ public class CustomOAuth2UserService implements OAuth2UserService<OAuth2UserRequ
                 user.getEmail(),
                 user.getId(),
                 isNewUser,
-                isRegistrationCompleted
+                isRegistrationCompleted,
+                user.getRole()
         );
     }
 }

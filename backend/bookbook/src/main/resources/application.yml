@@ -82,3 +82,10 @@ frontend:
   main-path: /bookbook
 aladin:
   ttbkey: ${ALADIN_API_KEY}
+jwt:
+  secret-key: YourSuperSecretKeyForJWTGenerationAndValidationThatShouldBeAtLeast256BitsLongAndRandomlyGenerated
+  access-token-validity-in-seconds: 3600
+  refresh-token-validity-in-seconds: 604800
+  cookie:
+    name: JWT_TOKEN
+    refresh-name: "refreshToken"

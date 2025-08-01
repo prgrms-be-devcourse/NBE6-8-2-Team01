@@ -1,13 +1,11 @@
 package com.bookbook.domain.user.service;
 
 import com.bookbook.domain.user.dto.UserResponseDto;
-import com.bookbook.domain.user.dto.UserUpdateRequestDto;
 import com.bookbook.domain.user.entity.User;
 import com.bookbook.domain.user.enums.Role;
 import com.bookbook.domain.user.enums.UserStatus;
 import com.bookbook.domain.user.repository.UserRepository;
 import com.bookbook.global.exception.ServiceException;
-import com.bookbook.global.util.NicknameGenerator;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -22,7 +20,6 @@ import java.util.UUID;
 public class UserService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
-    private final NicknameGenerator nicknameGenerator;
 
     @PostConstruct
     @Transactional
@@ -168,40 +165,9 @@ public class UserService {
                 });
     }
 
-
-    @Transactional
-    public void updateUserInfo(Long userId, UserUpdateRequestDto updateRequest) {
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new ServiceException("404-USER-NOT-FOUND", "해당 ID의 사용자를 찾을 수 없습니다."));
-
-        boolean hasChanges = false;
-
-        // 닉네임 업데이트
-        if (updateRequest.getNickname() != null && !updateRequest.getNickname().trim().isEmpty()) {
-            String trimmedNickname = updateRequest.getNickname().trim();
-            if (user.getNickname() == null || !trimmedNickname.equals(user.getNickname())) { // 기존 닉네임이 null이거나 다를 경우
-                if (userRepository.existsByNickname(trimmedNickname)) {
-                    throw new ServiceException("409-NICKNAME-DUPLICATE", "이미 사용 중인 닉네임입니다.");
-                }
-                user.setNickname(trimmedNickname);
-                hasChanges = true;
-            }
-        }
-
-
-        if (updateRequest.getAddress() != null && !updateRequest.getAddress().trim().isEmpty()) {
-            String trimmedAddress = updateRequest.getAddress().trim();
-            if (user.getAddress() == null || !trimmedAddress.equals(user.getAddress())) { // 기존 주소가 null이거나 다를 경우
-                user.setAddress(trimmedAddress);
-                hasChanges = true;
-            }
-        }
-
-        if (!hasChanges) {
-            throw new ServiceException("400-NO-CHANGES", "변경할 닉네임 또는 주소를 제공하지 않았거나 변경사항이 없습니다.");
-        }
-
-        user.setRegistrationCompleted(true);
-        userRepository.save(user);
+    public User getByIdOrThrow(Long id) {
+        return userRepository.findById(id)
+                .orElseThrow(() -> new ServiceException("404-USER-NOT-FOUND", "해당 사용자를 찾을 수 없습니다."));
     }
+
 }

@@ -1,27 +1,31 @@
-'use client'; // 이 줄을 파일 맨 위에 추가해주세요.
+'use client';
 
 import React, { useState, useEffect } from 'react';
 import { Bell, Heart, User } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
-import LoginModal from './LoginModal';
-import MessagePanel from '../bookbook/MessagePopup/MessagePanel'; // ✅ 사이드패널 컴포넌트 추가
+import MessagePanel from '../bookbook/MessagePopup/MessagePanel';
+import { authFetch, logoutUser } from '../util/authFetch';
+import { useLoginModal } from '../context/LoginModalContext';
 
 const Header = () => {
-  const [showLoginModal, setShowLoginModal] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [showMessagePanel, setShowMessagePanel] = useState(false); // ✅ 패널 상태
-
+  const [showMessagePanel, setShowMessagePanel] = useState(false);
+  const { openLoginModal } = useLoginModal();
   const toggleMessagePanel = () => setShowMessagePanel((prev) => !prev);
 
   useEffect(() => {
     const checkLoginStatus = async () => {
       try {
-        const response = await fetch('/api/v1/bookbook/users/isAuthenticated');
+        const response = await authFetch('/api/v1/bookbook/users/isAuthenticated', {
+          method: 'GET',
+        }, openLoginModal);
+
         if (response.ok) {
           const rsData = await response.json();
           setIsLoggedIn(rsData.data);
         } else {
+          // 401 에러는 authFetch에서 이미 처리되었을 가능성이 높습니다.
           setIsLoggedIn(false);
         }
       } catch (error) {
@@ -31,32 +35,19 @@ const Header = () => {
     };
 
     checkLoginStatus();
-  }, []);
+  }, [openLoginModal]);
 
   const handleLogout = async () => {
-    try {
-      const response = await fetch('/api/v1/bookbook/users/logout', {
-        method: 'POST',
-        credentials: 'include',
-      });
-
-      if (response.ok) {
-        setIsLoggedIn(false);
-        alert('로그아웃 되었습니다.');
-        window.location.href = '/bookbook';
-      } else {
-        alert('로그아웃에 실패했습니다.');
-      }
-    } catch (error) {
-      console.error('로그아웃 처리 중 오류 발생:', error);
-      alert('로그아웃 처리 중 오류가 발생했습니다.');
+    const success = await logoutUser();
+    if (success) {
+      setIsLoggedIn(false);
     }
   };
 
   const handleLendBookClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
     if (!isLoggedIn) {
       e.preventDefault();
-      setShowLoginModal(true);
+      openLoginModal();
     }
   };
 
@@ -86,7 +77,7 @@ const Header = () => {
 
           <div className="flex items-center space-x-6 relative">
             <button
-              onClick={isLoggedIn ? handleLogout : () => setShowLoginModal(true)}
+              onClick={isLoggedIn ? handleLogout : openLoginModal}
               className={`text-lg font-semibold px-5 py-2 rounded-md shadow transition ${
                 isLoggedIn ? 'bg-red-500 text-white hover:opacity-90' : 'bg-[#D5BAA3] text-white hover:opacity-90'
               }`}
@@ -106,30 +97,21 @@ const Header = () => {
                     className="cursor-pointer hover:opacity-80"
                   />
                 </button>
+                <Link href="/bookbook/user/notification" >
+                  <Bell className="w-6 h-6 text-gray-700 hover:text-blue-600 cursor-pointer" />
+                </Link>
+                <Link href="/bookbook/wishlist" >
+                  <Heart className="w-6 h-6 text-gray-700 hover:text-blue-600 cursor-pointer" />
+                </Link>
+                <Link href="/bookbook/user/profile" >
+                  <User className="w-6 h-6 text-gray-700 hover:text-blue-600 cursor-pointer" />
+                </Link>
               </>
             )}
-
-            <Link href="/bookbook/user/notification" className={!isLoggedIn ? 'invisible pointer-events-none' : ''}>
-              <Bell className="w-6 h-6 text-gray-700 hover:text-blue-600 cursor-pointer" />
-            </Link>
-
-            <Link href="/bookbook/user/wishlist" className={!isLoggedIn ? 'invisible pointer-events-none' : ''}>
-              <Heart className="w-6 h-6 text-gray-700 hover:text-blue-600 cursor-pointer" />
-            </Link>
-
-            <Link href="/bookbook/user/profile" className={!isLoggedIn ? 'invisible pointer-events-none' : ''}>
-              <User className="w-6 h-6 text-gray-700 hover:text-blue-600 cursor-pointer" />
-            </Link>
           </div>
         </div>
       </header>
 
-      {/* 로그인 모달 */}
-      {showLoginModal && (
-        <LoginModal onClose={() => setShowLoginModal(false)} />
-      )}
-
-      {/* 메시지 패널 */}
       {showMessagePanel && (
         <MessagePanel onClose={() => setShowMessagePanel(false)} />
       )}

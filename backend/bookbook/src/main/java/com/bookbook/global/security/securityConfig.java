@@ -1,11 +1,19 @@
 package com.bookbook.global.security;
 
+import com.bookbook.global.security.jwt.JwtAuthenticationFilter;
+import com.bookbook.global.security.jwt.JwtProvider;
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
@@ -14,17 +22,46 @@ import java.util.List;
 
 @Configuration
 @EnableWebSecurity
-@RequiredArgsConstructor // customOAuth2UserService를 생성자 주입하기 위한 어노테이션
+@RequiredArgsConstructor
 public class securityConfig {
 
     private final CustomOAuth2UserService customOAuth2UserService;
+    private final JwtProvider jwtProvider;
+    private final LoginSuccessHandler loginSuccessHandler;
+
+    @Value("${jwt.cookie.name}")
+    private String jwtAccessTokenCookieName;
+    @Value("${jwt.cookie.refresh-name}")
+    private String jwtRefreshTokenCookieName;
+
+    @Value("${frontend.base-url}")
+    private String frontendBaseUrl;
+
+    @Value("${frontend.main-path}")
+    private String mainPath;
+
 
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http, LoginSuccessHandler loginSuccessHandler) throws Exception {
+    public JwtAuthenticationFilter jwtAuthenticationFilter() {
+        return new JwtAuthenticationFilter(jwtProvider);
+    }
+
+    @Bean
+    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-                .csrf(csrf -> csrf.disable()) // REST API에서는 CSRF 비활성화 (토큰 기반 인증 시)
+                .csrf(csrf -> csrf.disable())
+                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+                .sessionManagement(sessionManagement ->
+                        sessionManagement.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+                )
+                .exceptionHandling(exceptionHandling ->
+                        exceptionHandling
+                                .authenticationEntryPoint((request, response, authException) -> {
+                                    response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Unauthorized");
+                                })
+                )
                 .authorizeHttpRequests(authorize -> authorize
-                        // 로그인 관련 경로는 모두 허용
+                      
                         .requestMatchers(
                                 "/api/*/admin/login", "/api/*/admin/logout",
                                 "api/v1/bookbook/users/social/callback",
@@ -32,64 +69,89 @@ public class securityConfig {
                                 "/bookbook/home",
                                 "/api/v1/bookbook/login/oauth2/code/**",
                                 "/api/v1/bookbook/home",
+                                "/api/v1/bookbook/users/check-nickname",
+                                "/api/v1/bookbook/users/signup",
+                                "/api/v1/bookbook/users/isAuthenticated",
+                                "/api/v1/bookbook/users/logout",
+                                "/api/v1/bookbook/auth/refresh-token",
                                 "/api/v1/bookbook/home/**", // 홈 관련 모든 API 허용
-
-                                "/api/v1/bookbook/users/**",
-                                "/api/v1/bookbook/users/isAuthenticated").permitAll()
+                                "/favicon.ico", // 파비콘 접근 허용
+                                "/h2-console/**", // H2 콘솔 접근 허용
+                                "/images/**", // 이미지 파일 접근 허용
+                                "/uploads/**", // uploads 폴더의 이미지 파일 접근 허용
+                                "/bookbook/rent/create", // Rent 페이지 생성은 인증 필요, (임시)
+                                "/bookbook/rent/**", // Rent 페이지 조회 허용 추가
+                                "/api/v1/bookbook/rent/**", // API 형태의 Rent 페이지 조회 허용 추가
+                                "/api/v1/bookbook/upload-image", // 이미지 업로드 API 경로 허용 추가
+                                "/api/v1/bookbook/searchbook" // 알라딘 책 검색 API 경로 허용 추가
+                        ).permitAll()
+                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll() // OPTIONS 메서드 요청은 모든 경로에 대해 허용 (Preflight 요청)
+                        .requestMatchers(HttpMethod.GET, "/api/v1/bookbook/users/me").authenticated()
+                        .requestMatchers(HttpMethod.PATCH, "/api/v1/bookbook/users/me").authenticated()
+                        .requestMatchers(HttpMethod.DELETE, "/api/v1/bookbook/users/me").authenticated()
                         .requestMatchers("api/*/admin/**").hasRole("ADMIN")
-                        .requestMatchers("/favicon.ico").permitAll() // 파비콘 접근 허용
-                        .requestMatchers("/h2-console/**").permitAll() // H2 콘솔 접근 허용
-                        .requestMatchers("/images/**").permitAll() // 이미지 파일 접근 허용 (로그아웃 상태에서도 이미지 보기 가능)
-                        .requestMatchers("/uploads/**").permitAll() // uploads 폴더의 이미지 파일 접근 허용 (로그아웃 상태에서도 이미지 보기 가능)
-                        .requestMatchers("/bookbook/rent/create").permitAll() // Rent 페이지 생성은 인증 필요, (임시)
-                        .requestMatchers("/bookbook/rent/**").permitAll() // Rent 페이지 조회 허용 추가
-                        .requestMatchers("/api/v1/bookbook/rent/**").permitAll() // API 형태의 Rent 페이지 조회 허용 추가
-                        .requestMatchers("/api/v1/bookbook/upload-image").permitAll() // 이미지 업로드 API 경로 허용 추가
-                        .requestMatchers("/api/v1/bookbook/searchbook").permitAll() // 알라딘 책 검색 API 경로 허용 추가
-                        .requestMatchers(org.springframework.http.HttpMethod.OPTIONS, "/**").permitAll() // OPTIONS 메서드 요청은 모든 경로에 대해 허용 (Preflight 요청)
                         .anyRequest().authenticated() // 나머지 모든 요청은 인증 필요
                 )
                 .oauth2Login(oauth2 -> oauth2
                         .userInfoEndpoint(userInfo -> userInfo
-                                .userService(customOAuth2UserService) // 사용자 정보를 가져온 후 처리할 서비스 지정
+                                .userService(customOAuth2UserService)
                         )
-                        .successHandler(loginSuccessHandler) // OAuth2 로그인 성공 후 처리할 핸들러 지정
+                        .successHandler(loginSuccessHandler)
                 )
+                .addFilterBefore(jwtAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class)
                 .logout(logout -> logout
-                        .logoutUrl("/api/v1/bookbook/users/logout") // 로그아웃을 처리할 URL
-                        .logoutSuccessUrl("http://localhost:3000/bookbook") // 로그아웃 성공 시 리다이렉트될 URL
-                        .invalidateHttpSession(true) // HTTP 세션 무효화
-                        .deleteCookies("JSESSIONID") // JSESSIONID 쿠키 삭제 (필요한 경우 다른 쿠키도 추가)
+                        .logoutRequestMatcher(request -> {
+                            // 요청 URI와 메서드를 확인하여 매칭
+                            String uri = request.getRequestURI();
+                            String method = request.getMethod();
+                            return "/api/v1/bookbook/users/logout".equals(uri) && "GET".equals(method);
+                        })
+                        .logoutSuccessHandler((request, response, authentication) -> {
+                            // 액세스 토큰 쿠키 삭제
+                            Cookie deleteAccessTokenCookie = new Cookie(jwtAccessTokenCookieName, null);
+                            deleteAccessTokenCookie.setHttpOnly(true);
+                            deleteAccessTokenCookie.setSecure(false);
+                            deleteAccessTokenCookie.setPath("/");
+                            deleteAccessTokenCookie.setMaxAge(0);
+                            response.addCookie(deleteAccessTokenCookie);
+
+                            // 리프레시 토큰 쿠키 삭제
+                            Cookie deleteRefreshTokenCookie = new Cookie(jwtRefreshTokenCookieName, null);
+                            deleteRefreshTokenCookie.setHttpOnly(true);
+                            deleteRefreshTokenCookie.setSecure(false);
+                            deleteRefreshTokenCookie.setPath("/");
+                            deleteRefreshTokenCookie.setMaxAge(0);
+                            response.addCookie(deleteRefreshTokenCookie);
+
+                            // DB에서 리프레시 토큰 무효화
+                            if (authentication != null && authentication.getPrincipal() instanceof CustomOAuth2User) {
+                                CustomOAuth2User user = (CustomOAuth2User) authentication.getPrincipal();
+                                jwtProvider.deleteRefreshToken(user.getUserId());
+                            }
+
+                            response.sendRedirect(frontendBaseUrl + mainPath);
+                        })
+                        .invalidateHttpSession(false)
+                        .deleteCookies(jwtAccessTokenCookieName, jwtRefreshTokenCookieName)
                 )
-                .headers(headers -> headers.frameOptions(frameOptions -> frameOptions.sameOrigin())); // H2 Console 사용을 위함
+                .httpBasic(httpBasic -> httpBasic.disable())
+                .formLogin(formLogin -> formLogin.disable())
+                .headers(headers -> headers.frameOptions(frameOptions -> frameOptions.sameOrigin()));
+
         return http.build();
     }
 
-    // --- CORS 설정을 위한 Bean을 추가합니다 ---
     @Bean
     public UrlBasedCorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-
-        // 허용할 오리진 설정: 당신의 프론트엔드 URL과 cdpn.io (필요하다면)
-        configuration.setAllowedOrigins(List.of("http://localhost:3000", "https://cdpn.io")); // Java 9 이상 사용 가능
-
-        // 허용할 HTTP 메서드 설정 (OPTIONS는 Preflight 요청에 필수)
+        configuration.setAllowedOrigins(List.of("http://localhost:3000", "https://cdpn.io"));
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
-
-        // 자격 증명 (쿠키 등) 허용 설정
         configuration.setAllowCredentials(true);
-
-        // 허용할 헤더 설정 (모든 헤더 허용)
-        configuration.setAllowedHeaders(Arrays.asList("*")); // 모든 헤더 허용
-
-        // Preflight 요청 캐싱 시간 (초)
-        configuration.setMaxAge(3600L); // Long 타입으로 명시
-
-        // CORS 설정을 소스에 등록
+        configuration.setAllowedHeaders(Arrays.asList("*"));
+        configuration.setMaxAge(3600L);
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/bookbook/**", configuration);
-        source.registerCorsConfiguration("/api/**", configuration); // 이 부분을 /api/** 로 수정했습니다.
-
+        source.registerCorsConfiguration("/api/**", configuration);
         return source;
     }
 }
