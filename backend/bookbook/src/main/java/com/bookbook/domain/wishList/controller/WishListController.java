@@ -3,6 +3,7 @@ package com.bookbook.domain.wishList.controller;
 import com.bookbook.domain.wishList.dto.WishListCreateRequestDto;
 import com.bookbook.domain.wishList.dto.WishListResponseDto;
 import com.bookbook.domain.wishList.service.WishListService;
+import com.bookbook.global.rsdata.RsData;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -31,7 +32,7 @@ public class WishListController {
      * @return 찜 목록 리스트
      */
     @GetMapping
-    public ResponseEntity<List<WishListResponseDto>> getWishList(
+    public ResponseEntity<RsData<List<WishListResponseDto>>> getWishList(
             @PathVariable Long userId,
             @RequestParam(required = false) String search
     ) {
@@ -41,7 +42,7 @@ public class WishListController {
         } else {
             wishList = wishListService.getWishListByUserId(userId);
         }
-        return ResponseEntity.ok(wishList);
+        return ResponseEntity.ok(RsData.of("200", "천 목록을 조회했습니다.", wishList));
     }
 
     /**
@@ -55,12 +56,12 @@ public class WishListController {
      * @return 생성된 찜 정보
      */
     @PostMapping
-    public ResponseEntity<WishListResponseDto> addWishList(
+    public ResponseEntity<RsData<WishListResponseDto>> addWishList(
             @PathVariable Long userId,
             @RequestBody WishListCreateRequestDto request
     ) {
         WishListResponseDto response = wishListService.addWishList(userId, request);
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(RsData.of("200", "천 목록에 추가했습니다.", response));
     }
 
     /**
@@ -73,11 +74,11 @@ public class WishListController {
      * @return 204 No Content
      */
     @DeleteMapping("/{rentId}")
-    public ResponseEntity<Void> deleteWishList(
+    public ResponseEntity<RsData<Void>> deleteWishList(
             @PathVariable Long userId,
             @PathVariable Integer rentId
     ) {
         wishListService.deleteWishList(userId, rentId);
-        return ResponseEntity.noContent().build();
+        return ResponseEntity.ok(RsData.of("200", "천 목록에서 삭제했습니다."));
     }
 }

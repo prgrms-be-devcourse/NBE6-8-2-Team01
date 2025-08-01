@@ -3,6 +3,7 @@ package com.bookbook.domain.review.controller;
 import com.bookbook.domain.review.dto.ReviewCreateRequestDto;
 import com.bookbook.domain.review.dto.ReviewResponseDto;
 import com.bookbook.domain.review.service.ReviewService;
+import com.bookbook.global.rsdata.RsData;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -31,12 +32,12 @@ public class ReviewController {
      * @return 생성된 리뷰 정보
      */
     @PostMapping("/lender/{lenderId}/rent/{rentId}")
-    public ResponseEntity<ReviewResponseDto> createLenderReview(
+    public ResponseEntity<RsData<ReviewResponseDto>> createLenderReview(
             @PathVariable Long lenderId,
             @PathVariable Integer rentId,
             @RequestBody ReviewCreateRequestDto request) {
         ReviewResponseDto review = reviewService.createLenderReview(lenderId, rentId, request);
-        return ResponseEntity.ok(review);
+        return ResponseEntity.ok(RsData.of("200", "대여자 리뷰를 작성했습니다.", review));
     }
     
     /**
@@ -50,11 +51,11 @@ public class ReviewController {
      * @return 생성된 리뷰 정보
      */
     @PostMapping("/borrower/{borrowerId}/rent/{rentId}")
-    public ResponseEntity<ReviewResponseDto> createBorrowerReview(
+    public ResponseEntity<RsData<ReviewResponseDto>> createBorrowerReview(
             @PathVariable Long borrowerId,
             @PathVariable Integer rentId,
             @RequestBody ReviewCreateRequestDto request) {
         ReviewResponseDto review = reviewService.createBorrowerReview(borrowerId, rentId, request);
-        return ResponseEntity.ok(review);
+        return ResponseEntity.ok(RsData.of("200", "대여받은 사람 리뷰를 작성했습니다.", review));
     }
 }
