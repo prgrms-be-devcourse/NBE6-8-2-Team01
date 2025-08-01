@@ -156,10 +156,17 @@ public class RentService {
             return RentAvailableResponseDto.empty();
         }
         
-        // Rent 엔티티를 BookInfo DTO로 변환
+        // Rent 엔티티를 BookInfo DTO로 변환 (사용자 닉네임 포함)
         List<RentAvailableResponseDto.BookInfo> books = rentPage.getContent()
                 .stream()
-                .map(RentAvailableResponseDto.BookInfo::from)
+                .map(rent -> {
+                    // 사용자 닉네임 조회
+                    String lenderNickname = userRepository.findById(rent.getLenderUserId())
+                            .map(User::getNickname)
+                            .orElse("알 수 없음");
+                    
+                    return RentAvailableResponseDto.BookInfo.from(rent, lenderNickname);
+                })
                 .collect(Collectors.toList());
         
         // 페이지네이션 정보 생성
