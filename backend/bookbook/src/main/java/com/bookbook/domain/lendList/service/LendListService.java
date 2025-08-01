@@ -52,6 +52,36 @@ public class LendListService {
     }
     
     /**
+     * 사용자가 등록한 도서 목록을 검색어로 필터링하여 조회
+     * 
+     * @param userId 사용자 ID
+     * @param searchKeyword 검색어 (책 제목, 저자, 출판사, 게시글 제목에서 검색)
+     * @param pageable 페이징 정보
+     * @return 검색된 등록한 도서 게시글 페이지
+     */
+    public Page<LendListResponseDto> getLendListByUserIdAndSearch(Long userId, String searchKeyword, Pageable pageable) {
+        Page<Rent> rentPage;
+        if (searchKeyword == null || searchKeyword.trim().isEmpty()) {
+            rentPage = lendListRepository.findByLenderUserId(userId, pageable);
+        } else {
+            rentPage = lendListRepository.findByLenderUserIdAndSearchKeyword(userId, searchKeyword.trim(), pageable);
+        }
+        
+        return rentPage.map(rent -> {
+            String borrowerNickname = null;
+            if (rent.getRentStatus() == RentStatus.LOANED || rent.getRentStatus() == RentStatus.FINISHED) {
+                borrowerNickname = rentListRepository.findByRentId(rent.getId())
+                        .stream()
+                        .findFirst()
+                        .flatMap(rentList -> userRepository.findById(rentList.getBorrowerUser().getId()))
+                        .map(user -> user.getNickname())
+                        .orElse(null);
+            }
+            return LendListResponseDto.from(rent, borrowerNickname);
+        });
+    }
+    
+    /**
      * 내가 등록한 도서 게시글 삭제
      * 
      * 본인이 작성한 게시글만 삭제 가능하며, 현재 대출 중인 도서는 삭제할 수 없습니다.
