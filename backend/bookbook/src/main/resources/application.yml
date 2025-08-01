@@ -13,7 +13,7 @@ spring:
     multipart:
       max-file-size: 10MB      # 개별 파일 크기 제한
       max-request-size: 50MB   # 전체 요청 크기 제한
-      location: src/main/resources/static/images
+      location: uploads
   jackson:
     serialization:
       fail-on-empty-beans: false
