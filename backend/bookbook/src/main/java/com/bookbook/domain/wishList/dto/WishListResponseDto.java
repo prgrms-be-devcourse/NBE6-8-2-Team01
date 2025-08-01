@@ -1,6 +1,5 @@
 package com.bookbook.domain.wishList.dto;
 
-import com.bookbook.domain.rent.entity.RentStatus;
 import com.bookbook.domain.wishList.entity.WishList;
 
 import java.time.LocalDateTime;
@@ -13,7 +12,7 @@ public record WishListResponseDto(
         String author,
         String publisher,
         String bookCondition,
-        RentStatus rentStatus,
+        String rentStatus,
         String bookImage,
         String address,
         String lenderNickname,
