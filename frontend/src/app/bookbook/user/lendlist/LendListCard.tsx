@@ -67,12 +67,14 @@ export default function LendListCard({ book, onDelete, onReview, formatDate }: L
               <h3 className="text-lg font-semibold text-gray-900 mb-1 line-clamp-1">
                 {book.title}
               </h3>
-              <p className="text-base font-medium text-gray-800 mb-1">
-                {book.bookTitle}
-              </p>
-              <p className="text-sm text-gray-600">저자: {book.author}</p>
-              <p className="text-sm text-gray-600">출판사: {book.publisher}</p>
-              <p className="text-sm text-gray-600 mb-2">상태: {book.bookCondition}</p>
+              <div className="space-y-2">
+                <p className="text-base font-medium text-gray-800">
+                  {book.bookTitle}
+                </p>
+                <p className="text-sm text-gray-600">저자: {book.author}</p>
+                <p className="text-sm text-gray-600">출판사: {book.publisher}</p>
+                <p className="text-sm text-gray-600">상태: {book.bookCondition}</p>
+              </div>
             </div>
 
             {/* 삭제 버튼 */}

@@ -67,12 +67,14 @@ export default function WishListCard({ item, onRemove }: WishListCardProps) {
                             <h3 className="text-lg font-semibold text-gray-900 mb-1 line-clamp-1">
                                 {item.title}
                             </h3>
-                            <p className="text-base font-medium text-gray-800 mb-1">
-                                {item.bookTitle}
-                            </p>
-                            <p className="text-sm text-gray-600">저자: {item.bookAuthor}</p>
-                            <p className="text-sm text-gray-600">출판사: {item.bookPublisher}</p>
-                            <p className="text-sm text-gray-600 mb-2">상태: {item.bookCondition}</p>
+                            <div className="space-y-2">
+                                <p className="text-base font-medium text-gray-800">
+                                    {item.bookTitle}
+                                </p>
+                                <p className="text-sm text-gray-600">저자: {item.bookAuthor}</p>
+                                <p className="text-sm text-gray-600">출판사: {item.bookPublisher}</p>
+                                <p className="text-sm text-gray-600">상태: {item.bookCondition}</p>
+                            </div>
                         </div>
 
                         {/* 찜 해제 버튼 */}
