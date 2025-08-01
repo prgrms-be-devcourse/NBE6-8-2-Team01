@@ -7,6 +7,7 @@ import RentListCard from './RentListCard';
 import ReviewModal from '../../../components/ReviewModal';
 import { RentedBook, PaginationInfo } from './types';
 import { dummyRentedBooks } from './dummyData';
+import { useCurrentUser } from '../../../hooks/useCurrentUser';
 
 export default function RentListPage() {
   const [rentedBooks, setRentedBooks] = useState<RentedBook[]>([]);
@@ -23,13 +24,17 @@ export default function RentListPage() {
   const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
   const [selectedBook, setSelectedBook] = useState<RentedBook | null>(null);
 
-  const userId = 1; // TODO: 실제 로그인된 사용자 ID로 변경
+  const { userId, loading: userLoading, error: userError } = useCurrentUser();
 
   useEffect(() => {
-    fetchRentedBooks(currentPage);
-  }, [currentPage]);
+    if (userId) {
+      fetchRentedBooks(currentPage);
+    }
+  }, [currentPage, userId]);
 
   useEffect(() => {
+    if (!userId) return;
+    
     console.log('검색어 변경됨:', searchTerm);
     const timer = setTimeout(() => {
       console.log('디바운싱 완료, API 호출 시작');
@@ -40,7 +45,7 @@ export default function RentListPage() {
       }
     }, 1500); // 1500ms 후에 검색 실행
     return () => clearTimeout(timer);
-  }, [searchTerm]);
+  }, [searchTerm, userId]);
 
 
   const fetchRentedBooks = async (page: number = 1, search?: string) => {
@@ -166,10 +171,29 @@ export default function RentListPage() {
     });
   };
 
-  if (loading) {
+  if (userLoading || loading) {
     return (
       <div className="flex justify-center items-center min-h-screen">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900"></div>
+      </div>
+    );
+  }
+
+  if (userError || !userId) {
+    return (
+      <div className="flex justify-center items-center min-h-screen">
+        <div className="text-center">
+          <Book className="mx-auto h-16 w-16 text-gray-300 mb-4" />
+          <p className="text-gray-500 text-lg mb-2">
+            {userError || '로그인이 필요합니다.'}
+          </p>
+          <button 
+            onClick={() => window.location.href = '/bookbook'}
+            className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
+          >
+            홈으로 이동
+          </button>
+        </div>
       </div>
     );
   }
