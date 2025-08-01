@@ -37,13 +37,20 @@ export default function LendListCard({ book, onDelete, onReview, formatDate }: L
     }
   };
 
+  const handleCardClick = () => {
+    // 대여중이거나 대여완료 상태가 아닌 경우에만 상세페이지로 이동
+    if (book.rentStatus?.toUpperCase() === 'AVAILABLE') {
+      window.location.href = `/bookbook/rent/${book.id}`;
+    }
+  };
+
   return (
-    <div className="bg-white rounded-lg shadow-md border border-gray-200 p-6 hover:shadow-lg transition-shadow">
+    <div className="bg-white rounded-lg shadow-md border border-gray-200 p-6 hover:shadow-lg transition-shadow cursor-pointer" onClick={handleCardClick}>
       <div className="flex gap-4">
         {/* 책 이미지 */}
         <div className="flex-shrink-0">
           <img
-            src={book.bookImage || "/book-placeholder.png"}
+            src={book.bookImage ? `${process.env.NEXT_PUBLIC_API_BASE_URL}${book.bookImage}` : "/book-placeholder.png"}
             alt={book.bookTitle}
             className="w-20 h-28 object-cover rounded border border-gray-200"
             onError={(e) => {
@@ -72,7 +79,10 @@ export default function LendListCard({ book, onDelete, onReview, formatDate }: L
             <div className="flex items-center gap-2 ml-4">
               {book.rentStatus?.toUpperCase() !== 'LOANED' && (
                 <button 
-                  onClick={() => onDelete(book.id)}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onDelete(book.id);
+                  }}
                   className="text-red-500 hover:text-red-700 transition-colors"
                   title="삭제"
                 >
@@ -130,7 +140,10 @@ export default function LendListCard({ book, onDelete, onReview, formatDate }: L
                 </span>
               ) : onReview ? (
                 <button 
-                  onClick={() => onReview(book.id)}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onReview(book.id);
+                  }}
                   className="px-3 py-1 text-xs bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
                 >
                   리뷰쓰기
