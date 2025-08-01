@@ -4,9 +4,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
-import { authFetch } from '@/app/util/authFetch';
-import apiClient from '../utils/apiClient';
-import { useLoginModal } from '@/app/context/LoginModalContext';
+import axios from 'axios';
+import axiosInstance from '@/app/util/axiosInstance';
 
 interface UserResponseDto {
     id: number;
@@ -35,26 +34,11 @@ export default function MyPage() {
     const [nicknameCheckMessage, setNicknameCheckMessage] = useState<string>('');
     const debounceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-    const { openLoginModal } = useLoginModal();
-
     useEffect(() => {
         const fetchUserData = async () => {
             try {
-                const response = await authFetch('/api/v1/bookbook/users/me', {}, openLoginModal);
-
-                if (!response.ok) {
-                    throw new Error('사용자 정보를 불러오지 못했습니다.');
-                }
-
-                // JSON 응답을 안전하게 파싱합니다.
-                const responseData = await response.json();
-
-                // 백엔드 응답 구조에 따라 실제 데이터가 'data' 필드 안에 있는지 확인합니다.
-                if (!responseData || !responseData.data) {
-                    throw new Error("서버 응답이 유효하지 않습니다.");
-                }
-
-                const data = responseData.data;
+                const response = await axiosInstance.get('/api/v1/bookbook/users/me');
+                const data = response.data.data;
 
                 setUserData({
                     id: data.id,
@@ -76,15 +60,20 @@ export default function MyPage() {
                 setOriginalNickname(data.nickname);
                 setOriginalAddress(data.address || '');
                 setNicknameCheckStatus('idle');
-            } catch (error) {
-                const errorMessage = error instanceof Error ? error.message : '알 수 없는 오류가 발생했습니다.';
+            } catch (error: unknown) {
+                let errorMessage = '알 수 없는 오류가 발생했습니다.';
+                if (axios.isAxiosError(error)) {
+                    errorMessage = error.response?.data?.message || error.message;
+                } else if (error instanceof Error) {
+                    errorMessage = error.message;
+                }
                 console.error('사용자 정보 로드 중 오류 발생:', error);
                 toast.error(`사용자 정보를 불러오는데 실패했습니다: ${errorMessage}`);
             }
         };
 
         void fetchUserData();
-    }, [openLoginModal]);
+    }, []);
 
     const handleNicknameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const value = e.target.value;
@@ -115,8 +104,8 @@ export default function MyPage() {
         }
 
         try {
-            const response = await apiClient<{ isAvailable: boolean }>(`/api/v1/bookbook/users/check-nickname?nickname=${encodeURIComponent(nicknameToCheck)}`);
-            const rsData = response.data;
+            const response = await axiosInstance.get(`/api/v1/bookbook/users/check-nickname?nickname=${encodeURIComponent(nicknameToCheck)}`);
+            const rsData = response.data.data;
             if (rsData && rsData.isAvailable) {
                 setNicknameCheckStatus('available');
                 setNicknameCheckMessage('사용 가능한 닉네임입니다.');
@@ -124,8 +113,13 @@ export default function MyPage() {
                 setNicknameCheckStatus('unavailable');
                 setNicknameCheckMessage('이미 사용 중인 닉네임입니다. 다른 닉네임을 사용해주세요.');
             }
-        } catch (error) {
-            const errorMessage = error instanceof Error ? error.message : '알 수 없는 오류가 발생했습니다.';
+        } catch (error: unknown) {
+            let errorMessage = '알 수 없는 오류가 발생했습니다.';
+            if (axios.isAxiosError(error)) {
+                errorMessage = error.response?.data?.message || error.message;
+            } else if (error instanceof Error) {
+                errorMessage = error.message;
+            }
             setNicknameCheckStatus('unavailable');
             setNicknameCheckMessage(`중복 확인 중 오류: ${errorMessage}`);
             console.error('닉네임 중복 확인 오류:', error);
@@ -158,7 +152,7 @@ export default function MyPage() {
             return;
         }
 
-        if (trimmedNickname === '' && trimmedAddress === '') {
+        if (!trimmedNickname && !trimmedAddress) {
             toast.warn('닉네임 또는 주소를 입력해주세요.');
             return;
         }
@@ -180,34 +174,27 @@ export default function MyPage() {
         }
 
         try {
-            const response = await authFetch('/api/v1/bookbook/users/me', {
-                method: 'PATCH',
-                body: JSON.stringify(requestBody),
-            }, openLoginModal);
-
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.message || '프로필 업데이트에 실패했습니다.');
-            }
-
-            const responseData = await response.json();
-            const updatedData = responseData.data;
+            // ✅ 응답 값을 사용하지 않으므로 변수에 할당하지 않고 호출만 합니다.
+            await axiosInstance.patch('/api/v1/bookbook/users/me', requestBody);
 
             setUserData(prev => prev ? {
                 ...prev,
-                nickname: updatedData.nickname || prev.nickname,
-                address: updatedData.address !== undefined ? updatedData.address : prev.address,
+                nickname: requestBody.nickname !== undefined ? requestBody.nickname : prev.nickname,
+                address: requestBody.address !== undefined ? requestBody.address : prev.address,
             } : null);
 
-            setOriginalNickname(updatedData.nickname || originalNickname);
-            setOriginalAddress(updatedData.address || originalAddress);
+            setOriginalNickname(requestBody.nickname !== undefined ? requestBody.nickname : originalNickname);
+            setOriginalAddress(requestBody.address !== undefined ? requestBody.address : originalAddress);
 
             setIsEditing(false);
             setNicknameCheckStatus('idle');
             setNicknameCheckMessage('');
             toast.success('프로필 정보가 성공적으로 업데이트되었습니다.');
-        } catch (error) {
-            const errorMessage = error instanceof Error ? error.message : '알 수 없는 오류가 발생했습니다.';
+
+        } catch (error: unknown) {
+            const errorMessage = axios.isAxiosError(error)
+                ? error.response?.data?.message || error.message
+                : (error instanceof Error ? error.message : '알 수 없는 오류가 발생했습니다.');
             console.error('프로필 업데이트 중 오류 발생:', error);
             toast.error(`프로필 업데이트 실패: ${errorMessage}`);
         }
@@ -230,9 +217,7 @@ export default function MyPage() {
         event.preventDefault();
 
         if (confirm('정말로 계정을 비활성화(회원 탈퇴) 하시겠습니까? 이 작업은 되돌릴 수 없습니다.')) {
-            const promise = authFetch('/api/v1/bookbook/users/me', {
-                method: 'DELETE',
-            }, openLoginModal);
+            const promise = axiosInstance.delete('/api/v1/bookbook/users/me');
 
             toast.promise(
                 promise,
@@ -241,7 +226,10 @@ export default function MyPage() {
                     success: '✅ 회원 탈퇴가 성공적으로 완료되었습니다! 북북과 함께해주셔서 감사합니다.',
                     error: {
                         render({ data }) {
-                            const errorMessage = data instanceof Error ? data.message : '알 수 없는 오류가 발생했습니다.';
+                            // ✅ axiosError 객체를 타입 가드로 처리
+                            const errorMessage = axios.isAxiosError(data)
+                                ? data.response?.data?.message || data.message
+                                : (data instanceof Error ? data.message : '알 수 없는 오류가 발생했습니다.');
                             console.error('회원 탈퇴 중 오류:', data);
                             return `❌ 회원 탈퇴 실패: ${errorMessage}`;
                         }
@@ -252,6 +240,7 @@ export default function MyPage() {
                     router.push('/api/v1/bookbook/users/logout');
                 })
                 .catch(() => {
+                    // 토스트 메시지가 이미 에러를 처리했으므로, 여기서는 추가 로깅만 합니다.
                     console.error('회원 탈퇴 실패 (catch 블록)');
                 });
         }
