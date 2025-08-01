@@ -8,7 +8,7 @@ interface AdminProfileProps {
   admin: UserLoginResponseDto;
   onLogout: () => void;
 }
-  
+
 // 관리자 프로필 영역 컴포넌트
 export function AdminProfile(props: AdminProfileProps) {
   const { admin, onLogout } = props;
@@ -19,9 +19,9 @@ export function AdminProfile(props: AdminProfileProps) {
     setShowDropdown(false);
     onLogout();
     setShowConfirmModal(false);
-  }
+  };
 
-  const avatar = admin?.avatar ? admin.avatar : "";
+  const avatar = "";
   const username = admin?.username ? admin.username : "";
   const nickname = admin?.nickname ? admin.nickname : "";
   const role = admin?.role ? admin.role : "";
@@ -82,10 +82,10 @@ export function AdminProfile(props: AdminProfileProps) {
         </div>
       </div>
       {showConfirmModal && (
-          <ConfirmModal
-            message="로그아웃이 완료되었습니다"
-            onConfirm={handleLogout}
-          />
+        <ConfirmModal
+          message="로그아웃이 완료되었습니다"
+          onConfirm={handleLogout}
+        />
       )}
     </>
   );
