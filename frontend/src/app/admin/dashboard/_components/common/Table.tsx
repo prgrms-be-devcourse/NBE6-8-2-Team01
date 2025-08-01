@@ -72,7 +72,7 @@ export function DataTable<T extends { id: string | number }>(
                   scope="col"
                   className="px-6 py-3 text-left text-xs font-bold text-gray-600 uppercase tracking-wider"
                 >
-                  {col.label}
+                  {col.label?.length > 0 ? col.label : "정보 없음"}
                 </th>
               ))}
             </tr>
