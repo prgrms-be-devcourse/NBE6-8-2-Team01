@@ -26,14 +26,22 @@ public class RentListController {
     private final ReviewService reviewService;
     
     /**
-     * 내가 빌린 도서 목록 조회
+     * 내가 빌린 도서 목록 조회 (검색 기능 포함)
      * 
      * @param borrowerUserId 대여받은 사용자 ID
+     * @param search 검색어 (선택사항, 책 제목/저자/출판사/게시글 제목에서 검색)
      * @return 대여한 도서 목록
      */
     @GetMapping
-    public ResponseEntity<List<RentListResponseDto>> getRentListByUserId(@PathVariable Long borrowerUserId) {
-        List<RentListResponseDto> rentList = rentListService.getRentListByUserId(borrowerUserId);
+    public ResponseEntity<List<RentListResponseDto>> getRentListByUserId(
+            @PathVariable Long borrowerUserId,
+            @RequestParam(required = false) String search) {
+        List<RentListResponseDto> rentList;
+        if (search != null && !search.trim().isEmpty()) {
+            rentList = rentListService.searchRentListByUserId(borrowerUserId, search);
+        } else {
+            rentList = rentListService.getRentListByUserId(borrowerUserId);
+        }
         return ResponseEntity.ok(rentList);
     }
     

@@ -12,6 +12,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * 찜 목록 관리 서비스
@@ -44,6 +45,46 @@ public class WishListService {
                     return WishListResponseDto.from(wishList, lenderNickname);
                 })
                 .toList();
+    }
+
+    /**
+     * 사용자의 찜 목록 검색
+     * 
+     * @param userId 사용자 ID
+     * @param searchKeyword 검색어 (책 제목, 저자, 출판사, 게시글 제목에서 검색)
+     * @return 검색된 찜 목록
+     */
+    public List<WishListResponseDto> searchWishListByUserId(Long userId, String searchKeyword) {
+        List<WishList> wishLists = wishListRepository.findByUserIdOrderByCreateDateDesc(userId);
+        
+        if (searchKeyword == null || searchKeyword.trim().isEmpty()) {
+            return wishLists.stream()
+                    .map(wishList -> {
+                        String lenderNickname = userRepository.findById(wishList.getRent().getLenderUserId())
+                                .map(user -> user.getNickname())
+                                .orElse("알 수 없음");
+                        return WishListResponseDto.from(wishList, lenderNickname);
+                    })
+                    .collect(Collectors.toList());
+        }
+        
+        String searchLower = searchKeyword.toLowerCase().trim();
+        
+        return wishLists.stream()
+                .filter(wishList -> {
+                    Rent rent = wishList.getRent();
+                    return rent.getBookTitle().toLowerCase().contains(searchLower) ||
+                           rent.getAuthor().toLowerCase().contains(searchLower) ||
+                           rent.getPublisher().toLowerCase().contains(searchLower) ||
+                           rent.getTitle().toLowerCase().contains(searchLower);
+                })
+                .map(wishList -> {
+                    String lenderNickname = userRepository.findById(wishList.getRent().getLenderUserId())
+                            .map(user -> user.getNickname())
+                            .orElse("알 수 없음");
+                    return WishListResponseDto.from(wishList, lenderNickname);
+                })
+                .collect(Collectors.toList());
     }
 
     /**

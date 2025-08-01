@@ -26,26 +26,53 @@ export default function LendListPage() {
   const userId = 1; // TODO: 실제 로그인된 사용자 ID로 변경
 
   useEffect(() => {
-    fetchMyBooks(currentPage);
+    fetchMyBooks(currentPage, searchTerm);
   }, [currentPage]);
 
-  const fetchMyBooks = async (page: number = 1) => {
+  // 검색어 디바운싱
+  useEffect(() => {
+    console.log('검색어 변경됨:', searchTerm);
+    const timer = setTimeout(() => {
+      console.log('디바운싱 완료, API 호출 시작');
+      if (currentPage === 1) {
+        fetchMyBooks(1, searchTerm);
+      } else {
+        setCurrentPage(1); // 검색 시 첫 페이지로 이동
+      }
+    }, 1500); // 1500ms 후에 검색 실행
+
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
+
+
+  const fetchMyBooks = async (page: number = 1, search: string = '') => {
     try {
       setLoading(true);
       setError(null);
 
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/user/${userId}/lendlist?page=${page - 1}&size=${pagination.size}&sort=createdDate,desc`,
-        {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-            'Accept': 'application/json',
-          },
-          mode: 'cors',
-          credentials: 'include',
-        }
-      );
+      const params = new URLSearchParams({
+        page: (page - 1).toString(),
+        size: pagination.size.toString(),
+        sort: 'createdDate,desc'
+      });
+      
+      if (search.trim()) {
+        params.append('search', search.trim());
+      }
+
+      const apiUrl = `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/user/${userId}/lendlist?${params}`;
+      console.log('API 호출 URL:', apiUrl);
+      console.log('검색어:', search);
+
+      const response = await fetch(apiUrl, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+        mode: 'cors',
+        credentials: 'include',
+      });
 
       console.log('내가 등록한 도서 목록 API 호출:', response.status);
 
@@ -60,6 +87,8 @@ export default function LendListPage() {
 
       const data = await response.json();
       console.log('내가 등록한 도서 목록 API 응답:', data);
+      console.log('검색 결과 개수:', data.content ? data.content.length : 0);
+      console.log('전체 요소 수:', data.totalElements);
 
       if (data.content) {
         setMyBooks(data.content);
@@ -72,23 +101,9 @@ export default function LendListPage() {
       }
     } catch (err) {
       console.error('내가 등록한 도서 목록 조회 에러:', err);
-      
-      // 백엔드 연동 실패 시 더미 데이터 사용
-      const pageSize = 10;
-      const startIndex = (page - 1) * pageSize;
-      const endIndex = startIndex + pageSize;
-      const pageData = dummyLendListBooks.slice(startIndex, endIndex);
-      
-      setMyBooks(pageData);
-      setPagination({
-        currentPage: page,
-        totalPages: Math.ceil(dummyLendListBooks.length / pageSize),
-        totalElements: dummyLendListBooks.length,
-        size: pageSize
-      });
-      
-      // 에러 메시지 표시 (개발 중임을 알림)
-      setError('백엔드 서버에 연결할 수 없어 샘플 데이터를 표시하고 있습니다.');
+      setError(`도서 목록을 불러오는데 실패했습니다: ${err instanceof Error ? err.message : '알 수 없는 오류'}`);
+      setMyBooks([]);
+      setPagination(prev => ({ ...prev, currentPage: page, totalPages: 1, totalElements: 0 }));
     } finally {
       setLoading(false);
     }
@@ -175,29 +190,16 @@ export default function LendListPage() {
     }
   };
 
-  // 검색 필터링
-  const filteredBooks = myBooks.filter(book => {
-    const searchLower = searchTerm.toLowerCase();
-    return (
-      book.bookTitle.toLowerCase().includes(searchLower) ||
-      book.author.toLowerCase().includes(searchLower) ||
-      book.publisher.toLowerCase().includes(searchLower) ||
-      book.title.toLowerCase().includes(searchLower)
-    );
-  });
-
-  // 현재 페이지에 표시할 아이템 계산
-  // 백엔드 연동 실패로 더미 데이터 사용 중일 때는 이미 페이징된 데이터를 사용
-  const currentPageBooks = error && error.includes('샘플 데이터') ? filteredBooks : filteredBooks;
+  // 현재 페이지에 표시할 아이템 (서버에서 이미 검색된 결과)
+  const currentPageBooks = myBooks;
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
-    fetchMyBooks(page);
+    fetchMyBooks(page, searchTerm);
   };
 
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setSearchTerm(e.target.value);
-    setCurrentPage(1); // 검색 시 첫 페이지로 이동
+    setSearchTerm(e.target.value); // 검색어만 업데이트, API 호출은 useEffect에서 디바운싱으로 처리
   };
 
   const formatDate = (dateString: string) => {
@@ -252,7 +254,7 @@ export default function LendListPage() {
           </div>
         )}
 
-        {filteredBooks.length === 0 && !loading ? (
+        {currentPageBooks.length === 0 && !loading ? (
           <div className="text-center py-12">
             <Book className="mx-auto h-16 w-16 text-gray-300 mb-4" />
             <p className="text-gray-500 text-lg">

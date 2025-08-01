@@ -29,13 +29,32 @@ export default function RentListPage() {
     fetchRentedBooks(currentPage);
   }, [currentPage]);
 
-  const fetchRentedBooks = async (page: number = 1) => {
+  useEffect(() => {
+    console.log('검색어 변경됨:', searchTerm);
+    const timer = setTimeout(() => {
+      console.log('디바운싱 완료, API 호출 시작');
+      if (currentPage === 1) {
+        fetchRentedBooks(1, searchTerm);
+      } else {
+        setCurrentPage(1);
+      }
+    }, 1500); // 1500ms 후에 검색 실행
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
+
+
+  const fetchRentedBooks = async (page: number = 1, search?: string) => {
     try {
       setLoading(true);
       setError(null);
 
+      let url = `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/user/${userId}/rentlist?page=${page - 1}&size=${pagination.size}&sort=createdDate,desc`;
+      if (search && search.trim()) {
+        url += `&search=${encodeURIComponent(search.trim())}`;
+      }
+
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/user/${userId}/rentlist?page=${page - 1}&size=${pagination.size}&sort=createdDate,desc`,
+        url,
         {
           method: 'GET',
           headers: {
@@ -52,7 +71,7 @@ export default function RentListPage() {
       if (!response.ok) {
         if (response.status === 404) {
           setRentedBooks([]);
-          setPagination(prev => ({ ...prev, currentPage: page, totalPages: 1, totalElements: 0 }));
+          setPagination(prev => ({ ...prev, currentPage: 1, totalPages: 1, totalElements: 0 }));
           return;
         }
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
@@ -61,7 +80,10 @@ export default function RentListPage() {
       const data = await response.json();
       console.log('빌린 도서 목록 API 응답:', data);
 
-      if (data.content) {
+      if (Array.isArray(data)) {
+        setRentedBooks(data);
+        setPagination(prev => ({ ...prev, currentPage: 1, totalPages: 1, totalElements: data.length }));
+      } else if (data.content) {
         setRentedBooks(data.content);
         setPagination({
           currentPage: data.number + 1,
@@ -72,23 +94,9 @@ export default function RentListPage() {
       }
     } catch (err) {
       console.error('빌린 도서 목록 조회 에러:', err);
-      
-      // 백엔드 연동 실패 시 더미 데이터 사용
-      const pageSize = 10;
-      const startIndex = (page - 1) * pageSize;
-      const endIndex = startIndex + pageSize;
-      const pageData = dummyRentedBooks.slice(startIndex, endIndex);
-      
-      setRentedBooks(pageData);
-      setPagination({
-        currentPage: page,
-        totalPages: Math.ceil(dummyRentedBooks.length / pageSize),
-        totalElements: dummyRentedBooks.length,
-        size: pageSize
-      });
-      
-      // 에러 메시지 표시 (개발 중임을 알림)
-      setError('백엔드 서버에 연결할 수 없어 샘플 데이터를 표시하고 있습니다.');
+      setError(`도서 목록을 불러오는데 실패했습니다: ${err instanceof Error ? err.message : '알 수 없는 오류'}`);
+      setRentedBooks([]);
+      setPagination(prev => ({ ...prev, currentPage: page, totalPages: 1, totalElements: 0 }));
     } finally {
       setLoading(false);
     }
@@ -138,20 +146,8 @@ export default function RentListPage() {
     }
   };
 
-  // 검색 필터링
-  const filteredBooks = rentedBooks.filter(book => {
-    const searchLower = searchTerm.toLowerCase();
-    return (
-      book.bookTitle.toLowerCase().includes(searchLower) ||
-      book.author.toLowerCase().includes(searchLower) ||
-      book.publisher.toLowerCase().includes(searchLower) ||
-      book.title.toLowerCase().includes(searchLower)
-    );
-  });
-
-  // 현재 페이지에 표시할 아이템 계산
-  // 백엔드 연동 실패로 더미 데이터 사용 중일 때는 이미 페이징된 데이터를 사용
-  const currentPageBooks = error && error.includes('샘플 데이터') ? filteredBooks : filteredBooks;
+  // 서버에서 이미 필터링된 데이터이므로 클라이언트 필터링 제거
+  const currentPageBooks = rentedBooks;
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
@@ -160,7 +156,6 @@ export default function RentListPage() {
 
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchTerm(e.target.value);
-    setCurrentPage(1); // 검색 시 첫 페이지로 이동
   };
 
   const formatDate = (dateString: string) => {
@@ -215,7 +210,7 @@ export default function RentListPage() {
           </div>
         )}
 
-        {filteredBooks.length === 0 && !loading ? (
+        {rentedBooks.length === 0 && !loading ? (
           <div className="text-center py-12">
             <Book className="mx-auto h-16 w-16 text-gray-300 mb-4" />
             <p className="text-gray-500 text-lg">
