@@ -214,7 +214,7 @@ export function UserRentPostComponent({ data, onRefresh }: ContentComponentProps
             {/* 헤더 */}
             <div className="flex items-center justify-between">
                 <h3 className="text-lg font-semibold text-gray-900">
-                    멤버 목록
+                    대여 글 목록
                 </h3>
                 <div className="text-sm text-gray-500">
                     {(data?.data?.length ?? 0) > 0 ? `총 ${data.data.length}건 검색 완료` : "검색 결과 없음"}
