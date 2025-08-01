@@ -27,18 +27,25 @@ public class LendListController {
     private final ReviewService reviewService;
     
     /**
-     * 내가 등록한 도서 목록 조회
+     * 내가 등록한 도서 목록 조회 (검색 기능 포함)
      * 
      * @param userId 사용자 ID
+     * @param search 검색어 (선택사항, 책 제목/저자/출판사/게시글 제목에서 검색)
      * @param pageable 페이징 정보 (기본: 10개씩, 생성일 역순)
      * @return 등록한 도서 게시글 목록
      */
     @GetMapping
     public ResponseEntity<Page<LendListResponseDto>> getLendListByUserId(
             @PathVariable Long userId,
+            @RequestParam(required = false) String search,
             @PageableDefault(size = 10, sort = "createdDate", direction = Sort.Direction.DESC) Pageable pageable) {
         
-        Page<LendListResponseDto> lendList = lendListService.getLendListByUserId(userId, pageable);
+        Page<LendListResponseDto> lendList;
+        if (search != null && !search.trim().isEmpty()) {
+            lendList = lendListService.getLendListByUserIdAndSearch(userId, search, pageable);
+        } else {
+            lendList = lendListService.getLendListByUserId(userId, pageable);
+        }
         return ResponseEntity.ok(lendList);
     }
     
