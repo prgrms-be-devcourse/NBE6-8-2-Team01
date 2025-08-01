@@ -1,5 +1,6 @@
 package com.bookbook.global.rsdata;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.annotation.Nullable;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -11,9 +12,16 @@ import lombok.Getter;
 @AllArgsConstructor
 public class RsData<T> {
 
+    @JsonProperty("resultCode")
     private String resultCode;
+    
+    @JsonProperty("msg")
     private String msg;
+    
+    @JsonProperty("data")
     private T data;
+    
+    @JsonProperty("statusCode")
     private int statusCode;
 
     public RsData(String resultCode, String msg, T data) {
@@ -23,6 +31,7 @@ public class RsData<T> {
         this.statusCode = Integer.parseInt(resultCode.split("-", 2)[0]);
     }
 
+    @JsonProperty("success")
     public boolean isSuccess() {
         return resultCode.startsWith("200");
     }
