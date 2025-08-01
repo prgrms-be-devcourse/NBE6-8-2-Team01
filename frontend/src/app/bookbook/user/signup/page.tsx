@@ -1,13 +1,11 @@
 'use client';
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { FaUser, FaMapMarkerAlt } from 'react-icons/fa';
 
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
-import axios from 'axios';
-import axiosInstance from '@/app/util/axiosInstance';
 
 const SignupPage = () => {
     const router = useRouter();
@@ -50,13 +48,29 @@ const SignupPage = () => {
         }
 
         try {
-            const response = await axiosInstance.get(
-                `/api/v1/bookbook/users/check-nickname?nickname=${encodeURIComponent(nicknameToCheck)}`
+            const response = await fetch(
+                `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/bookbook/users/check-nickname?nickname=${encodeURIComponent(nicknameToCheck)}`,
+                { method: 'GET' }
             );
 
-            const rsData = response.data.data;
+            if (!response.ok) {
+                let errorMessage = '닉네임 중복 확인 실패';
+                try {
+                    const errorData = await response.json();
+                    errorMessage = errorData.message || errorMessage;
+                } catch (jsonError) {
+                    console.error('Failed to parse error response:', jsonError);
+                }
 
-            if (rsData.isAvailable) {
+                setNicknameCheckStatus('unavailable');
+                setNicknameError(errorMessage);
+                toast.error(errorMessage);
+                return;
+            }
+
+            const rsData = await response.json();
+
+            if (rsData.data.isAvailable) {
                 setNicknameCheckStatus('available');
                 setNicknameError('');
                 toast.success('사용 가능한 닉네임입니다!');
@@ -65,18 +79,22 @@ const SignupPage = () => {
                 setNicknameError('이미 사용 중인 닉네임입니다. 다른 닉네임을 사용해주세요.');
                 toast.warn('이미 사용 중인 닉네임입니다.');
             }
-        } catch (error: unknown) {
-
+        } catch (error) {
             let errorMessage = '알 수 없는 오류가 발생했습니다.';
-            if (axios.isAxiosError(error)) {
-                errorMessage = error.response?.data?.message || error.message;
-            } else if (error instanceof Error) {
+            if (error instanceof Error) {
                 errorMessage = error.message;
             }
 
+            // ✅ 인터셉터가 던진 특정 에러 메시지를 감지하고 사용자에게 알립니다.
+            if (errorMessage === '재로그인이 필요합니다.') {
+                toast.warn('세션이 만료되었습니다. 다시 로그인해 주세요.');
+                setNicknameError('');
+            } else {
+                toast.error(`오류: ${errorMessage}`);
+                setNicknameError(`닉네임 중복 확인 중 오류가 발생했습니다: ${errorMessage}`);
+            }
+
             setNicknameCheckStatus('unavailable');
-            setNicknameError(`닉네임 중복 확인 중 오류가 발생했습니다: ${errorMessage}`);
-            toast.error(`오류: ${errorMessage}`);
             console.error('Nickname check error:', error);
         }
     };
@@ -111,22 +129,46 @@ const SignupPage = () => {
         setLoading(true);
 
         try {
-            const response = await axiosInstance.patch('/api/v1/bookbook/users/me', { nickname, address });
+            const response = await fetch(
+                `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/bookbook/users/me`,
+                {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ nickname, address }),
+                }
+            );
 
-            if (response.status === 200) {
-                toast.success('회원 정보 업데이트가 성공적으로 완료되었습니다! 메인 페이지로 이동합니다.');
-                router.push('/bookbook');
+            if (!response.ok) {
+                let errorMessage = '회원 정보 업데이트 실패';
+                try {
+                    const errorData = await response.json();
+                    errorMessage = errorData.message || errorMessage;
+                } catch (jsonError) {
+                    console.error('Failed to parse error response:', jsonError);
+                }
+
+                setFormError(errorMessage);
+                toast.error(errorMessage);
+                return;
             }
-        } catch (error: unknown) {
+
+            toast.success('회원 정보 업데이트가 성공적으로 완료되었습니다! 메인 페이지로 이동합니다.');
+            router.push('/bookbook');
+
+        } catch (error) {
             let errorMessage = '알 수 없는 오류가 발생했습니다.';
-            if (axios.isAxiosError(error)) {
-                errorMessage = error.response?.data?.message || error.message;
-            } else if (error instanceof Error) {
+            if (error instanceof Error) {
                 errorMessage = error.message;
             }
 
+            // ✅ 인터셉터가 던진 특정 에러 메시지를 감지하고 사용자에게 알립니다.
+            if (errorMessage === '재로그인이 필요합니다.') {
+                toast.warn('세션이 만료되었습니다. 다시 로그인해 주세요.');
+            } else {
+                toast.error(`정보 업데이트 실패: ${errorMessage}`);
+            }
+
             setFormError(`정보 업데이트에 실패했습니다: ${errorMessage}`);
-            toast.error(`정보 업데이트 실패: ${errorMessage}`);
             console.error('User info update failed:', error);
         } finally {
             setLoading(false);

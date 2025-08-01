@@ -4,8 +4,6 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
-import axios from 'axios';
-import axiosInstance from '@/app/util/axiosInstance';
 
 interface UserResponseDto {
     id: number;
@@ -37,10 +35,14 @@ export default function MyPage() {
     useEffect(() => {
         const fetchUserData = async () => {
             try {
-                const response = await axiosInstance.get('/api/v1/bookbook/users/me');
-                const data = response.data.data;
+                const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/bookbook/users/me`);
+                if (!response.ok) {
+                    throw new Error(response.statusText || '사용자 정보 로드 실패');
+                }
+                const resData = await response.json();
+                const data = resData.data;
 
-                setUserData({
+                const formattedUserData = {
                     id: data.id,
                     username: data.username,
                     nickname: data.nickname,
@@ -53,8 +55,8 @@ export default function MyPage() {
                         month: 'numeric',
                         day: 'numeric',
                     }) : '날짜 없음',
-                });
-
+                };
+                setUserData(formattedUserData);
                 setEditedNickname(data.nickname);
                 setEditedAddress(data.address || '');
                 setOriginalNickname(data.nickname);
@@ -62,9 +64,7 @@ export default function MyPage() {
                 setNicknameCheckStatus('idle');
             } catch (error: unknown) {
                 let errorMessage = '알 수 없는 오류가 발생했습니다.';
-                if (axios.isAxiosError(error)) {
-                    errorMessage = error.response?.data?.message || error.message;
-                } else if (error instanceof Error) {
+                if (error instanceof Error) {
                     errorMessage = error.message;
                 }
                 console.error('사용자 정보 로드 중 오류 발생:', error);
@@ -72,7 +72,7 @@ export default function MyPage() {
             }
         };
 
-        void fetchUserData();
+        fetchUserData();
     }, []);
 
     const handleNicknameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -88,7 +88,7 @@ export default function MyPage() {
         if (value.trim() && value !== originalNickname) {
             setNicknameCheckStatus('checking');
             debounceTimeoutRef.current = setTimeout(() => {
-                void checkNicknameAvailability(value);
+                checkNicknameAvailability(value);
             }, 500);
         } else if (value.trim() === originalNickname) {
             setNicknameCheckStatus('available');
@@ -104,9 +104,19 @@ export default function MyPage() {
         }
 
         try {
-            const response = await axiosInstance.get(`/api/v1/bookbook/users/check-nickname?nickname=${encodeURIComponent(nicknameToCheck)}`);
-            const rsData = response.data.data;
-            if (rsData && rsData.isAvailable) {
+            const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/bookbook/users/check-nickname?nickname=${encodeURIComponent(nicknameToCheck)}`);
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                const errorMessage = errorData.message || '닉네임 중복 확인 실패';
+                setNicknameCheckStatus('unavailable');
+                setNicknameCheckMessage(errorMessage);
+                console.error('닉네임 중복 확인 오류:', errorMessage);
+                return;
+            }
+
+            const rsData = await response.json();
+            if (rsData && rsData.data.isAvailable) {
                 setNicknameCheckStatus('available');
                 setNicknameCheckMessage('사용 가능한 닉네임입니다.');
             } else {
@@ -115,9 +125,7 @@ export default function MyPage() {
             }
         } catch (error: unknown) {
             let errorMessage = '알 수 없는 오류가 발생했습니다.';
-            if (axios.isAxiosError(error)) {
-                errorMessage = error.response?.data?.message || error.message;
-            } else if (error instanceof Error) {
+            if (error instanceof Error) {
                 errorMessage = error.message;
             }
             setNicknameCheckStatus('unavailable');
@@ -174,8 +182,19 @@ export default function MyPage() {
         }
 
         try {
-            // ✅ 응답 값을 사용하지 않으므로 변수에 할당하지 않고 호출만 합니다.
-            await axiosInstance.patch('/api/v1/bookbook/users/me', requestBody);
+            const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/bookbook/users/me`, {
+                method: 'PATCH',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(requestBody),
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                const errorMessage = errorData.message || '프로필 업데이트 실패';
+                throw new Error(errorMessage);
+            }
 
             setUserData(prev => prev ? {
                 ...prev,
@@ -192,9 +211,7 @@ export default function MyPage() {
             toast.success('프로필 정보가 성공적으로 업데이트되었습니다.');
 
         } catch (error: unknown) {
-            const errorMessage = axios.isAxiosError(error)
-                ? error.response?.data?.message || error.message
-                : (error instanceof Error ? error.message : '알 수 없는 오류가 발생했습니다.');
+            const errorMessage = error instanceof Error ? error.message : '알 수 없는 오류가 발생했습니다.';
             console.error('프로필 업데이트 중 오류 발생:', error);
             toast.error(`프로필 업데이트 실패: ${errorMessage}`);
         }
@@ -213,36 +230,53 @@ export default function MyPage() {
         }
     };
 
-    const handleDeactivateAccount = async (event: React.MouseEvent<HTMLAnchorElement>) => {
+    const handleDeactivateAccount = (event: React.MouseEvent<HTMLAnchorElement>) => {
         event.preventDefault();
 
         if (confirm('정말로 계정을 비활성화(회원 탈퇴) 하시겠습니까? 이 작업은 되돌릴 수 없습니다.')) {
-            const promise = axiosInstance.delete('/api/v1/bookbook/users/me');
+            // fetch 호출을 Promise로 감싸서 toast.promise와 연동
+            const deletePromise = new Promise(async (resolve, reject) => {
+                try {
+                    const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/bookbook/users/me`, {
+                        method: 'DELETE',
+                    });
+
+                    if (!response.ok) {
+                        let errorMessage = '회원 탈퇴 실패';
+                        try {
+                            const errorData = await response.json();
+                            errorMessage = errorData.message || errorMessage;
+                        } catch {
+                            // JSON 파싱 실패 시 기본 메시지 사용
+                        }
+                        reject(new Error(errorMessage));
+                        return;
+                    }
+
+                    resolve(response);
+                } catch (error) {
+                    reject(error);
+                }
+            });
 
             toast.promise(
-                promise,
+                deletePromise,
                 {
                     pending: '회원 탈퇴를 진행 중입니다...',
                     success: '✅ 회원 탈퇴가 성공적으로 완료되었습니다! 북북과 함께해주셔서 감사합니다.',
                     error: {
                         render({ data }) {
-                            // ✅ axiosError 객체를 타입 가드로 처리
-                            const errorMessage = axios.isAxiosError(data)
-                                ? data.response?.data?.message || data.message
-                                : (data instanceof Error ? data.message : '알 수 없는 오류가 발생했습니다.');
+                            const errorMessage = data instanceof Error ? data.message : '알 수 없는 오류가 발생했습니다.';
                             console.error('회원 탈퇴 중 오류:', data);
                             return `❌ 회원 탈퇴 실패: ${errorMessage}`;
                         }
                     }
                 }
-            )
-                .then(() => {
-                    router.push('/api/v1/bookbook/users/logout');
-                })
-                .catch(() => {
-                    // 토스트 메시지가 이미 에러를 처리했으므로, 여기서는 추가 로깅만 합니다.
-                    console.error('회원 탈퇴 실패 (catch 블록)');
-                });
+            ).then(() => {
+                router.push('/api/v1/bookbook/users/logout');
+            }).catch(() => {
+                // toast.promise에서 에러를 이미 처리했으므로 여기서는 추가 로직이 필요 없습니다.
+            });
         }
     };
 
