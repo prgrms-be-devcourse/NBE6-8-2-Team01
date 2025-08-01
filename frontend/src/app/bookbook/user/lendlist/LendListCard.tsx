@@ -12,12 +12,12 @@ interface LendListCardProps {
 
 export default function LendListCard({ book, onDelete, onReview, formatDate }: LendListCardProps) {
   const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'Available':
+    switch (status.toUpperCase()) {
+      case 'AVAILABLE':
         return 'bg-green-100 text-green-800';
-      case 'Loaned':
+      case 'LOANED':
         return 'bg-blue-100 text-blue-800';
-      case 'Finished':
+      case 'FINISHED':
         return 'bg-gray-100 text-gray-800';
       default:
         return 'bg-gray-100 text-gray-800';
@@ -25,12 +25,12 @@ export default function LendListCard({ book, onDelete, onReview, formatDate }: L
   };
 
   const getStatusText = (status: string) => {
-    switch (status) {
-      case 'Available':
+    switch (status.toUpperCase()) {
+      case 'AVAILABLE':
         return '대여가능';
-      case 'Loaned':
+      case 'LOANED':
         return '대여중';
-      case 'Finished':
+      case 'FINISHED':
         return '대여완료';
       default:
         return status;
@@ -70,7 +70,7 @@ export default function LendListCard({ book, onDelete, onReview, formatDate }: L
 
             {/* 삭제 버튼 */}
             <div className="flex items-center gap-2 ml-4">
-              {book.rentStatus !== 'Loaned' && (
+              {book.rentStatus?.toUpperCase() !== 'LOANED' && (
                 <button 
                   onClick={() => onDelete(book.id)}
                   className="text-red-500 hover:text-red-700 transition-colors"
@@ -84,11 +84,13 @@ export default function LendListCard({ book, onDelete, onReview, formatDate }: L
 
           {/* 추가 정보 */}
           <div className="flex flex-wrap gap-4 text-sm text-gray-600 mb-3">
-            <div className="flex items-center gap-1">
-              <MapPin className="h-4 w-4" />
-              <span>{book.address}</span>
-            </div>
-            {(book.rentStatus === 'Loaned' || book.rentStatus === 'Finished') && book.borrowerNickname && (
+            {book.address && (
+              <div className="flex items-center gap-1">
+                <MapPin className="h-4 w-4" />
+                <span>{book.address}</span>
+              </div>
+            )}
+            {(book.rentStatus?.toUpperCase() === 'LOANED' || book.rentStatus?.toUpperCase() === 'FINISHED') && book.borrowerNickname && (
               <div className="flex items-center gap-1">
                 <User className="h-4 w-4" />
                 <span>책방손님: {book.borrowerNickname}</span>
@@ -97,20 +99,20 @@ export default function LendListCard({ book, onDelete, onReview, formatDate }: L
           </div>
 
           {/* 대여 기간 */}
-          {(book.rentStatus === 'Loaned' || book.rentStatus === 'Finished') && book.returnDate && (
+          {(book.rentStatus?.toUpperCase() === 'LOANED' || book.rentStatus?.toUpperCase() === 'FINISHED') && book.returnDate && (
             <div className="flex items-center gap-4 text-sm text-gray-600 mb-3">
               <div className="flex items-center gap-1">
                 <Clock className="h-4 w-4" />
                 <span>대여일: {formatDate(book.createdDate)}</span>
               </div>
               <div className={`flex items-center gap-1 ${
-                book.rentStatus === 'Loaned' 
+                book.rentStatus?.toUpperCase() === 'LOANED' 
                   ? 'px-3 py-1 bg-red-50 border border-red-200 rounded-lg' 
                   : ''
               }`}>
-                <Clock className={`h-4 w-4 ${book.rentStatus === 'Loaned' ? 'text-red-500' : ''}`} />
-                <span className={book.rentStatus === 'Loaned' ? 'font-semibold text-red-700' : ''}>
-                  {book.rentStatus === 'Loaned' ? '반납예정' : '반납일'}: {formatDate(book.returnDate)}
+                <Clock className={`h-4 w-4 ${book.rentStatus?.toUpperCase() === 'LOANED' ? 'text-red-500' : ''}`} />
+                <span className={book.rentStatus?.toUpperCase() === 'LOANED' ? 'font-semibold text-red-700' : ''}>
+                  {book.rentStatus?.toUpperCase() === 'LOANED' ? '반납예정' : '반납일'}: {formatDate(book.returnDate)}
                 </span>
               </div>
             </div>
@@ -121,7 +123,7 @@ export default function LendListCard({ book, onDelete, onReview, formatDate }: L
             <span className={`px-3 py-1 text-xs font-medium rounded-full ${getStatusColor(book.rentStatus || '')}`}>
               {getStatusText(book.rentStatus || '')}
             </span>
-            {book.rentStatus === 'Finished' && (
+            {book.rentStatus?.toUpperCase() === 'FINISHED' && (
               book.hasReview ? (
                 <span className="px-3 py-1 text-xs bg-gray-400 text-white rounded">
                   리뷰완료
