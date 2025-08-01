@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import BookFilterBar from './BookFilterBar';
 import BookCardList from './BookCardList';
 
@@ -21,7 +22,7 @@ type PaginationInfo = {
 
 // ✅ 백엔드 Rent 엔티티에 맞춘 Book 타입
 type Book = {
-  id: number;
+  id: number;              // Long → number 변환
   bookTitle: string;       // 실제 책 제목 (Rent.bookTitle)
   author: string;          // 저자 (Rent.author)
   publisher: string;       // 출판사 (Rent.publisher)
@@ -29,8 +30,8 @@ type Book = {
   bookImage: string;       // 책 이미지 (Rent.bookImage)
   address: string;         // 위치 정보 (Rent.address)
   category: string;        // 카테고리 (Rent.category)
-  rentStatus: string;      // 대여 상태 (Rent.rent_status) - 대여가능, 대여중
-  lenderUserId: number;    // 책 소유자 ID (Rent.lender_user_id)
+  rentStatus: string;      // 대여 상태 (Rent.rent_status) - "대여 가능", "대여 중"
+  lenderUserId: number;    // 책 소유자 ID (Rent.lender_user_id) Long → number
   title?: string;          // 대여글 제목 (Rent.title)
   contents?: string;       // 대여 설명 (Rent.contents)
   createdDate?: string;    // 생성일
@@ -49,12 +50,13 @@ type BooksApiResponse = {
 };
 
 export default function RentPage() {
+  const router = useRouter(); // Next.js 라우터 추가
   const [books, setBooks] = useState<Book[]>([]);
   const [pagination, setPagination] = useState<PaginationInfo>({
     currentPage: 1,
     totalPages: 1,
     totalElements: 0,
-    size: 12 // 그리드 레이아웃에 맞게 12개로 설정
+    size: 4 // 세로 레이아웃에 맞게 4개로 변경
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -147,6 +149,12 @@ export default function RentPage() {
     fetchBooks(currentFilters, page);
   };
 
+  // 📖 책 클릭 핸들러 (상세페이지 이동)
+  const handleBookClick = (bookId: number) => {
+    console.log('책 클릭 - ID:', bookId);
+    router.push(`/bookbook/rent/${bookId}`);
+  };
+
   // 컴포넌트 마운트 시 초기 데이터 로드
   useEffect(() => {
     fetchBooks(currentFilters, 1);
@@ -193,7 +201,7 @@ export default function RentPage() {
 
       <hr className="my-6" />
 
-      {/* 📚 도서 목록 */}
+      {/* 📚 도서 목록 - 세로 레이아웃 */}
       <div className="min-h-[600px]">
         {loading ? (
           <div className="flex justify-center items-center py-20">
@@ -223,40 +231,81 @@ export default function RentPage() {
             </p>
           </div>
         ) : (
-          // 그리드 레이아웃으로 책 목록 표시
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-6">
+          // 세로 레이아웃으로 책 목록 표시 (카드 형태)
+          <div className="space-y-6">
             {books.map((book) => (
-              <div key={book.id} className="border rounded-lg p-4 shadow bg-white hover:shadow-md transition-shadow">
-                {/* 책 이미지 */}
-                <div className="flex justify-center mb-4">
-                  <img
-                    src={book.bookImage}
-                    alt={book.bookTitle}
-                    className="w-24 h-36 object-cover rounded-md shadow-sm"
-                    onError={(e) => {
-                      e.currentTarget.src = '/book-placeholder.png';
-                    }}
-                  />
-                </div>
-                
-                {/* 책 정보 */}
-                <div className="text-center space-y-1">
-                  <h3 className="font-bold text-sm text-gray-800 line-clamp-2 mb-2">
-                    {book.bookTitle}
-                  </h3>
-                  <p className="text-xs text-gray-600">저자: {book.author}</p>
-                  <p className="text-xs text-gray-600">출판: {book.publisher}</p>
-                  <p className="text-xs text-gray-600">상태: {book.bookCondition}</p>
+              <div 
+                key={book.id} 
+                className="border border-gray-200 rounded-xl p-6 shadow-sm bg-white hover:shadow-lg transition-all duration-300 cursor-pointer hover:border-gray-300"
+                onClick={() => handleBookClick(book.id)}
+              >
+                <div className="flex gap-6">
+                  {/* 책 이미지 */}
+                  <div className="flex-shrink-0">
+                    <img
+                      src={book.bookImage}
+                      alt={book.bookTitle}
+                      className="w-32 h-48 object-cover rounded-lg shadow-md"
+                      onError={(e) => {
+                        e.currentTarget.src = '/book-placeholder.png';
+                      }}
+                    />
+                  </div>
                   
-                  {/* 대여 상태 */}
-                  <div className="pt-2">
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                      book.rentStatus === '대여가능' || book.rentStatus === 'Available'
-                        ? 'bg-green-100 text-green-800' 
-                        : 'bg-red-100 text-red-800'
-                    }`}>
-                      {book.rentStatus}
-                    </span>
+                  {/* 책 정보 */}
+                  <div className="flex-1 space-y-3">
+                    {/* 제목 */}
+                    <h3 className="text-xl font-bold text-gray-900 mb-2">
+                      {book.bookTitle}
+                    </h3>
+                    
+                    {/* 기본 정보 */}
+                    <div className="space-y-2">
+                      <p className="text-gray-700">
+                        <span className="font-medium">저자:</span> {book.author}
+                      </p>
+                      <p className="text-gray-700">
+                        <span className="font-medium">출판사:</span> {book.publisher}
+                      </p>
+                      <p className="text-gray-700">
+                        <span className="font-medium">상태:</span> {book.bookCondition}
+                      </p>
+                      <p className="text-gray-700">
+                        <span className="font-medium">위치:</span> {book.address}
+                      </p>
+                      {book.category && (
+                        <p className="text-gray-700">
+                          <span className="font-medium">카테고리:</span> {book.category}
+                        </p>
+                      )}
+                    </div>
+
+                    {/* 대여글 제목과 내용 (있는 경우) */}
+                    {book.title && (
+                      <div className="mt-4 p-3 bg-gray-50 rounded-lg">
+                        <h4 className="font-semibold text-gray-800 mb-1">{book.title}</h4>
+                        {book.contents && (
+                          <p className="text-gray-600 text-sm line-clamp-2">{book.contents}</p>
+                        )}
+                      </div>
+                    )}
+
+                    {/* 대여 상태와 등록일 */}
+                    <div className="flex items-center justify-between mt-4 pt-4 border-t border-gray-100">
+                      <span className={`px-4 py-2 rounded-full text-sm font-medium ${
+                        book.rentStatus === '대여 가능' || book.rentStatus === '대여가능' || book.rentStatus === 'Available'
+                          ? 'bg-green-100 text-green-800' 
+                          : 'bg-red-100 text-red-800'
+                      }`}>
+                        {book.rentStatus}
+                      </span>
+                      
+                      {book.createdDate && (
+                        <span className="text-sm text-gray-500">
+                          등록일: {new Date(book.createdDate).toLocaleDateString('ko-KR')}
+                        </span>
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>
@@ -265,20 +314,35 @@ export default function RentPage() {
         )}
       </div>
 
-      {/* 📄 페이지네이션 */}
+      {/* 📄 페이지네이션 - 개선된 디자인 */}
       {!loading && !error && pagination.totalPages > 1 && (
-        <div className="flex justify-center items-center gap-3 mt-10">
+        <div className="flex justify-center items-center gap-2 mt-12">
+          {/* 맨 처음 페이지 */}
+          {pagination.currentPage > 3 && (
+            <>
+              <button
+                onClick={() => handlePageChange(1)}
+                className="w-10 h-10 flex items-center justify-center rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-100 transition-colors"
+              >
+                1
+              </button>
+              {pagination.currentPage > 4 && (
+                <span className="px-2 text-gray-400">...</span>
+              )}
+            </>
+          )}
+
           {/* 이전 페이지 */}
           <button
             onClick={() => handlePageChange(pagination.currentPage - 1)}
             disabled={pagination.currentPage === 1}
-            className={`px-3 py-1 text-sm ${
+            className={`w-10 h-10 flex items-center justify-center rounded-lg text-sm font-medium transition-colors ${
               pagination.currentPage === 1
-                ? 'text-gray-400 cursor-not-allowed'
-                : 'text-gray-600 hover:text-black'
+                ? 'text-gray-300 cursor-not-allowed'
+                : 'text-gray-600 hover:bg-gray-100'
             }`}
           >
-            ◀
+            ‹
           </button>
 
           {/* 페이지 번호 */}
@@ -286,10 +350,10 @@ export default function RentPage() {
             <button
               key={num}
               onClick={() => handlePageChange(num)}
-              className={`w-8 h-8 rounded text-sm font-semibold transition-colors ${
+              className={`w-10 h-10 flex items-center justify-center rounded-lg text-sm font-medium transition-colors ${
                 num === pagination.currentPage
-                  ? 'bg-black text-white'
-                  : 'bg-white border hover:bg-gray-100'
+                  ? 'bg-blue-600 text-white'
+                  : 'text-gray-600 hover:bg-gray-100'
               }`}
             >
               {num}
@@ -300,20 +364,35 @@ export default function RentPage() {
           <button
             onClick={() => handlePageChange(pagination.currentPage + 1)}
             disabled={pagination.currentPage === pagination.totalPages}
-            className={`px-3 py-1 text-sm ${
+            className={`w-10 h-10 flex items-center justify-center rounded-lg text-sm font-medium transition-colors ${
               pagination.currentPage === pagination.totalPages
-                ? 'text-gray-400 cursor-not-allowed'
-                : 'text-gray-600 hover:text-black'
+                ? 'text-gray-300 cursor-not-allowed'
+                : 'text-gray-600 hover:bg-gray-100'
             }`}
           >
-            ▶
+            ›
           </button>
+
+          {/* 맨 마지막 페이지 */}
+          {pagination.currentPage < pagination.totalPages - 2 && (
+            <>
+              {pagination.currentPage < pagination.totalPages - 3 && (
+                <span className="px-2 text-gray-400">...</span>
+              )}
+              <button
+                onClick={() => handlePageChange(pagination.totalPages)}
+                className="w-10 h-10 flex items-center justify-center rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-100 transition-colors"
+              >
+                {pagination.totalPages}
+              </button>
+            </>
+          )}
         </div>
       )}
 
       {/* 📊 페이지 정보 */}
       {!loading && !error && books.length > 0 && (
-        <div className="text-center text-sm text-gray-500 mt-4">
+        <div className="text-center text-sm text-gray-500 mt-6">
           {pagination.currentPage} / {pagination.totalPages} 페이지 
           (총 {pagination.totalElements}권)
         </div>
