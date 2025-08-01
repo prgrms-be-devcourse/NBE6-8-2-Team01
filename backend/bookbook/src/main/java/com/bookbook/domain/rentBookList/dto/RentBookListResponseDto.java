@@ -16,7 +16,7 @@ public class RentBookListResponseDto {
     private final String bookImage;
     private final String address;
     private final String category;
-    private final RentStatus rentStatus;
+    private final String rentStatus;    // RentStatus → String으로 변경 (한글 표시)
     private final Long lenderUserId;
     private final String title;
     private final String contents;
@@ -29,14 +29,39 @@ public class RentBookListResponseDto {
         this.author = rent.getAuthor();
         this.publisher = rent.getPublisher();
         this.bookCondition = rent.getBookCondition();
-        this.bookImage = rent.getBookImage();
+        this.bookImage = processImageUrl(rent.getBookImage()); // 이미지 URL 처리
         this.address = rent.getAddress();
         this.category = rent.getCategory();
-        this.rentStatus = rent.getRentStatus();
+        this.rentStatus = rent.getRentStatus().getDescription(); // 한글 상태로 변환
         this.lenderUserId = rent.getLenderUserId();
         this.title = rent.getTitle();
         this.contents = rent.getContents();
         this.createdDate = rent.getCreatedDate();
         this.modifiedDate = rent.getModifiedDate();
+    }
+    
+    // 이미지 URL 처리 메서드
+    private String processImageUrl(String imageUrl) {
+        if (imageUrl == null || imageUrl.trim().isEmpty()) {
+            return "/book-placeholder.png"; // 기본 이미지
+        }
+        
+        // 이미 전체 URL인 경우 그대로 반환
+        if (imageUrl.startsWith("http://") || imageUrl.startsWith("https://")) {
+            return imageUrl;
+        }
+        
+        // 상대 경로인 경우 절대 경로로 변환
+        if (imageUrl.startsWith("/uploads/")) {
+            return "http://localhost:8080" + imageUrl;
+        }
+        
+        // uploads/로 시작하는 경우
+        if (imageUrl.startsWith("uploads/")) {
+            return "http://localhost:8080/" + imageUrl;
+        }
+        
+        // 기타 경우 기본 처리
+        return "http://localhost:8080" + (imageUrl.startsWith("/") ? imageUrl : "/" + imageUrl);
     }
 }
