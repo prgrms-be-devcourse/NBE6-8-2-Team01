@@ -83,7 +83,7 @@ export default function LendListCard({ book, onDelete, onReview, formatDate }: L
                     e.stopPropagation();
                     onDelete(book.id);
                   }}
-                  className="text-red-500 hover:text-red-700 transition-colors"
+                  className="text-red-500 hover:text-red-700 transition-colors cursor-pointer"
                   title="삭제"
                 >
                   <Trash2 className="h-5 w-5" />

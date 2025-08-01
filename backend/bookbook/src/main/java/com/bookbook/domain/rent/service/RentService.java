@@ -12,7 +12,6 @@ import com.bookbook.domain.user.entity.User;
 import com.bookbook.domain.user.repository.UserRepository;
 import com.bookbook.global.exception.ServiceException;
 import lombok.RequiredArgsConstructor;
-import org.hibernate.boot.model.naming.IllegalIdentifierException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -33,12 +32,11 @@ public class RentService {
     private final UserRepository userRepository;
 
     // Rent 페이지 등록 Post 요청
-    // http://localhost:3000/bookbook/rent/create
     @Transactional
     public void createRentPage(RentRequestDto dto, Long userId) {
         // 유저 정보 조회
         User user = userRepository.findById(userId)
-                .orElseThrow(()-> new ServiceException("", "로그인을 해 주세요."));
+                .orElseThrow(()-> new ServiceException("401", "로그인을 해 주세요."));
 
         // Rent 엔티티 생성 (Builder 패턴 활용)
         Rent rent = Rent.builder()

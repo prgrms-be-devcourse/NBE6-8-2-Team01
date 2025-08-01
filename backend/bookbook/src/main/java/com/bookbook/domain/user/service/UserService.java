@@ -27,7 +27,6 @@ public class UserService {
     private final JdbcTemplate jdbcTemplate;
     private final ReviewRepository reviewRepository;
 
-
     @PostConstruct
     @Transactional
     public void initializeData(){

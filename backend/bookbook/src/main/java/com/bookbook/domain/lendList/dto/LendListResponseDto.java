@@ -18,6 +18,7 @@ public class LendListResponseDto {
     private String publisher;
     private String bookCondition;
     private String bookImage;
+    private String address;
     private String rentStatus;
     private String borrowerNickname;
     private LocalDateTime createdDate;
@@ -33,6 +34,7 @@ public class LendListResponseDto {
                 .publisher(rent.getPublisher())
                 .bookCondition(rent.getBookCondition())
                 .bookImage(rent.getBookImage())
+                .address(rent.getAddress())
                 .rentStatus(rent.getRentStatus().name())
                 .borrowerNickname(borrowerNickname)
                 .createdDate(rent.getCreatedDate())
