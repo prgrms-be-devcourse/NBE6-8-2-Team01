@@ -166,6 +166,7 @@ export function UserListComponent({
     { key: "id", label: "No" },
     { key: "username", label: "유저명" },
     { key: "nickname", label: "닉네임" },
+    { key: "email", label: "이메일" },
     {
       key: "createdAt",
       label: "가입일",
