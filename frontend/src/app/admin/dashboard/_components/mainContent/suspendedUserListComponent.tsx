@@ -11,7 +11,6 @@ export function SuspendedUserListComponent({ data }: ContentComponentProps) {
     { key: "id", label: "No" },
     { key: "userId", label: "아이디" },
     { key: "name", label: "이름" },
-    { key: "email", label: "이메일" },
     {
       key: "suspendedAt",
       label: "정지일",
