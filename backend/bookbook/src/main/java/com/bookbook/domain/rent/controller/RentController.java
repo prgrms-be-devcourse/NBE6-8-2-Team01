@@ -3,12 +3,14 @@ package com.bookbook.domain.rent.controller;
 import com.bookbook.domain.rent.dto.RentRequestDto;
 import com.bookbook.domain.rent.dto.RentResponseDto;
 import com.bookbook.domain.rent.service.RentService;
+import com.bookbook.global.security.CustomOAuth2User;
 import io.swagger.v3.oas.annotations.Operation;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
-// 25.07.31 현준
+// 25.08.01 수정 현준
 @RestController // @Controller와 @ResponseBody를 합친 형태, RESTful 웹 서비스 컨트롤러
 @RequestMapping({"/bookbook/rent", "/api/v1/bookbook/rent"}) // 기존 경로와 API 경로 모두 지원
 @RequiredArgsConstructor // final 필드에 대한 생성자를 자동으로 생성
@@ -17,12 +19,11 @@ public class RentController {
     private final RentService rentService;
 
     // Rent 페이지 등록 Post 요청
-    // http://localhost:3000/bookbook/rent/create
     @PostMapping("/create") // /rent 경로로 POST 요청을 처리
     @Operation(summary = "Rent 페이지 등록") // Swagger 에서 API 문서화에 사용되는 설명
-    public void createRentPage(@RequestBody @Valid RentRequestDto dto){
-        int id = 1; // 예시로 1을 사용, 실제로는 인증된 사용자 ID를 가져와야 함
-        rentService.createRentPage(dto, id);
+    public void createRentPage(@RequestBody @Valid RentRequestDto dto, @AuthenticationPrincipal CustomOAuth2User userDetails){
+        Long userId = userDetails.getUserId();
+        rentService.createRentPage(dto, userId);
     }
 
     // Rent 페이지 조회 Get요청
