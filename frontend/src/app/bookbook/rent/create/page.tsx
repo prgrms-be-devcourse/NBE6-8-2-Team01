@@ -4,6 +4,9 @@
 import React, { useEffect, useState } from 'react';
 import { useRouter } from "next/navigation";
 
+// 분리한 AddressSelectionPopup 컴포넌트를 import
+import AddressSelectionPopup from '@/app/components/AddressSelectionPopup';
+
 interface BookSearchResult {
     bookTitle: string;
     author: string;
@@ -51,9 +54,12 @@ export default function BookRentPage() {
     const itemsPerPage = 10; // 백엔드 MaxResults와 동일하게 10으로 설정
     const [hasMoreResults, setHasMoreResults] = useState(false);
 
-
     const defaultImageUrl = 'https://i.postimg.cc/pLC9D2vW/noimg.gif';
     const [previewImageUrl, setPreviewImageUrl] = useState<string>(defaultImageUrl);
+
+    // 주소 선택 관련 상태 추가
+    const [isAddressPopupOpen, setIsAddressPopupOpen] = useState(false); // 팝업 출력 용
+    const [selectedAddress, setSelectedAddress] = useState(''); // 선택된 주소
 
     useEffect(() => {
         if (bookImage) {
@@ -66,7 +72,6 @@ export default function BookRentPage() {
     }, [bookImage]);
 
     const conditions = ['최상 (깨끗함)', '상 (사용감 적음)', '중 (사용감 있음)', '하 (손상 있음)'];
-    const addresses = ['서울특별시', '부산광역시', '대구광역시', '인천광역시', '광주광역시', '대전광역시', '울산광역시', '세종특별자치시', '경기도', '강원특별자치도', '충청북도', '충청남도', '전라북도', '전라남도', '경상북도', '경상남도', '제주특별자치도'];
 
     const router = useRouter();
 
@@ -74,6 +79,7 @@ export default function BookRentPage() {
         setTitle('');
         setBookImage(null);
         setBookCondition('');
+        setSelectedAddress('');
         setAddress('');
         setContents('');
         setBookTitle('');
@@ -191,7 +197,7 @@ export default function BookRentPage() {
             title: title,
             bookCondition: bookCondition,
             bookImage: imageUrl,
-            address: address,
+            address: selectedAddress,
             contents: contents,
             rentStatus: 'AVAILABLE', // 백엔드의 RentStatus.AVAILABLE과 동일한 문자열
             bookTitle: bookTitle,
@@ -241,7 +247,7 @@ export default function BookRentPage() {
                             type="text"
                             id="postTitle"
                             className="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-gray-900"
-                            placeholder="예: 식탁 위의 세계사 - 한번 읽어보세요!"
+                            placeholder="글 제목을 입력해주세요."
                             value={title}
                             onChange={(e) => setTitle(e.target.value)}
                             required
@@ -275,40 +281,56 @@ export default function BookRentPage() {
                         </div>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div>
+                    {/* 책 상태, 주소 입력 부분 */}
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+
+                        {/* 책 상태 */}
+                        <div className='md:col-span-1'> {/* 1:2 비율을 위해 md:col-span-1 추가 */}
                             <label htmlFor="bookCondition" className="block text-gray-700 text-base font-medium mb-2 font-bold">
                                 책 상태
                             </label>
+                            {/* 책 상태 토글 */}
                             <select
                                 id="bookCondition"
-                                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-gray-900"
+                                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-gray-900 h-12"
                                 value={bookCondition}
                                 onChange={(e) => setBookCondition(e.target.value)}
                                 required
                             >
-                                <option value="" disabled>선택하세요</option>
+                                <option value="" disabled>책 상태를 선택하세요</option>
                                 {conditions.map((cond) => (
                                     <option key={cond} value={cond}>{cond}</option>
                                 ))}
                             </select>
                         </div>
-                        <div>
+
+                        {/* 주소 입력 */}
+                        <div className='md:col-span-2'> {/* 1:2 비율을 위해 md:col-span-2 추가 */}
                             <label htmlFor="address" className="block text-gray-700 text-base font-medium mb-2 font-bold">
                                 주소
                             </label>
-                            <select
-                                id="address"
-                                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-gray-900"
-                                value={address}
-                                onChange={(e) => setAddress(e.target.value)}
-                                required
-                            >
-                                <option value="" disabled>선택하세요</option>
-                                {addresses.map((addr) => (
-                                    <option key={addr} value={addr}>{addr}</option>
-                                ))}
-                            </select>
+
+                            {/* 주소 선택 필드를 텍스트와 버튼으로 변경 */}
+                            <div className="flex items-center space-x-2">
+                                {/* 주소 선택 인풋 상자 */}
+                                <input
+                                    type="text"
+                                    id="address"
+                                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-gray-900 h-12"
+                                    value={selectedAddress || '주소를 선택해주세요'} // 선택된 주소 표시
+                                    readOnly // 직접 입력 방지
+                                    required
+                                />
+                                {/* 책 선택 버튼 */}
+                                <button
+                                    type="button"
+                                    onClick={() => setIsAddressPopupOpen(true)} // 주소 팝업 열기
+                                    className="px-4 py-3 whitespace-nowrap text-white font-semibold rounded-lg shadow-md bg-[#D5BAA3] hover:bg-[#C2A794] "
+                                >
+                                    선택
+                                </button>
+                            </div>
+
                         </div>
                     </div>
 
@@ -320,7 +342,7 @@ export default function BookRentPage() {
                             id="contents"
                             rows={6}
                             className="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-gray-900 resize-y"
-                            placeholder="책에 대한 설명, 상태 등을 최대한 자세히 적어주세요."
+                            placeholder="책에 대한 설명, 상태 등을 자세히 적어주세요."
                             value={contents}
                             onChange={(e) => setContents(e.target.value)}
                             maxLength={500}
@@ -332,16 +354,25 @@ export default function BookRentPage() {
                     </div>
 
                     <div className="flex flex-col items-center justify-end space-y-3 sm:space-y-0 sm:flex-row sm:space-x-3">
-                        <p className="text-sm italic text-blue-600 mb-2 sm:mb-0"> {/* 파란색 글씨 적용 */}
-                            책 검색하기 기능으로 간편하게 입력하세요!
-                        </p>
-                        <input
-                            type="text"
-                            placeholder="책 제목 또는 키워드 입력"
-                            className="w-full sm:w-auto p-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-gray-900"
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                        />
+                        {/* 책 도움말 말풍선 */}
+                        <div className="relative w-full sm:w-auto">
+                            {/* 책 검색 상자 */}
+                            <input
+                                type="text"
+                                placeholder="책 제목 입력"
+                                className="w-full sm:w-auto p-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-gray-900"
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                            />
+                            {/* 비어있을 때만 출력하는 span 부분 */}
+                            {searchQuery.trim() === '' && (
+                               <span className="absolute left-1/2 -top-8 -translate-x-1/2 bg-blue-500 text-white text-xs font-semibold px-2 py-1 rounded-md shadow-md whitespace-nowrap">
+                                    책 검색 기능으로 간편하게 입력하세요!
+                                </span>
+                            )}
+                        </div>
+
+                        {/* 책 검색 버튼 */}
                         <button
                             type="button"
                             className="px-6 py-2 text-white font-semibold rounded-lg shadow-md
@@ -563,6 +594,16 @@ export default function BookRentPage() {
                   </div>
                 </div>
             )}
+
+            {/* 주소 선택 팝업 */}
+            <AddressSelectionPopup
+                isOpen={isAddressPopupOpen}
+                onClose={() => setIsAddressPopupOpen(false)}
+                onSelectAddress={(address: string) => {
+                    setSelectedAddress(address);
+                    setIsAddressPopupOpen(false);
+                }}
+            />
         </div>
     )
 };
