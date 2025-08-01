@@ -1,4 +1,4 @@
-'use client';
+'use client'; // 이 줄을 파일 맨 위에 추가해주세요.
 
 import React, { useState, useEffect } from 'react';
 import { Bell, Heart, User } from 'lucide-react';
