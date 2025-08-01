@@ -1,5 +1,6 @@
 package com.bookbook.domain.report.entity;
 
+import com.bookbook.domain.report.enums.ReportStatus;
 import com.bookbook.domain.user.entity.User;
 import com.bookbook.global.entity.BaseEntity;
 import jakarta.persistence.*;
@@ -27,6 +28,10 @@ public class Report extends BaseEntity {
     @LastModifiedDate
     private LocalDateTime modifiedDate;
 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private ReportStatus status;
+
     @ManyToOne
     @JoinColumn(name = "reporter_user_id", nullable = false)
     private User reporterUser;
@@ -41,5 +46,6 @@ public class Report extends BaseEntity {
         this.reporterUser = reporterUser;
         this.targetUser = targetUser;
         this.reason = reason;
+        this.status = ReportStatus.PENDING;
     }
 }
