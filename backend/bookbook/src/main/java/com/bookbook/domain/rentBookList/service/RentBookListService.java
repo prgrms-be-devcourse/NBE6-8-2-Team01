@@ -102,4 +102,12 @@ public class RentBookListService {
                 .map(category -> Map.of("id", category, "name", category))
                 .collect(Collectors.toList());
     }
+
+    // 책 상세 정보 조회
+    public RentBookListResponseDto getBookDetail(Integer rentId) {
+        Rent rent = rentBookListRepository.findById(rentId)
+                .orElseThrow(() -> new RuntimeException("존재하지 않는 책입니다. ID: " + rentId));
+        
+        return new RentBookListResponseDto(rent);
+    }
 }

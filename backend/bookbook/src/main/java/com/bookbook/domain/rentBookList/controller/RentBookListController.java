@@ -51,6 +51,18 @@ public class RentBookListController {
         return new RsData<>("200-1", "대여 가능한 책 목록을 조회했습니다.", response);
     }
 
+    @GetMapping("/{rentId}")
+    @Operation(summary = "책 상세 정보 조회", description = "특정 책의 상세 정보를 조회합니다.")
+    public RsData<RentBookListResponseDto> getBookDetail(
+            @PathVariable Integer rentId
+    ) {
+        log.debug("책 상세 정보 조회 - rentId: {}", rentId);
+
+        RentBookListResponseDto bookDetail = rentBookListService.getBookDetail(rentId);
+
+        return new RsData<>("200-3", "책 상세 정보를 조회했습니다.", bookDetail);
+    }
+
     @PostMapping("/{rentId}/request")
     @Operation(summary = "대여 신청", description = "특정 책에 대해 대여 신청을 합니다.")
     public RsData<Void> requestRent(
