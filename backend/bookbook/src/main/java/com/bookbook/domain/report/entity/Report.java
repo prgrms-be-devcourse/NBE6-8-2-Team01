@@ -1,4 +1,4 @@
-package com.bookbook.domain.report;
+package com.bookbook.domain.report.entity;
 
 import com.bookbook.domain.user.entity.User;
 import com.bookbook.global.entity.BaseEntity;
