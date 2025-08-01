@@ -1,5 +1,6 @@
 package com.bookbook.domain.user.service;
 
+import com.bookbook.domain.review.repository.ReviewRepository;
 import com.bookbook.domain.user.dto.UserProfileResponseDto;
 import com.bookbook.domain.user.dto.UserResponseDto;
 import com.bookbook.domain.user.entity.User;
@@ -13,6 +14,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Optional;
 import java.util.UUID;
 
 @Service
@@ -21,6 +23,7 @@ import java.util.UUID;
 public class UserService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private final ReviewRepository reviewRepository;
 
     @PostConstruct
     @Transactional
@@ -175,12 +178,12 @@ public class UserService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ServiceException("404-USER-NOT-FOUND", "사용자를 찾을 수 없습니다."));
 
-        // TODO: 매너점수(평점) 계산 로직 구현 필요
-        // 현재는 임시로 고정된 값을 반환합니다.
-        double mannerScore = 4.8;
-        int mannerScoreCount = 25;
+        Optional<Double> averageRating = reviewRepository.findAverageRatingByRevieweeId(userId);
+        long mannerScoreCount = reviewRepository.countByRevieweeId(userId);
 
-        return UserProfileResponseDto.from(user, mannerScore, mannerScoreCount);
+        double mannerScore = averageRating.orElse(0.0);
+
+        return UserProfileResponseDto.from(user, mannerScore, (int) mannerScoreCount);
     }
 
 }
