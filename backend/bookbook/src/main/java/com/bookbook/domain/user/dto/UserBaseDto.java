@@ -11,8 +11,9 @@ import java.time.LocalDateTime;
 @Builder
 public record UserBaseDto(
         @NonNull Long id,
-        @NonNull String username,
-        @NonNull String nickname,
+        String username,
+        String nickname,
+        String email,
         @NonNull Float rating,
         @NonNull LocalDateTime createdAt,
         @NonNull LocalDateTime updatedAt,
@@ -25,6 +26,7 @@ public record UserBaseDto(
                 .id(user.getId())
                 .username(user.getUsername())
                 .nickname(user.getNickname())
+                .email(user.getEmail())
                 .rating(user.getRating())
                 .createdAt(user.getCreateAt())
                 .updatedAt(user.getUpdateAt())
