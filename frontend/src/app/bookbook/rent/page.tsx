@@ -32,6 +32,7 @@ type Book = {
   category: string;        // 카테고리 (Rent.category)
   rentStatus: string;      // 대여 상태 (Rent.rent_status) - "대여 가능", "대여 중"
   lenderUserId: number;    // 책 소유자 ID (Rent.lender_user_id) Long → number
+  lenderNickname?: string; // 책 소유자 닉네임
   title?: string;          // 대여글 제목 (Rent.title)
   contents?: string;       // 대여 설명 (Rent.contents)
   createdDate?: string;    // 생성일
@@ -278,17 +279,12 @@ export default function RentPage() {
                           <span className="font-medium">카테고리:</span> {book.category}
                         </p>
                       )}
+                      {book.lenderNickname && (
+                        <p className="text-gray-700">
+                          <span className="font-medium">작성자:</span> {book.lenderNickname}
+                        </p>
+                      )}
                     </div>
-
-                    {/* 대여글 제목과 내용 (있는 경우) */}
-                    {book.title && (
-                      <div className="mt-4 p-3 bg-gray-50 rounded-lg">
-                        <h4 className="font-semibold text-gray-800 mb-1">{book.title}</h4>
-                        {book.contents && (
-                          <p className="text-gray-600 text-sm line-clamp-2">{book.contents}</p>
-                        )}
-                      </div>
-                    )}
 
                     {/* 대여 상태와 등록일 */}
                     <div className="flex items-center justify-between mt-4 pt-4 border-t border-gray-100">

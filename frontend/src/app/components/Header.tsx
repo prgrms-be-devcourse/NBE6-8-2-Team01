@@ -11,8 +11,40 @@ import { useLoginModal } from '../context/LoginModalContext';
 const Header = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [showMessagePanel, setShowMessagePanel] = useState(false);
+  const [unreadNotificationCount, setUnreadNotificationCount] = useState(0);
   const { openLoginModal } = useLoginModal();
   const toggleMessagePanel = () => setShowMessagePanel((prev) => !prev);
+
+  // 읽지 않은 알림 개수를 가져오는 함수
+  const fetchUnreadNotificationCount = async () => {
+    if (!isLoggedIn) {
+      setUnreadNotificationCount(0);
+      return;
+    }
+
+    try {
+      const response = await authFetch('/api/v1/bookbook/user/notifications/unread-count', {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+      }, openLoginModal);
+
+      if (response.ok) {
+        const rsData = await response.json();
+        if (rsData.success || rsData.resultCode.startsWith('200')) {
+          setUnreadNotificationCount(rsData.data || 0);
+        }
+      } else {
+        console.warn('알림 개수 조회 실패:', response.status);
+        setUnreadNotificationCount(0);
+      }
+    } catch (error) {
+      console.error('알림 개수 조회 중 오류:', error);
+      setUnreadNotificationCount(0);
+    }
+  };
 
   useEffect(() => {
     const checkLoginStatus = async () => {
@@ -23,24 +55,46 @@ const Header = () => {
 
         if (response.ok) {
           const rsData = await response.json();
-          setIsLoggedIn(rsData.data);
+          const loginStatus = rsData.data;
+          setIsLoggedIn(loginStatus);
+          
+          // 로그인된 경우에만 알림 개수 조회
+          if (loginStatus) {
+            fetchUnreadNotificationCount();
+          }
         } else {
           // 401 에러는 authFetch에서 이미 처리되었을 가능성이 높습니다.
           setIsLoggedIn(false);
+          setUnreadNotificationCount(0);
         }
       } catch (error) {
         console.error('로그인 상태 확인 중 오류 발생:', error);
         setIsLoggedIn(false);
+        setUnreadNotificationCount(0);
       }
     };
 
     checkLoginStatus();
   }, [openLoginModal]);
 
+  // 로그인 상태가 변경될 때 알림 개수 업데이트
+  useEffect(() => {
+    if (isLoggedIn) {
+      fetchUnreadNotificationCount();
+      
+      // 주기적으로 알림 개수 업데이트 (선택사항)
+      const interval = setInterval(fetchUnreadNotificationCount, 30000); // 30초마다
+      return () => clearInterval(interval);
+    } else {
+      setUnreadNotificationCount(0);
+    }
+  }, [isLoggedIn]);
+
   const handleLogout = async () => {
     const success = await logoutUser();
     if (success) {
       setIsLoggedIn(false);
+      setUnreadNotificationCount(0);
     }
   };
 
@@ -49,6 +103,11 @@ const Header = () => {
       e.preventDefault();
       openLoginModal();
     }
+  };
+
+  const handleNotificationClick = () => {
+    // 알림 페이지로 이동 후 개수를 0으로 리셋하지 않음
+    // 사용자가 실제로 알림을 읽으면 백엔드에서 개수가 업데이트됨
   };
 
   return (
@@ -97,13 +156,21 @@ const Header = () => {
                     className="cursor-pointer hover:opacity-80"
                   />
                 </button>
-                <Link href="/bookbook/user/notification" >
+                
+                {/* 알림 아이콘 - 개수 표시 포함 */}
+                <Link href="/bookbook/user/notification" onClick={handleNotificationClick} className="relative">
                   <Bell className="w-6 h-6 text-gray-700 hover:text-blue-600 cursor-pointer" />
+                  {unreadNotificationCount > 0 && (
+                    <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center min-w-[20px] px-1">
+                      {unreadNotificationCount > 99 ? '99+' : unreadNotificationCount}
+                    </span>
+                  )}
                 </Link>
-                <Link href="/bookbook/user/wishlist" >
+                
+                <Link href="/bookbook/user/wishlist">
                   <Heart className="w-6 h-6 text-gray-700 hover:text-blue-600 cursor-pointer" />
                 </Link>
-                <Link href="/bookbook/user/profile" >
+                <Link href="/bookbook/user/profile">
                   <User className="w-6 h-6 text-gray-700 hover:text-blue-600 cursor-pointer" />
                 </Link>
               </>
