@@ -1,5 +1,7 @@
 package com.bookbook.domain.user.service;
 
+import com.bookbook.domain.review.repository.ReviewRepository;
+import com.bookbook.domain.user.dto.UserProfileResponseDto;
 import com.bookbook.domain.user.dto.UserResponseDto;
 import com.bookbook.domain.user.entity.User;
 import com.bookbook.domain.user.enums.Role;
@@ -12,6 +14,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Optional;
 import java.util.UUID;
 
 @Service
@@ -20,6 +23,7 @@ import java.util.UUID;
 public class UserService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private final ReviewRepository reviewRepository;
 
     @PostConstruct
     @Transactional
@@ -168,6 +172,18 @@ public class UserService {
     public User getByIdOrThrow(Long id) {
         return userRepository.findById(id)
                 .orElseThrow(() -> new ServiceException("404-USER-NOT-FOUND", "해당 사용자를 찾을 수 없습니다."));
+    }
+
+    public UserProfileResponseDto getUserProfileDetails(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ServiceException("404-USER-NOT-FOUND", "사용자를 찾을 수 없습니다."));
+
+        Optional<Double> averageRating = reviewRepository.findAverageRatingByRevieweeId(userId);
+        long mannerScoreCount = reviewRepository.countByRevieweeId(userId);
+
+        double mannerScore = averageRating.orElse(0.0);
+
+        return UserProfileResponseDto.from(user, mannerScore, (int) mannerScoreCount);
     }
 
 }
