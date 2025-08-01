@@ -5,6 +5,9 @@ import { useRouter } from 'next/navigation';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
+// Import the AddressSelectionPopup component
+import AddressSelectionPopup from '../../../components/AddressSelectionPopup';
+
 interface UserResponseDto {
     id: number;
     username: string;
@@ -31,6 +34,8 @@ export default function MyPage() {
     const [nicknameCheckStatus, setNicknameCheckStatus] = useState<'idle' | 'checking' | 'available' | 'unavailable'>('idle');
     const [nicknameCheckMessage, setNicknameCheckMessage] = useState<string>('');
     const debounceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+    const [isPopupOpen, setIsPopupOpen] = useState(false);
 
     useEffect(() => {
         const fetchUserData = async () => {
@@ -234,7 +239,6 @@ export default function MyPage() {
         event.preventDefault();
 
         if (confirm('정말로 계정을 비활성화(회원 탈퇴) 하시겠습니까? 이 작업은 되돌릴 수 없습니다.')) {
-            // fetch 호출을 Promise로 감싸서 toast.promise와 연동
             const deletePromise = new Promise(async (resolve, reject) => {
                 try {
                     const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/bookbook/users/me`, {
@@ -247,7 +251,6 @@ export default function MyPage() {
                             const errorData = await response.json();
                             errorMessage = errorData.message || errorMessage;
                         } catch {
-                            // JSON 파싱 실패 시 기본 메시지 사용
                         }
                         reject(new Error(errorMessage));
                         return;
@@ -275,9 +278,22 @@ export default function MyPage() {
             ).then(() => {
                 router.push('/api/v1/bookbook/users/logout');
             }).catch(() => {
-                // toast.promise에서 에러를 이미 처리했으므로 여기서는 추가 로직이 필요 없습니다.
             });
         }
+    };
+
+    // New functions to handle the popup
+    const handleOpenPopup = () => {
+        setIsPopupOpen(true);
+    };
+
+    const handleClosePopup = () => {
+        setIsPopupOpen(false);
+    };
+
+    const handleSelectAddress = (selectedAddress: string) => {
+        setEditedAddress(selectedAddress);
+        handleClosePopup();
     };
 
     const renderRatingStars = (rating: number) => {
@@ -372,9 +388,19 @@ export default function MyPage() {
                             id="address"
                             className="flex-grow p-3 border border-gray-300 rounded-lg text-gray-800 focus:outline-none focus:border-gray-400 disabled:bg-gray-50 disabled:text-gray-500 disabled:cursor-not-allowed"
                             value={isEditing ? editedAddress : userData.address || ''}
-                            onChange={(e) => setEditedAddress(e.target.value)}
+                            readOnly
+                            onClick={isEditing ? handleOpenPopup : undefined}
                             disabled={!isEditing}
                         />
+                        {isEditing && (
+                            <button
+                                type="button"
+                                onClick={handleOpenPopup}
+                                className="px-4 py-2 rounded-lg bg-gray-800 text-white hover:bg-gray-700 transition-colors duration-300"
+                            >
+                                주소 찾기
+                            </button>
+                        )}
                     </div>
                 </div>
 
@@ -442,6 +468,13 @@ export default function MyPage() {
                     </a>
                 </div>
             </div>
+
+            <AddressSelectionPopup
+                isOpen={isPopupOpen}
+                onClose={handleClosePopup}
+                onSelectAddress={handleSelectAddress}
+            />
+
             <ToastContainer
                 position="top-center"
                 autoClose={3000}
