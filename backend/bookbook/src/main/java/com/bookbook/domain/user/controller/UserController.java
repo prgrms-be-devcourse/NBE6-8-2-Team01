@@ -1,6 +1,7 @@
 package com.bookbook.domain.user.controller;
 
 import com.bookbook.domain.user.dto.UserCreateRequestDto;
+import com.bookbook.domain.user.dto.UserProfileResponseDto;
 import com.bookbook.domain.user.dto.UserResponseDto;
 import com.bookbook.domain.user.dto.UserUpdateRequestDto;
 import com.bookbook.domain.user.service.UserService;
@@ -102,6 +103,13 @@ public class UserController {
 
         userService.updateUserInfo(userId, updateRequest.getNickname(), updateRequest.getAddress());
         RsData<Void> rsData = RsData.of("200-OK", "회원 정보가 성공적으로 수정되었습니다.");
+        return ResponseEntity.status(rsData.getStatusCode()).body(rsData);
+    }
+
+    @GetMapping("/{userId}")
+    public ResponseEntity<RsData<UserProfileResponseDto>> getUserProfile(@PathVariable Long userId) {
+        UserProfileResponseDto userProfile = userService.getUserProfileDetails(userId);
+        RsData<UserProfileResponseDto> rsData = RsData.of("200-OK", "사용자 프로필 조회 성공", userProfile);
         return ResponseEntity.status(rsData.getStatusCode()).body(rsData);
     }
 }
