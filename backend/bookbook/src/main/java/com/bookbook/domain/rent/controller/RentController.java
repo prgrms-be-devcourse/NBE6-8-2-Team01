@@ -10,7 +10,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
-// 25.08.01 수정 현준
+// 25.08.01 현준
 @RestController // @Controller와 @ResponseBody를 합친 형태, RESTful 웹 서비스 컨트롤러
 @RequestMapping({"/bookbook/rent", "/api/v1/bookbook/rent"}) // 기존 경로와 API 경로 모두 지원
 @RequiredArgsConstructor // final 필드에 대한 생성자를 자동으로 생성

@@ -23,7 +23,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 import java.util.stream.Collectors;
 
-// 25.07.31 현준
+// 25.08.01 현준
 @Service
 @RequiredArgsConstructor
 public class RentService {
@@ -32,6 +32,7 @@ public class RentService {
     private final UserRepository userRepository;
 
     // Rent 페이지 등록 Post 요청
+    // /bookbook/rent/create
     @Transactional
     public void createRentPage(RentRequestDto dto, Long userId) {
         // 유저 정보 조회
@@ -82,6 +83,8 @@ public class RentService {
         }
     }
 
+    // Rent 페이지 조회 Get 요청
+    // /bookbook/rent/{id}
     @Transactional(readOnly = true) // 조회 기능이므로 readOnly=true 설정
     public RentResponseDto getRentPage(int id) {
 
@@ -89,15 +92,19 @@ public class RentService {
                 .orElseThrow(()-> new ServiceException("404-2", "해당 대여글을 찾을 수 없습니다."));
 
         return new RentResponseDto(
+                rent.getId(),
                 rent.getLenderUserId(),
+                rent.getTitle(),
                 rent.getBookCondition(),
                 rent.getBookImage(),
                 rent.getAddress(),
                 rent.getContents(),
                 rent.getRentStatus(),
-                rent.getTitle(),
+                rent.getBookTitle(),
                 rent.getAuthor(),
                 rent.getPublisher(),
+                rent.getCategory(),
+                rent.getDescription(),
                 rent.getCreatedDate(),
                 rent.getModifiedDate()
         );
