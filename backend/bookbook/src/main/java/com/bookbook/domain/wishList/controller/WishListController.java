@@ -22,18 +22,25 @@ public class WishListController {
     private final WishListService wishListService;
 
     /**
-     * 찜 목록 조회
+     * 찜 목록 조회 (검색 기능 포함)
      * 
      * 사용자의 찜 목록을 생성일 역순으로 조회합니다.
      * 
      * @param userId 사용자 ID
+     * @param search 검색어 (선택사항, 책 제목/저자/출판사/게시글 제목에서 검색)
      * @return 찜 목록 리스트
      */
     @GetMapping
     public ResponseEntity<List<WishListResponseDto>> getWishList(
-            @PathVariable Long userId
+            @PathVariable Long userId,
+            @RequestParam(required = false) String search
     ) {
-        List<WishListResponseDto> wishList = wishListService.getWishListByUserId(userId);
+        List<WishListResponseDto> wishList;
+        if (search != null && !search.trim().isEmpty()) {
+            wishList = wishListService.searchWishListByUserId(userId, search);
+        } else {
+            wishList = wishListService.getWishListByUserId(userId);
+        }
         return ResponseEntity.ok(wishList);
     }
 
