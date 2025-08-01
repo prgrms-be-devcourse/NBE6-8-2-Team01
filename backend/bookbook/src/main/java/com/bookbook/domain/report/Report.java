@@ -1,20 +1,31 @@
 package com.bookbook.domain.report;
 
 import com.bookbook.domain.user.entity.User;
-import com.bookbook.global.jpa.entity.BaseEntity;
+import com.bookbook.global.entity.BaseEntity;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.annotation.LastModifiedDate;
 
-@Entity
-@Getter @Setter @NoArgsConstructor
+import java.time.LocalDateTime;
+
+@Entity // JPA 엔티티
+@Getter
+@Setter
+@NoArgsConstructor
 public class Report extends BaseEntity {
 
-    // BaseEntity를 상속받지만, User의 ID 타입에 맞추기 위해 다시 정의
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
+    @CreatedDate
+    private LocalDateTime createdDate;
+
+    @LastModifiedDate
+    private LocalDateTime modifiedDate;
 
     @ManyToOne
     @JoinColumn(name = "reporter_user_id", nullable = false)
