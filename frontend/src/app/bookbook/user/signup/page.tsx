@@ -6,6 +6,7 @@ import { FaUser, FaMapMarkerAlt } from 'react-icons/fa';
 
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import AddressSelectionPopup from '../../../components/AddressSelectionPopup';
 
 const SignupPage = () => {
     const router = useRouter();
@@ -20,6 +21,8 @@ const SignupPage = () => {
 
     const [formError, setFormError] = useState<string>('');
     const [loading, setLoading] = useState<boolean>(false);
+
+    const [isPopupOpen, setIsPopupOpen] = useState<boolean>(false); // Add state for popup
 
     const handleNicknameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const value = e.target.value;
@@ -85,7 +88,6 @@ const SignupPage = () => {
                 errorMessage = error.message;
             }
 
-            // ✅ 인터셉터가 던진 특정 에러 메시지를 감지하고 사용자에게 알립니다.
             if (errorMessage === '재로그인이 필요합니다.') {
                 toast.warn('세션이 만료되었습니다. 다시 로그인해 주세요.');
                 setNicknameError('');
@@ -161,7 +163,6 @@ const SignupPage = () => {
                 errorMessage = error.message;
             }
 
-            // ✅ 인터셉터가 던진 특정 에러 메시지를 감지하고 사용자에게 알립니다.
             if (errorMessage === '재로그인이 필요합니다.') {
                 toast.warn('세션이 만료되었습니다. 다시 로그인해 주세요.');
             } else {
@@ -173,6 +174,21 @@ const SignupPage = () => {
         } finally {
             setLoading(false);
         }
+    };
+
+    // New functions to handle the popup
+    const handleOpenPopup = () => {
+        setIsPopupOpen(true);
+    };
+
+    const handleClosePopup = () => {
+        setIsPopupOpen(false);
+    };
+
+    const handleSelectAddress = (selectedAddress: string) => {
+        setAddress(selectedAddress);
+        setFormError('');
+        handleClosePopup();
     };
 
     return (
@@ -205,24 +221,32 @@ const SignupPage = () => {
                             <p className="text-red-500 text-sm mt-1">✖ {nicknameError}</p>
                         )}
                     </div>
-                    {/* 주소 입력 필드 */}
+                    {/* 주소 입력 필드 (modified) */}
                     <div className="mb-6">
                         <label htmlFor="address" className="flex items-center font-bold text-gray-700 mb-2 text-lg">
                             <FaMapMarkerAlt className="text-xl mr-2" /> 주소
                         </label>
-                        <input
-                            type="text"
-                            id="address"
-                            name="address"
-                            placeholder="주소를 입력하세요"
-                            value={address}
-                            onChange={(e) => {
-                                setAddress(e.target.value);
-                                setFormError('');
-                            }}
-                            className="w-full p-3 border border-gray-300 rounded-md text-base focus:border-blue-500 focus:ring focus:ring-blue-200 focus:ring-opacity-50 h-12"
-                            disabled={loading}
-                        />
+                        <div className="flex gap-2">
+                            <input
+                                type="text"
+                                id="address"
+                                name="address"
+                                placeholder="주소를 선택하세요"
+                                value={address}
+                                readOnly
+                                className="flex-grow p-3 border border-gray-300 rounded-md text-base focus:border-blue-500 focus:ring focus:ring-blue-200 focus:ring-opacity-50 h-12 bg-gray-50 cursor-pointer"
+                                onClick={handleOpenPopup}
+                                disabled={loading}
+                            />
+                            <button
+                                type="button"
+                                onClick={handleOpenPopup}
+                                className="p-3 bg-gray-800 text-white rounded-md hover:bg-gray-700 transition-colors duration-300 h-12"
+                                disabled={loading}
+                            >
+                                주소 찾기
+                            </button>
+                        </div>
                     </div>
                     {/* 이용약관 동의 섹션 */}
                     <div className="mb-6">
@@ -294,6 +318,13 @@ const SignupPage = () => {
                     </button>
                 </form>
             </div>
+
+            {/* Render the AddressSelectionPopup */}
+            <AddressSelectionPopup
+                isOpen={isPopupOpen}
+                onClose={handleClosePopup}
+                onSelectAddress={handleSelectAddress}
+            />
 
             <ToastContainer
                 position="top-center"
