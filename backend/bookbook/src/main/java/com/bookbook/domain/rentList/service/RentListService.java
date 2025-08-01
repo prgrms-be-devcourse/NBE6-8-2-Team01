@@ -47,6 +47,46 @@ public class RentListService {
     }
     
     /**
+     * 사용자가 대여한 도서 목록 검색
+     * 
+     * @param borrowerUserId 대여받은 사용자 ID
+     * @param searchKeyword 검색어 (책 제목, 저자, 출판사, 게시글 제목에서 검색)
+     * @return 검색된 대여한 도서 목록
+     */
+    public List<RentListResponseDto> searchRentListByUserId(Long borrowerUserId, String searchKeyword) {
+        List<RentList> rentLists = rentListRepository.findByBorrowerUserId(borrowerUserId);
+        
+        if (searchKeyword == null || searchKeyword.trim().isEmpty()) {
+            return rentLists.stream()
+                    .map(rentList -> {
+                        String lenderNickname = userRepository.findById(rentList.getRent().getLenderUserId())
+                                .map(user -> user.getNickname())
+                                .orElse("알 수 없음");
+                        return RentListResponseDto.from(rentList, lenderNickname);
+                    })
+                    .collect(Collectors.toList());
+        }
+        
+        String searchLower = searchKeyword.toLowerCase().trim();
+        
+        return rentLists.stream()
+                .filter(rentList -> {
+                    Rent rent = rentList.getRent();
+                    return rent.getBookTitle().toLowerCase().contains(searchLower) ||
+                           rent.getAuthor().toLowerCase().contains(searchLower) ||
+                           rent.getPublisher().toLowerCase().contains(searchLower) ||
+                           rent.getTitle().toLowerCase().contains(searchLower);
+                })
+                .map(rentList -> {
+                    String lenderNickname = userRepository.findById(rentList.getRent().getLenderUserId())
+                            .map(user -> user.getNickname())
+                            .orElse("알 수 없음");
+                    return RentListResponseDto.from(rentList, lenderNickname);
+                })
+                .collect(Collectors.toList());
+    }
+    
+    /**
      * 도서 대여 신청 등록
      * 
      * 사용자가 원하는 도서에 대해 대여 신청을 등록합니다.
