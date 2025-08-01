@@ -4,9 +4,6 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
-import { authFetch } from '@/app/util/authFetch';
-import apiClient from '../utils/apiClient';
-import { useLoginModal } from '@/app/context/LoginModalContext';
 
 interface UserResponseDto {
     id: number;
@@ -35,28 +32,17 @@ export default function MyPage() {
     const [nicknameCheckMessage, setNicknameCheckMessage] = useState<string>('');
     const debounceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-    const { openLoginModal } = useLoginModal();
-
     useEffect(() => {
         const fetchUserData = async () => {
             try {
-                const response = await authFetch('/api/v1/bookbook/users/me', {}, openLoginModal);
-
+                const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/bookbook/users/me`);
                 if (!response.ok) {
-                    throw new Error('사용자 정보를 불러오지 못했습니다.');
+                    throw new Error(response.statusText || '사용자 정보 로드 실패');
                 }
+                const resData = await response.json();
+                const data = resData.data;
 
-                // JSON 응답을 안전하게 파싱합니다.
-                const responseData = await response.json();
-
-                // 백엔드 응답 구조에 따라 실제 데이터가 'data' 필드 안에 있는지 확인합니다.
-                if (!responseData || !responseData.data) {
-                    throw new Error("서버 응답이 유효하지 않습니다.");
-                }
-
-                const data = responseData.data;
-
-                setUserData({
+                const formattedUserData = {
                     id: data.id,
                     username: data.username,
                     nickname: data.nickname,
@@ -69,22 +55,25 @@ export default function MyPage() {
                         month: 'numeric',
                         day: 'numeric',
                     }) : '날짜 없음',
-                });
-
+                };
+                setUserData(formattedUserData);
                 setEditedNickname(data.nickname);
                 setEditedAddress(data.address || '');
                 setOriginalNickname(data.nickname);
                 setOriginalAddress(data.address || '');
                 setNicknameCheckStatus('idle');
-            } catch (error) {
-                const errorMessage = error instanceof Error ? error.message : '알 수 없는 오류가 발생했습니다.';
+            } catch (error: unknown) {
+                let errorMessage = '알 수 없는 오류가 발생했습니다.';
+                if (error instanceof Error) {
+                    errorMessage = error.message;
+                }
                 console.error('사용자 정보 로드 중 오류 발생:', error);
                 toast.error(`사용자 정보를 불러오는데 실패했습니다: ${errorMessage}`);
             }
         };
 
-        void fetchUserData();
-    }, [openLoginModal]);
+        fetchUserData();
+    }, []);
 
     const handleNicknameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const value = e.target.value;
@@ -99,7 +88,7 @@ export default function MyPage() {
         if (value.trim() && value !== originalNickname) {
             setNicknameCheckStatus('checking');
             debounceTimeoutRef.current = setTimeout(() => {
-                void checkNicknameAvailability(value);
+                checkNicknameAvailability(value);
             }, 500);
         } else if (value.trim() === originalNickname) {
             setNicknameCheckStatus('available');
@@ -115,17 +104,30 @@ export default function MyPage() {
         }
 
         try {
-            const response = await apiClient<{ isAvailable: boolean }>(`/api/v1/bookbook/users/check-nickname?nickname=${encodeURIComponent(nicknameToCheck)}`);
-            const rsData = response.data;
-            if (rsData && rsData.isAvailable) {
+            const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/bookbook/users/check-nickname?nickname=${encodeURIComponent(nicknameToCheck)}`);
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                const errorMessage = errorData.message || '닉네임 중복 확인 실패';
+                setNicknameCheckStatus('unavailable');
+                setNicknameCheckMessage(errorMessage);
+                console.error('닉네임 중복 확인 오류:', errorMessage);
+                return;
+            }
+
+            const rsData = await response.json();
+            if (rsData && rsData.data.isAvailable) {
                 setNicknameCheckStatus('available');
                 setNicknameCheckMessage('사용 가능한 닉네임입니다.');
             } else {
                 setNicknameCheckStatus('unavailable');
                 setNicknameCheckMessage('이미 사용 중인 닉네임입니다. 다른 닉네임을 사용해주세요.');
             }
-        } catch (error) {
-            const errorMessage = error instanceof Error ? error.message : '알 수 없는 오류가 발생했습니다.';
+        } catch (error: unknown) {
+            let errorMessage = '알 수 없는 오류가 발생했습니다.';
+            if (error instanceof Error) {
+                errorMessage = error.message;
+            }
             setNicknameCheckStatus('unavailable');
             setNicknameCheckMessage(`중복 확인 중 오류: ${errorMessage}`);
             console.error('닉네임 중복 확인 오류:', error);
@@ -158,7 +160,7 @@ export default function MyPage() {
             return;
         }
 
-        if (trimmedNickname === '' && trimmedAddress === '') {
+        if (!trimmedNickname && !trimmedAddress) {
             toast.warn('닉네임 또는 주소를 입력해주세요.');
             return;
         }
@@ -180,33 +182,35 @@ export default function MyPage() {
         }
 
         try {
-            const response = await authFetch('/api/v1/bookbook/users/me', {
+            const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/bookbook/users/me`, {
                 method: 'PATCH',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
                 body: JSON.stringify(requestBody),
-            }, openLoginModal);
+            });
 
             if (!response.ok) {
                 const errorData = await response.json();
-                throw new Error(errorData.message || '프로필 업데이트에 실패했습니다.');
+                const errorMessage = errorData.message || '프로필 업데이트 실패';
+                throw new Error(errorMessage);
             }
-
-            const responseData = await response.json();
-            const updatedData = responseData.data;
 
             setUserData(prev => prev ? {
                 ...prev,
-                nickname: updatedData.nickname || prev.nickname,
-                address: updatedData.address !== undefined ? updatedData.address : prev.address,
+                nickname: requestBody.nickname !== undefined ? requestBody.nickname : prev.nickname,
+                address: requestBody.address !== undefined ? requestBody.address : prev.address,
             } : null);
 
-            setOriginalNickname(updatedData.nickname || originalNickname);
-            setOriginalAddress(updatedData.address || originalAddress);
+            setOriginalNickname(requestBody.nickname !== undefined ? requestBody.nickname : originalNickname);
+            setOriginalAddress(requestBody.address !== undefined ? requestBody.address : originalAddress);
 
             setIsEditing(false);
             setNicknameCheckStatus('idle');
             setNicknameCheckMessage('');
             toast.success('프로필 정보가 성공적으로 업데이트되었습니다.');
-        } catch (error) {
+
+        } catch (error: unknown) {
             const errorMessage = error instanceof Error ? error.message : '알 수 없는 오류가 발생했습니다.';
             console.error('프로필 업데이트 중 오류 발생:', error);
             toast.error(`프로필 업데이트 실패: ${errorMessage}`);
@@ -226,16 +230,37 @@ export default function MyPage() {
         }
     };
 
-    const handleDeactivateAccount = async (event: React.MouseEvent<HTMLAnchorElement>) => {
+    const handleDeactivateAccount = (event: React.MouseEvent<HTMLAnchorElement>) => {
         event.preventDefault();
 
         if (confirm('정말로 계정을 비활성화(회원 탈퇴) 하시겠습니까? 이 작업은 되돌릴 수 없습니다.')) {
-            const promise = authFetch('/api/v1/bookbook/users/me', {
-                method: 'DELETE',
-            }, openLoginModal);
+            // fetch 호출을 Promise로 감싸서 toast.promise와 연동
+            const deletePromise = new Promise(async (resolve, reject) => {
+                try {
+                    const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/bookbook/users/me`, {
+                        method: 'DELETE',
+                    });
+
+                    if (!response.ok) {
+                        let errorMessage = '회원 탈퇴 실패';
+                        try {
+                            const errorData = await response.json();
+                            errorMessage = errorData.message || errorMessage;
+                        } catch {
+                            // JSON 파싱 실패 시 기본 메시지 사용
+                        }
+                        reject(new Error(errorMessage));
+                        return;
+                    }
+
+                    resolve(response);
+                } catch (error) {
+                    reject(error);
+                }
+            });
 
             toast.promise(
-                promise,
+                deletePromise,
                 {
                     pending: '회원 탈퇴를 진행 중입니다...',
                     success: '✅ 회원 탈퇴가 성공적으로 완료되었습니다! 북북과 함께해주셔서 감사합니다.',
@@ -247,13 +272,11 @@ export default function MyPage() {
                         }
                     }
                 }
-            )
-                .then(() => {
-                    router.push('/api/v1/bookbook/users/logout');
-                })
-                .catch(() => {
-                    console.error('회원 탈퇴 실패 (catch 블록)');
-                });
+            ).then(() => {
+                router.push('/api/v1/bookbook/users/logout');
+            }).catch(() => {
+                // toast.promise에서 에러를 이미 처리했으므로 여기서는 추가 로직이 필요 없습니다.
+            });
         }
     };
 

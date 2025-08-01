@@ -1,11 +1,22 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { usePathname } from 'next/navigation';
 import UserSidebar from '../components/UserSidebar';
-import Header from '../components/Header'; // ✅ Header 임포트
+import Header from '../components/Header';
 import { LoginModalProvider, useLoginModal } from '../context/LoginModalContext';
 import LoginModal from '../components/LoginModal';
+import { setFetchInterceptorOpenLoginModal } from '@/app/util/fetchIntercepter'
+
+function InterceptorSetup() {
+    const { openLoginModal } = useLoginModal();
+
+    useEffect(() => {
+        setFetchInterceptorOpenLoginModal(openLoginModal);
+    }, [openLoginModal]);
+
+    return null;
+}
 
 function LoginModalContainer() {
     const { isLoginModalOpen, closeLoginModal } = useLoginModal();
@@ -19,6 +30,8 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
 
     return (
         <LoginModalProvider>
+            {/*  인터셉터 설정을 담당하는 컴포넌트 */}
+            <InterceptorSetup />
             <Header />
             {isUserPage ? (
                 <div className="flex min-h-screen">
