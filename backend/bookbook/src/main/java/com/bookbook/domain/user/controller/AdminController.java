@@ -1,8 +1,5 @@
 package com.bookbook.domain.user.controller;
 
-import com.bookbook.domain.user.dto.ChangeRentStatusRequestDto;
-import com.bookbook.domain.rent.dto.RentResponseDto;
-import com.bookbook.domain.user.dto.RentSimpleResponseDto;
 import com.bookbook.domain.rent.service.RentService;
 import com.bookbook.domain.suspend.dto.request.UserSuspendRequestDto;
 import com.bookbook.domain.suspend.dto.response.UserResumeResponseDto;
@@ -149,6 +146,7 @@ public class AdminController {
         return  ResponseEntity.status(rsData.getStatusCode()).body(rsData);
     }
 
+    /*
     @GetMapping("/posts")
     public ResponseEntity<RsData<PageResponse<RentSimpleResponseDto>>> getPosts(
             @RequestParam(defaultValue = "1") Integer page,
@@ -183,4 +181,5 @@ public class AdminController {
                 rentResponseDto
         );
     }
+     */
 }
