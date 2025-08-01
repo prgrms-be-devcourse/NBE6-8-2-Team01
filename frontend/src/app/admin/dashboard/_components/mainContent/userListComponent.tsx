@@ -7,8 +7,8 @@ import { formatDate } from "../common/dateFormatter";
 import UserDetailModal from "../user/manage/userDetailModal";
 import { ContentComponentProps } from "./baseContentComponentProps";
 import { UserFilterContainer, FilterState } from "../user/filter";
-import { PageResponse } from "../../_types/page";
-import {useDashBoardContext} from "@/app/admin/dashboard/_hooks/useDashboard";
+import { useDashBoardContext } from "@/app/admin/dashboard/_hooks/useDashboard";
+import apiClient from "@/app/bookbook/user/utils/apiClient";
 
 interface ManagementButtonProps {
   user: UserBaseResponseDto;
@@ -75,21 +75,9 @@ export function UserListComponent({
   const handleManageClick = async (user: UserBaseResponseDto) => {
     console.log(`관리 버튼 클릭: 멤버 ID - ${user.id}, 닉네임 - ${user.nickname}`);
 
-    fetch(`http://localhost:8080/api/v1/admin/users/${user.id}`, {
+    apiClient(`/api/v1/admin/users/${user.id}`, {
       method: "GET",
-      headers: {
-        "Content-Type": "application/json; charset=utf-8",
-      },
-      credentials: "include",
     })
-      .then((response) => {
-        if (!response.ok) {
-          setSelectedUser(null as unknown as UserDetailResponseDto);
-          return;
-        }
-
-        return response.json();
-      })
       .then((data) => {
         console.log(data);
         setSelectedUser(data.data as UserDetailResponseDto);
@@ -165,7 +153,7 @@ export function UserListComponent({
   }
 
   const doSearch = () => {
-    if (!currentItem || !currentItem.apiPath || currentItem.apiPath.trim().length === 0) {
+    if (!currentItem || !currentItem?.apiPath || !currentItem.apiPath.trim()) {
       return;
     }
 
@@ -221,7 +209,7 @@ export function UserListComponent({
         {/* 헤더 */}
         <div className="flex items-center justify-between">
           <h3 className="text-lg font-semibold text-gray-900">
-            전체 멤버 목록
+            멤버 목록
           </h3>
             <div className="text-sm text-gray-500">
               {data.data.length > 0 ? `총 ${data.data.length}명 검색 완료` : "검색 결과 없음"}

@@ -3,8 +3,9 @@
 import { useState } from "react";
 import { Lock, User, Eye, EyeOff, BookOpen, AlertTriangle } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useAuthContext } from "@/app/admin/global/hooks/useAuth";
+import { useAuthContext, UserLoginResponseDto } from "@/app/admin/global/hooks/useAuth";
 import { UnauthorizedModal } from "../adminGuard";
+import apiClient from "@/app/bookbook/user/utils/apiClient";
 
 export default function AdminLoginPage() {
     const { setLoginMember } = useAuthContext();
@@ -46,15 +47,10 @@ export default function AdminLoginPage() {
         }
 
         // TODO: 실제 로그인 API 연동
-        fetch("http://localhost:8080/api/v1/admin/login", {
+        apiClient<UserLoginResponseDto>("/api/v1/admin/login", {
             method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-            },
             body: JSON.stringify(reqBody),
-            credentials: "include",
-        }).then((response) => response.json())
-        .then(data => {
+        }).then(data => {
             console.log(data);
             if (data.statusCode !== 200) {
                 setShowUnauthorizedModal(true);

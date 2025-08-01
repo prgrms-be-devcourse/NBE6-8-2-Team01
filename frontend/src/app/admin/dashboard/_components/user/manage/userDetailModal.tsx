@@ -1,14 +1,12 @@
 import { useState } from "react";
-import {
-  UserDetailResponseDto,
-  userStatus,
-} from "../../../_types/userResponseDto";
+import { UserDetailResponseDto } from "../../../_types/userResponseDto";
 import { formatDate } from "../../common/dateFormatter";
 import ConfirmModal from "../../common/confirmModal";
 import UserBasicInfo from "./userBasicInfo";
 import UserStatusInfo from "./userStatusInfo";
 import UserJoinInfo from "./userJoinInfo";
 import SuspendForm from "./suspendForm";
+import apiClient from "@/app/bookbook/user/utils/apiClient";
 
 interface UserDetailModalProps {
   user: UserDetailResponseDto;
@@ -55,27 +53,11 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
 
   const doRequest = async (url: string, requestInit?: RequestInit) => {
     try {
-      const response = await fetch(url, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          Accept: "application/json",
-        },
-        mode: "cors",
-        credentials: "include",
+      await apiClient(url, {
+        method: "PATCH",
         ...requestInit,
       });
 
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-      }
-
-      // 응답이 비어있는지 확인
-      const text = await response.text();
-      if (text) {
-        return JSON.parse(text);
-      }
-      return null;
     } catch (error) {
       console.error("API 요청 실패:", error);
       throw error;
@@ -90,14 +72,13 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
         period: getPeriodDays(suspendPeriod),
       };
 
-      await doRequest("http://localhost:8080/api/v1/admin/users/suspend", {
+      await doRequest("/api/v1/admin/users/suspend", {
         body: JSON.stringify(requestDto),
       });
 
       alert(`${user.baseResponseDto.nickname}님이 정지되었습니다.`);
     } catch (error) {
-      alert("정지 처리 중 오류가 발생했습니다.");
-      throw error;
+      throw new Error(`정지 처리 중 오류가 발생했습니다.\n${error}`, );
     }
   };
 
@@ -106,7 +87,7 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
       const userId = user.baseResponseDto.id;
 
       await doRequest(
-        `http://localhost:8080/api/v1/admin/users/${userId}/resume`,
+        `/api/v1/admin/users/${userId}/resume`,
         {
           body: null,
         }
@@ -114,8 +95,7 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
 
       alert(`${user.baseResponseDto.nickname}님의 정지가 해제되었습니다.`);
     } catch (error) {
-      alert("정지 해제 처리 중 오류가 발생했습니다.");
-      throw error;
+      throw new Error(`정지 해제 처리 중 오류가 발생했습니다.\n${error}`, );
     }
   };
 
@@ -129,13 +109,12 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
 
       resetModalState();
       onClose();
-
       // 성공적으로 정지/해제 처리 후 리스트 새로고침
-      if (onRefresh) {
-        onRefresh();
-      }
+      onRefresh?.();
     } catch (error) {
       // 에러 발생시 모달을 닫지 않고 사용자가 다시 시도할 수 있도록 함
+      // toast.error(error as string);
+      alert(`작업을 진행하는데 실패했습니다. ${error}`)
       console.error("처리 중 오류 발생:", error);
     }
   };
