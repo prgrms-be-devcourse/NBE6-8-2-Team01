@@ -10,6 +10,7 @@ import com.bookbook.domain.user.repository.UserRepository;
 import com.bookbook.global.exception.ServiceException;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -23,11 +24,17 @@ import java.util.UUID;
 public class UserService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private final JdbcTemplate jdbcTemplate;
     private final ReviewRepository reviewRepository;
 
     @PostConstruct
     @Transactional
-    public void createAdminUser(){
+    public void initializeData(){
+        createAdminUser();
+        updateNotificationSchema();
+    }
+
+    private void createAdminUser(){
         String adminUsername = "admin";
         String adminPassword = "admin123";
         String adminEmail = "admin@book.com";
@@ -48,6 +55,18 @@ public class UserService {
             System.out.println("관리자 계정이 생성되었습니다: " + adminUsername);
         } else {
             System.out.println("관리자 계정이 이미 존재합니다: " + adminUsername);
+        }
+    }
+
+    private void updateNotificationSchema() {
+        try {
+            // 기존 CHECK 제약 조건을 제거하고 새로운 것으로 교체
+            jdbcTemplate.execute("ALTER TABLE notification DROP CONSTRAINT IF EXISTS notification_type_check");
+            jdbcTemplate.execute("ALTER TABLE notification ADD CONSTRAINT notification_type_check CHECK (type IN ('RENT_REQUEST', 'RETURN_REMINDER', 'WISHLIST_AVAILABLE', 'POST_CREATED'))");
+            System.out.println("✅ NotificationType 스키마 업데이트 완료: POST_CREATED 추가됨");
+        } catch (Exception e) {
+            System.err.println("❌ NotificationType 스키마 업데이트 실패: " + e.getMessage());
+            // 개발 환경에서는 계속 진행
         }
     }
 

@@ -52,7 +52,14 @@ public class RentBookListService {
             rentPage = rentBookListRepository.findAllAvailableBooks(pageable);
         }
         
-        return rentPage.map(RentBookListResponseDto::new);
+        return rentPage.map(rent -> {
+            // 사용자 닉네임 조회
+            String lenderNickname = userRepository.findById(rent.getLenderUserId())
+                    .map(User::getNickname)
+                    .orElse("알 수 없음");
+            
+            return new RentBookListResponseDto(rent, lenderNickname);
+        });
     }
 
     // 대여 신청
@@ -108,6 +115,11 @@ public class RentBookListService {
         Rent rent = rentBookListRepository.findById(rentId)
                 .orElseThrow(() -> new RuntimeException("존재하지 않는 책입니다. ID: " + rentId));
         
-        return new RentBookListResponseDto(rent);
+        // 사용자 닉네임 조회
+        String lenderNickname = userRepository.findById(rent.getLenderUserId())
+                .map(User::getNickname)
+                .orElse("알 수 없음");
+        
+        return new RentBookListResponseDto(rent, lenderNickname);
     }
 }

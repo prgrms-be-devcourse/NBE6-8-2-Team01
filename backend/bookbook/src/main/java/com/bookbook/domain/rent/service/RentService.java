@@ -1,5 +1,7 @@
 package com.bookbook.domain.rent.service;
 
+import com.bookbook.domain.notification.enums.NotificationType;
+import com.bookbook.domain.notification.service.NotificationService;
 import com.bookbook.domain.rent.dto.RentAvailableResponseDto;
 import com.bookbook.domain.rent.dto.RentRequestDto;
 import com.bookbook.domain.rent.dto.RentResponseDto;
@@ -10,12 +12,12 @@ import com.bookbook.domain.user.entity.User;
 import com.bookbook.domain.user.repository.UserRepository;
 import com.bookbook.global.exception.ServiceException;
 import lombok.RequiredArgsConstructor;
-import org.hibernate.boot.model.naming.IllegalIdentifierException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
@@ -26,14 +28,15 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class RentService {
     private final RentRepository rentRepository;
+    private final NotificationService notificationService;
     private final UserRepository userRepository;
 
     // Rent 페이지 등록 Post 요청
     @Transactional
-    public void createRentPage(RentRequestDto dto, long userId) {
-         // 유저 정보 조회
-         User user = userRepository.findById(userId)
-                 .orElseThrow(()-> new ServiceException("401", "로그인을 해 주세요."));
+    public void createRentPage(RentRequestDto dto, Long userId) {
+        // 유저 정보 조회
+        User user = userRepository.findById(userId)
+                .orElseThrow(()-> new ServiceException("401", "로그인을 해 주세요."));
 
         // Rent 엔티티 생성 (Builder 패턴 활용)
         Rent rent = Rent.builder()
@@ -52,7 +55,31 @@ public class RentService {
                 .build();
 
         // Rent 테이블에 추가
-        rentRepository.save(rent);
+        Rent savedRent = rentRepository.save(rent);
+
+        // 글 등록 알림 생성을 별도 트랜잭션으로 처리
+        createNotificationSafely(user, dto, savedRent);
+    }
+
+    // 별도 트랜잭션으로 알림 생성 (실패해도 글 등록에 영향 없음)
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void createNotificationSafely(User user, RentRequestDto dto, Rent savedRent) {
+        try {
+            // 글을 등록한 사용자 본인에게만 확인용 알림 보내기
+            notificationService.createNotification(
+                    user, // receiver (글을 등록한 사용자 본인)
+                    user, // sender (글을 등록한 사용자 본인) - 닉네임 표시용
+                    NotificationType.POST_CREATED, // POST_CREATED 타입 사용
+                    "도서 대여글이 성공적으로 등록되었습니다!",
+                    dto.bookTitle(),
+                    dto.bookImage(),
+                    (long) savedRent.getId()
+            );
+        } catch (Exception e) {
+            // 알림 생성 실패 시 로그만 남기고 계속 진행
+            System.err.println("❌ 알림 생성 실패 (하지만 글 등록은 성공): " + e.getMessage());
+            e.printStackTrace();
+        }
     }
 
     @Transactional(readOnly = true) // 조회 기능이므로 readOnly=true 설정
@@ -127,10 +154,17 @@ public class RentService {
             return RentAvailableResponseDto.empty();
         }
         
-        // Rent 엔티티를 BookInfo DTO로 변환
+        // Rent 엔티티를 BookInfo DTO로 변환 (사용자 닉네임 포함)
         List<RentAvailableResponseDto.BookInfo> books = rentPage.getContent()
                 .stream()
-                .map(RentAvailableResponseDto.BookInfo::from)
+                .map(rent -> {
+                    // 사용자 닉네임 조회
+                    String lenderNickname = userRepository.findById(rent.getLenderUserId())
+                            .map(User::getNickname)
+                            .orElse("알 수 없음");
+                    
+                    return RentAvailableResponseDto.BookInfo.from(rent, lenderNickname);
+                })
                 .collect(Collectors.toList());
         
         // 페이지네이션 정보 생성

@@ -18,12 +18,13 @@ public class RentBookListResponseDto {
     private final String category;
     private final String rentStatus;    // RentStatus → String으로 변경 (한글 표시)
     private final Long lenderUserId;
+    private final String lenderNickname; // 책 소유자 닉네임 추가
     private final String title;
     private final String contents;
     private final LocalDateTime createdDate;
     private final LocalDateTime modifiedDate;
 
-    public RentBookListResponseDto(Rent rent) {
+    public RentBookListResponseDto(Rent rent, String lenderNickname) {
         this.id = rent.getId();         // 이제 int → Integer로 정상 변환
         this.bookTitle = rent.getBookTitle();
         this.author = rent.getAuthor();
@@ -34,6 +35,7 @@ public class RentBookListResponseDto {
         this.category = rent.getCategory();
         this.rentStatus = rent.getRentStatus().getDescription(); // 한글 상태로 변환
         this.lenderUserId = rent.getLenderUserId();
+        this.lenderNickname = lenderNickname; // 사용자 닉네임 설정
         this.title = rent.getTitle();
         this.contents = rent.getContents();
         this.createdDate = rent.getCreatedDate();

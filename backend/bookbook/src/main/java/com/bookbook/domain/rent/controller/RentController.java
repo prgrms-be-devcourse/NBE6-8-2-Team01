@@ -21,8 +21,12 @@ public class RentController {
     // Rent 페이지 등록 Post 요청
     @PostMapping("/create") // /rent 경로로 POST 요청을 처리
     @Operation(summary = "Rent 페이지 등록") // Swagger 에서 API 문서화에 사용되는 설명
-    public void createRentPage(@RequestBody @Valid RentRequestDto dto, @AuthenticationPrincipal CustomOAuth2User userDetails){
-        Long userId = userDetails.getUserId();
+    public void createRentPage(
+            @RequestBody @Valid RentRequestDto dto,
+            @AuthenticationPrincipal CustomOAuth2User customOAuth2User
+    ){
+        // 실제 로그인한 사용자 ID 사용
+        Long userId = customOAuth2User.getUserId();
         rentService.createRentPage(dto, userId);
     }
 

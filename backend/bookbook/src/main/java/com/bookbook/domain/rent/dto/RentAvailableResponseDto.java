@@ -30,13 +30,14 @@ public class RentAvailableResponseDto {
         private String category;        // 카테고리
         private String rentStatus;      // 대여 상태 (대여가능, 대여중)
         private Long lenderUserId;      // 책 소유자 ID
+        private String lenderNickname;  // 책 소유자 닉네임
         private String title;           // 대여글 제목 (선택사항)
         private String contents;        // 대여 설명 (선택사항)
         private String createdDate;     // 생성일
         private String modifiedDate;    // 수정일
         
-        // Rent 엔티티로부터 BookInfo 생성
-        public static BookInfo from(Rent rent) {
+        // Rent 엔티티와 User 엔티티로부터 BookInfo 생성
+        public static BookInfo from(Rent rent, String lenderNickname) {
             return BookInfo.builder()
                     .id(rent.getId())
                     .bookTitle(rent.getBookTitle())
@@ -48,6 +49,7 @@ public class RentAvailableResponseDto {
                     .category(rent.getCategory())
                     .rentStatus(rent.getRentStatus().getDescription())
                     .lenderUserId(rent.getLenderUserId())
+                    .lenderNickname(lenderNickname)
                     .title(rent.getTitle())
                     .contents(rent.getContents())
                     .createdDate(rent.getCreatedDate() != null ? rent.getCreatedDate().toString() : null)
