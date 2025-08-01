@@ -14,7 +14,6 @@ export const setFetchInterceptorOpenLoginModal = (func: () => void) => {
 window.fetch = async function (input, init: FetchRequestInit = {}) {
     const newInit: FetchRequestInit = {
         ...init,
-        // ✅ RequestCredentials 타입에 맞게 'include' 문자열 리터럴 사용
         credentials: 'include',
     };
 

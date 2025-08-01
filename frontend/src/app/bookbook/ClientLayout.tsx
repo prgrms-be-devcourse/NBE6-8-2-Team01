@@ -6,13 +6,13 @@ import UserSidebar from '../components/UserSidebar';
 import Header from '../components/Header';
 import { LoginModalProvider, useLoginModal } from '../context/LoginModalContext';
 import LoginModal from '../components/LoginModal';
-import { setOpenLoginModalFunction } from '../util/axiosInstance';
+import { setFetchInterceptorOpenLoginModal } from '@/app/util/fetchIntercepter'
 
-function AxiosInterceptorSetup() {
+function InterceptorSetup() {
     const { openLoginModal } = useLoginModal();
 
     useEffect(() => {
-        setOpenLoginModalFunction(openLoginModal);
+        setFetchInterceptorOpenLoginModal(openLoginModal);
     }, [openLoginModal]);
 
     return null;
@@ -30,8 +30,8 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
 
     return (
         <LoginModalProvider>
-            {/*  axios 인터셉터 설정을 위해 새로 만든 컴포넌트를 Provider 내부에 렌더링합니다. */}
-            <AxiosInterceptorSetup />
+            {/*  인터셉터 설정을 담당하는 컴포넌트 */}
+            <InterceptorSetup />
             <Header />
             {isUserPage ? (
                 <div className="flex min-h-screen">
