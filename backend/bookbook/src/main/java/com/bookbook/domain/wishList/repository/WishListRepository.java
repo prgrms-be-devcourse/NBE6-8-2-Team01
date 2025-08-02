@@ -9,10 +9,10 @@ import java.util.List;
 import java.util.Optional;
 
 @Repository
-public interface WishListRepository extends JpaRepository<WishList, Long> {
+public interface WishListRepository extends JpaRepository<WishList, Integer> {
 
     // Status를 포함한 조회 메서드들
-    List<WishList> findByUserIdAndStatusOrderByCreateDateDesc(Long userId, WishListStatus status);
+    List<WishList> findByUserIdAndStatusOrderByCreatedDateDesc(Long userId, WishListStatus status);
 
     Optional<WishList> findByUserIdAndRentIdAndStatus(Long userId, Integer rentId, WishListStatus status);
 }
