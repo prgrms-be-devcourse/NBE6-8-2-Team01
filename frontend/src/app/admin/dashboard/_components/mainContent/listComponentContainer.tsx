@@ -73,7 +73,6 @@ export function ListComponentContainer() {
         );
     }
 
-
     return (
         <ContentComponent
             data={data}

@@ -79,13 +79,16 @@ export default function WishListPage() {
                 throw new Error(`HTTP ${response.status}: ${response.statusText}`);
             }
 
-            const data = await response.json();
-            console.log('찜 목록 API 응답:', data);
+            const response_data = await response.json();
+            console.log('찜 목록 API 응답:', response_data);
+
+            // RsData 형식에 맞게 data 추출
+            const data = response_data.data;
 
             if (Array.isArray(data)) {
                 setWishList(data);
                 setPagination(prev => ({ ...prev, currentPage: 1, totalPages: 1, totalElements: data.length }));
-            } else if (data.content) {
+            } else if (data?.content) {
                 setWishList(data.content);
                 setPagination({
                     currentPage: data.number + 1,

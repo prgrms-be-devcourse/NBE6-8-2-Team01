@@ -90,12 +90,15 @@ export default function LendListPage() {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
 
-      const data = await response.json();
-      console.log('내가 등록한 도서 목록 API 응답:', data);
-      console.log('검색 결과 개수:', data.content ? data.content.length : 0);
-      console.log('전체 요소 수:', data.totalElements);
+      const response_data = await response.json();
+      console.log('내가 등록한 도서 목록 API 응답:', response_data);
+      
+      // RsData 형식에 맞게 data 추출
+      const data = response_data.data;
+      console.log('검색 결과 개수:', data?.content ? data.content.length : 0);
+      console.log('전체 요소 수:', data?.totalElements);
 
-      if (data.content) {
+      if (data?.content) {
         setMyBooks(data.content);
         setPagination({
           currentPage: data.number + 1,
