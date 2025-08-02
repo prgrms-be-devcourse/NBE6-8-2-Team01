@@ -9,9 +9,6 @@ import lombok.Setter;
 @Setter
 public class ReportRequestDto {
 
-    @NotNull(message = "신고한 사용자의 ID는 필수입니다.")
-    private Long reporterUserId;
-
     @NotNull(message = "신고 대상 사용자의 ID는 필수입니다.")
     private Long targetUserId;
 
