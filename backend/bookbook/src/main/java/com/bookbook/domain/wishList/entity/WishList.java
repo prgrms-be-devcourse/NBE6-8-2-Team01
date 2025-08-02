@@ -3,23 +3,17 @@ package com.bookbook.domain.wishList.entity;
 import com.bookbook.domain.rent.entity.Rent;
 import com.bookbook.domain.user.entity.User;
 import com.bookbook.domain.wishList.enums.WishListStatus;
+import com.bookbook.global.jpa.entity.BaseEntity;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import org.springframework.data.annotation.CreatedDate;
-
-import java.time.LocalDateTime;
 
 @Entity
 @Getter
 @Setter
 @NoArgsConstructor
-public class WishList {
-
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+public class WishList extends BaseEntity {
 
     @ManyToOne
     private User user;
@@ -30,7 +24,4 @@ public class WishList {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private WishListStatus status = WishListStatus.ACTIVE;
-
-    @CreatedDate
-    private LocalDateTime createDate;
 }
