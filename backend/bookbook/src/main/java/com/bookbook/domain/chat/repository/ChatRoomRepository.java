@@ -1,6 +1,7 @@
 package com.bookbook.domain.chat.repository;
 
 import com.bookbook.domain.chat.entity.ChatRoom;
+import com.bookbook.domain.chat.entity.ChatMessage;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -13,10 +14,11 @@ import java.util.Optional;
 @Repository
 public interface ChatRoomRepository extends JpaRepository<ChatRoom, Integer> {
     
-    // 사용자별 채팅방 목록 조회 (최신 메시지 순)
+    // 사용자별 채팅방 목록 조회 (최신 메시지 순) - 메시지가 있는 채팅방만
     @Query("SELECT cr FROM ChatRoom cr " +
            "WHERE (cr.lenderId = :userId OR cr.borrowerId = :userId) " +
            "AND cr.isActive = true " +
+           "AND EXISTS (SELECT 1 FROM ChatMessage cm WHERE cm.roomId = cr.roomId) " +
            "ORDER BY cr.lastMessageTime DESC NULLS LAST, cr.createdDate DESC")
     Page<ChatRoom> findByUserIdOrderByLastMessageTimeDesc(@Param("userId") Integer userId, Pageable pageable);
     

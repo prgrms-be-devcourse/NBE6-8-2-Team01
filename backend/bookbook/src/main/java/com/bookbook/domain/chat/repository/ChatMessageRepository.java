@@ -15,6 +15,9 @@ public interface ChatMessageRepository extends JpaRepository<ChatMessage, Intege
     // 채팅방별 메시지 목록 조회 (최신순)
     Page<ChatMessage> findByRoomIdOrderByCreatedDateDesc(String roomId, Pageable pageable);
     
+    // 특정 채팅방의 메시지 개수
+    long countByRoomId(String roomId);
+    
     // 특정 사용자의 읽지 않은 메시지 개수 (전체)
     @Query("SELECT COUNT(cm) FROM ChatMessage cm " +
            "JOIN ChatRoom cr ON cm.roomId = cr.roomId " +

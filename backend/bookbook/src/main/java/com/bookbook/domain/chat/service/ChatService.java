@@ -70,10 +70,11 @@ public class ChatService {
         
         chatRoomRepository.save(newRoom);
         
-        createSystemMessage(newRoom.getRoomId(), 
-                String.format("📚 '%s' 책에 대한 채팅방이 생성되었습니다.", rent.getBookTitle()));
+        // 시스템 메시지는 생성하지 않음 - 사용자가 첫 메시지를 보낼 때까지 채팅방이 목록에 나타나지 않음
+        // createSystemMessage(newRoom.getRoomId(), 
+        //         String.format("📚 '%s' 책에 대한 채팅방이 생성되었습니다.", rent.getBookTitle()));
         
-        log.info("새 채팅방 생성 완료 - roomId: {}", newRoom.getRoomId());
+        log.info("새 채팅방 생성 완료 - roomId: {} (메시지 없음)", newRoom.getRoomId());
         return buildChatRoomResponse(newRoom, rent, lender, borrower, borrowerId);
     }
     
@@ -101,6 +102,30 @@ public class ChatService {
         });
     }
     
+    public ChatRoomResponse getChatRoom(String roomId, Integer userId) {
+        log.info("채팅방 정보 조회 - roomId: {}, userId: {}", roomId, userId);
+        
+        ChatRoom chatRoom = chatRoomRepository.findByRoomIdAndUserId(roomId, userId)
+                .orElseThrow(() -> new ServiceException("채팅방에 접근할 권한이 없습니다."));
+        
+        Rent rent = rentRepository.findById(chatRoom.getRentId()).orElse(null);
+        String bookTitle = rent != null ? rent.getBookTitle() : "알 수 없는 책";
+        String bookImage = rent != null ? rent.getBookImage() : null;
+        
+        Integer otherUserId = chatRoom.getOtherUserId(userId);
+        User otherUser = userRepository.findById(Long.valueOf(otherUserId)).orElse(null);
+        String otherUserNickname = otherUser != null ? otherUser.getNickname() : "알 수 없는 사용자";
+        
+        long unreadCount = chatMessageRepository.countUnreadMessagesByRoomIdAndUserId(roomId, userId);
+        
+        ChatRoomResponse response = ChatRoomResponse.from(chatRoom, bookTitle, bookImage, 
+                otherUserNickname, null, unreadCount);
+        response.setOtherUserId(otherUserId);
+        response.setRentId(chatRoom.getRentId()); // rentId 설정
+        
+        return response;
+    }
+    
     public Page<MessageResponse> getChatMessages(String roomId, Integer userId, Pageable pageable) {
         log.info("채팅 메시지 조회 - roomId: {}, userId: {}, page: {}, size: {}", 
                 roomId, userId, pageable.getPageNumber(), pageable.getPageSize());
@@ -122,29 +147,32 @@ public class ChatService {
             // isMine 계산: 현재 사용자의 ID와 메시지 발신자 ID가 같은지 확인
             boolean isMine = message.getSenderId().equals(userId);
             
-            // 🔍 디버깅 로그 추가
-            log.info("🔍 메시지 ID: {}, 발신자 ID: {}, 현재 사용자 ID: {}, isMine: {}, 내용: '{}'", 
-                    message.getId(), message.getSenderId(), userId, isMine, 
-                    message.getContent().length() > 20 ? message.getContent().substring(0, 20) + "..." : message.getContent());
-            
-            MessageResponse response = MessageResponse.from(message, senderNickname, null, isMine);
-            
-            // 📤 응답 객체 확인
-            log.info("📤 응답 객체 - 메시지 ID: {}, isMine: {}, senderId: {}", 
-                    response.getId(), response.isMine(), response.getSenderId());
-            
-            return response;
+            return MessageResponse.from(message, senderNickname, null, isMine);
         });
     }
     
     @Transactional
     public MessageResponse sendMessage(MessageSendRequest request, Integer senderId) {
-        log.info("메시지 전송 - roomId: {}, senderId: {}, content: '{}'", 
-                request.getRoomId(), senderId, 
-                request.getContent().length() > 20 ? request.getContent().substring(0, 20) + "..." : request.getContent());
+        log.info("메시지 전송 - roomId: {}, senderId: {}", request.getRoomId(), senderId);
         
         ChatRoom chatRoom = chatRoomRepository.findByRoomIdAndUserId(request.getRoomId(), senderId)
                 .orElseThrow(() -> new ServiceException("채팅방에 접근할 권한이 없습니다."));
+        
+        // 채팅방에 메시지가 있는지 확인 (첫 번째 메시지인지 체크)
+        boolean isFirstMessage = chatMessageRepository.countByRoomId(request.getRoomId()) == 0;
+        
+        // 첫 번째 메시지인 경우 시스템 메시지 생성
+        if (isFirstMessage) {
+            try {
+                Rent rent = rentRepository.findById(chatRoom.getRentId()).orElse(null);
+                if (rent != null) {
+                    String systemMessage = String.format("📚 '%s' 책에 대한 채팅방이 생성되었습니다.", rent.getBookTitle());
+                    createSystemMessage(request.getRoomId(), systemMessage);
+                }
+            } catch (Exception e) {
+                log.warn("시스템 메시지 생성 실패 - roomId: {}", request.getRoomId(), e);
+            }
+        }
         
         ChatMessage message = ChatMessage.builder()
                 .roomId(request.getRoomId())
@@ -165,14 +193,6 @@ public class ChatService {
         
         // 메시지를 보낸 사람이므로 항상 isMine = true
         MessageResponse response = MessageResponse.from(message, senderNickname, null, true);
-        
-        // 🔍 전송 메시지 디버깅 로그
-        log.info("🔍 전송된 메시지 - ID: {}, senderId: {}, isMine: {}, content: '{}'", 
-                message.getId(), senderId, true, request.getContent());
-        
-        // 📤 응답 객체 확인
-        log.info("📤 전송 응답 객체 - 메시지 ID: {}, isMine: {}, senderId: {}", 
-                response.getId(), response.isMine(), response.getSenderId());
         
         log.info("메시지 전송 완료 - messageId: {}, senderId: {}", message.getId(), senderId);
         return response;

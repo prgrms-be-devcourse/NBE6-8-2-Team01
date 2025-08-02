@@ -67,6 +67,30 @@ public class ChatController {
     }
     
     /**
+     * 채팅방 정보 조회
+     */
+    @GetMapping("/rooms/{roomId}")
+    public ResponseEntity<RsData<ChatRoomResponse>> getChatRoom(
+            @PathVariable String roomId,
+            @AuthenticationPrincipal CustomOAuth2User user) {
+        
+        log.info("채팅방 정보 조회 - roomId: {}, userId: {}", roomId, user.getUserId());
+        
+        try {
+            ChatRoomResponse chatRoom = chatService.getChatRoom(roomId, user.getUserId().intValue());
+            return ResponseEntity.ok(RsData.of("200", "채팅방 정보를 조회했습니다.", chatRoom));
+        } catch (Exception e) {
+            log.error("채팅방 정보 조회 실패", e);
+            if (e.getMessage().contains("권한이 없습니다")) {
+                return ResponseEntity.status(403)
+                        .body(RsData.of("403", e.getMessage(), null));
+            }
+            return ResponseEntity.badRequest()
+                    .body(RsData.of("400", e.getMessage(), null));
+        }
+    }
+    
+    /**
      * 채팅방 메시지 목록 조회
      */
     @GetMapping("/rooms/{roomId}/messages")
@@ -76,23 +100,12 @@ public class ChatController {
             @RequestParam(defaultValue = "50") int size,
             @AuthenticationPrincipal CustomOAuth2User user) {
         
-        log.info("🔍 채팅 메시지 조회 요청 - roomId: {}, userId: {}, page: {}, size: {}", 
+        log.info("채팅 메시지 조회 - roomId: {}, userId: {}, page: {}, size: {}", 
                 roomId, user.getUserId(), page, size);
         
         try {
             Pageable pageable = PageRequest.of(page, size);
             Page<MessageResponse> messages = chatService.getChatMessages(roomId, user.getUserId().intValue(), pageable);
-            
-            // 📊 첫 번째 메시지 정보 로그
-            if (!messages.isEmpty()) {
-                MessageResponse firstMessage = messages.getContent().get(0);
-                log.info("📊 첫 번째 메시지 정보 - ID: {}, isMine: {}, senderId: {}, userId: {}, content: '{}'", 
-                        firstMessage.getId(), firstMessage.isMine(), firstMessage.getSenderId(), 
-                        user.getUserId(), firstMessage.getContent().length() > 20 ? 
-                        firstMessage.getContent().substring(0, 20) + "..." : firstMessage.getContent());
-            }
-            
-            log.info("📤 메시지 조회 완료 - 총 {} 개 메시지 반환", messages.getTotalElements());
             
             return ResponseEntity.ok(RsData.of("200", "채팅 메시지를 조회했습니다.", messages));
         } catch (Exception e) {
@@ -114,16 +127,11 @@ public class ChatController {
             @Valid @RequestBody MessageSendRequest request,
             @AuthenticationPrincipal CustomOAuth2User user) {
         
-        log.info("🔍 메시지 전송 요청 - roomId: {}, userId: {}, messageType: {}, content: '{}'", 
-                request.getRoomId(), user.getUserId(), request.getMessageType(),
-                request.getContent().length() > 20 ? request.getContent().substring(0, 20) + "..." : request.getContent());
+        log.info("메시지 전송 - roomId: {}, userId: {}, messageType: {}", 
+                request.getRoomId(), user.getUserId(), request.getMessageType());
         
         try {
             MessageResponse response = chatService.sendMessage(request, user.getUserId().intValue());
-            
-            // 📤 전송 완료 로그
-            log.info("📤 메시지 전송 완료 - messageId: {}, isMine: {}, senderId: {}", 
-                    response.getId(), response.isMine(), response.getSenderId());
             
             return ResponseEntity.ok(RsData.of("200", "메시지가 전송되었습니다.", response));
         } catch (Exception e) {
