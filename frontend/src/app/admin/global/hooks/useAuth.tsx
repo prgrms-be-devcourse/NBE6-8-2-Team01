@@ -1,13 +1,18 @@
 import { createContext, use, useEffect, useState } from "react";
 import {userRole, userStatus} from "@/app/admin/dashboard/_types/userResponseDto";
+import apiClient from "@/app/bookbook/user/utils/apiClient";
 
 export interface UserLoginResponseDto {
     id: number;
     username: string;
-    nickname: string;
+    email?: string;
+    nickname?: string;
+    address?: string;
+    rating?: number;
     role: userRole;
-    status: userStatus;
-    avatar?: string;
+    userStatus: userStatus;
+    createAt: string;
+    registrationCompleted: boolean;
 }
 
 export default function useAuth() {
@@ -21,18 +26,13 @@ export default function useAuth() {
 
     useEffect(() => {
         const checkAuthStatus = () => {
-            fetch("http://localhost:8080/api/v1/admin/me", {
+            apiClient<UserLoginResponseDto>("/api/v1/admin/me", { // todo: api/v1/bookbook/users로 시도
                 method: "GET",
-                credentials: "include",
-            })
-            .then(response => response.json())
-            .then(data => {
+            }).then(data => {
                 setLoginMember(data.data);
-            })
-            .catch(error => {
+            }).catch(error => {
                 console.log("Auth Check Failure : ", error);
-            })
-            .finally(() => {
+            }).finally(() => {
                 setIsInitialized(true);
             })
         };
@@ -45,17 +45,13 @@ export default function useAuth() {
     };
 
     const logout = (onSuccess: () => void) => {
-        fetch("http://localhost:8080/api/v1/admin/logout", {
+        apiClient("/api/v1/admin/logout", {
             method: "DELETE",
-            credentials: "include",
-        })
-        .then((res) => res.json())
-        .then((data) => {
-            if (data.error) {
-                alert(data.error.msg);
+        }).then((data) => {
+            if (data) {
+                alert(data.msg);
                 return;
             }
-
             clearLoginMember();
             onSuccess();
         })

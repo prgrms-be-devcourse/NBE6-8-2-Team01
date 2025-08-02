@@ -3,6 +3,7 @@
 import {createContext, use, useCallback, useEffect, useState} from "react";
 import { MenuItem } from "@/app/admin/dashboard/_types/menuItem";
 import { menuItems } from "@/app/admin/dashboard/_components/sidebar/consts";
+import ApiClient from "@/app/bookbook/user/utils/apiClient";
 
 export default function useDashboard() {
     const [activeItem, setActiveItem] = useState('dashboard');
@@ -14,23 +15,8 @@ export default function useDashboard() {
     const fetchData = useCallback((apiPath: string) => {
         setError(false);
         setLoading(true);
-        const baseUrl = "http://localhost:8080";
 
-        fetch(baseUrl + apiPath, {
-            method: "GET",
-            headers: {
-                "Content-Type": "application/json; charset=utf-8",
-            },
-            credentials: "include",
-        })
-            .then(response => {
-                if (!response.ok) {
-                    setResponseData(null);
-                    return;
-                }
-                return response.json();
-            })
-            .then(data => {
+        ApiClient(apiPath, { method: "GET" }).then(data => {
                 if (data) {
                     console.log('데이터 새로고침:', data);
                     setResponseData(data.data);

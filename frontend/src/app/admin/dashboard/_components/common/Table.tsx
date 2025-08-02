@@ -41,10 +41,11 @@ export function DataTable<T extends { id: string | number }>(
 
   const PER_PAGE = 10;
   const currentPage = data?.pageInfo?.currentPage || 1;
-  const pagedData = data ? data.data : [];
+  const pagedData = data?.data || [];
+  const maxPage = data?.pageInfo?.totalPages || 0;
 
   const getDataFromButton = (newPage: number) => {
-    if (!currentItem || !currentItem.apiPath || currentItem.apiPath.trim().length === 0) {
+    if (!currentItem || !currentItem.apiPath || !currentItem.apiPath.trim()) {
       return;
     }
 
@@ -71,13 +72,13 @@ export function DataTable<T extends { id: string | number }>(
                   scope="col"
                   className="px-6 py-3 text-left text-xs font-bold text-gray-600 uppercase tracking-wider"
                 >
-                  {col.label}
+                  {col.label?.length > 0 ? col.label : "정보 없음"}
                 </th>
               ))}
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
-            {pagedData.length > 0 ? (
+            {pagedData?.length > 0 ? (
               pagedData.map((item) => (
                 <tr key={item.id} className="hover:bg-gray-50 transition-colors">
                   {columns.map((col) => (
@@ -90,7 +91,7 @@ export function DataTable<T extends { id: string | number }>(
               ))
               ) : (
                 <tr>
-                  <td colSpan={columns.length} className="px-6 py-12 text-center text-sm text-gray-500">
+                  <td colSpan={columns?.length} className="px-6 py-12 text-center text-sm text-gray-500">
                     데이터가 없습니다.
                   </td>
                 </tr>
@@ -98,7 +99,7 @@ export function DataTable<T extends { id: string | number }>(
           </tbody>
         </table>
       </div>
-      {data.pageInfo.totalPages > 0 && (
+      {maxPage > 0 && (
         <
           PageButtonContainer
             page={currentPage}

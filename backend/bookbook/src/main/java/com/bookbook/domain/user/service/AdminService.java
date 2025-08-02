@@ -1,10 +1,12 @@
 package com.bookbook.domain.user.service;
 
-import com.bookbook.domain.user.dto.response.UserDetailResponseDto;
 import com.bookbook.domain.user.dto.UserBaseDto;
 import com.bookbook.domain.user.dto.UserLoginRequestDto;
+import com.bookbook.domain.user.dto.response.UserDetailResponseDto;
 import com.bookbook.domain.user.entity.User;
+import com.bookbook.domain.user.enums.Role;
 import com.bookbook.domain.user.repository.UserRepository;
+import com.bookbook.global.exception.ServiceException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -27,6 +29,10 @@ public class AdminService {
                 .orElseThrow(() -> new RuntimeException("존재하지 않는 계정입니다"));
 
         checkPassword(user, reqBody.getPassword());
+
+        if (user.getRole() != Role.ADMIN) {
+            throw new ServiceException("401-1", "허가되지 않은 접근입니다.");
+        }
 
         return user;
     }

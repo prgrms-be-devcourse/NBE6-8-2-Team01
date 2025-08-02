@@ -21,15 +21,19 @@ const UserBasicInfo: React.FC<UserBasicInfoProps> = ({ user }) => {
           </label>
           <p className="text-gray-900">{user.baseResponseDto.username}</p>
         </div>
-        <div>
+        <div className="col-span-2 md:col-span-2">
           <label className="block font-medium text-gray-700 mb-1">닉네임</label>
           <p className="text-gray-900 font-medium">
             {user.baseResponseDto.nickname}
           </p>
         </div>
-        <div className="col-span-2 md:col-span-3">
+        <div>
           <label className="block font-medium text-gray-700 mb-1">역할</label>
           <p className="text-gray-900">{getUserRole(user.baseResponseDto.role)}</p>
+        </div>
+        <div className="col-span-2 md:col-span-3">
+          <label className="block font-medium text-gray-700 mb-1">이메일</label>
+          <p className="text-gray-900">{user.baseResponseDto.email}</p>
         </div>
         <div className="col-span-2 md:col-span-3">
           <label className="block font-medium text-gray-700 mb-1">주소</label>
