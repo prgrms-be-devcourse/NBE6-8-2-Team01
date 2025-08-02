@@ -37,7 +37,7 @@ public class WishListService {
      * @return 찜 목록 리스트
      */
     public List<WishListResponseDto> getWishListByUserId(Long userId) {
-        return wishListRepository.findByUserIdAndStatusOrderByCreateDateDesc(userId, WishListStatus.ACTIVE)
+        return wishListRepository.findByUserIdAndStatusOrderByCreatedDateDesc(userId, WishListStatus.ACTIVE)
                 .stream()
                 .map(wishList -> {
                     String lenderNickname = userRepository.findById(wishList.getRent().getLenderUserId())
@@ -56,7 +56,7 @@ public class WishListService {
      * @return 검색된 찜 목록
      */
     public List<WishListResponseDto> searchWishListByUserId(Long userId, String searchKeyword) {
-        List<WishList> wishLists = wishListRepository.findByUserIdAndStatusOrderByCreateDateDesc(userId, WishListStatus.ACTIVE);
+        List<WishList> wishLists = wishListRepository.findByUserIdAndStatusOrderByCreatedDateDesc(userId, WishListStatus.ACTIVE);
         
         if (searchKeyword == null || searchKeyword.trim().isEmpty()) {
             return wishLists.stream()
