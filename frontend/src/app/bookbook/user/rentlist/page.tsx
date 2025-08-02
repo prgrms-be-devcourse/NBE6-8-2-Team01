@@ -82,13 +82,16 @@ export default function RentListPage() {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
 
-      const data = await response.json();
-      console.log('빌린 도서 목록 API 응답:', data);
+      const response_data = await response.json();
+      console.log('빌린 도서 목록 API 응답:', response_data);
+
+      // RsData 형식에 맞게 data 추출
+      const data = response_data.data;
 
       if (Array.isArray(data)) {
         setRentedBooks(data);
         setPagination(prev => ({ ...prev, currentPage: 1, totalPages: 1, totalElements: data.length }));
-      } else if (data.content) {
+      } else if (data?.content) {
         setRentedBooks(data.content);
         setPagination({
           currentPage: data.number + 1,

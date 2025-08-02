@@ -6,6 +6,7 @@ import com.bookbook.domain.rentList.service.RentListService;
 import com.bookbook.domain.review.dto.ReviewCreateRequestDto;
 import com.bookbook.domain.review.dto.ReviewResponseDto;
 import com.bookbook.domain.review.service.ReviewService;
+import com.bookbook.global.rsdata.RsData;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -33,7 +34,7 @@ public class RentListController {
      * @return 대여한 도서 목록
      */
     @GetMapping
-    public ResponseEntity<List<RentListResponseDto>> getRentListByUserId(
+    public ResponseEntity<RsData<List<RentListResponseDto>>> getRentListByUserId(
             @PathVariable Long borrowerUserId,
             @RequestParam(required = false) String search) {
         List<RentListResponseDto> rentList;
@@ -42,7 +43,7 @@ public class RentListController {
         } else {
             rentList = rentListService.getRentListByUserId(borrowerUserId);
         }
-        return ResponseEntity.ok(rentList);
+        return ResponseEntity.ok(RsData.of("200", "대여 도서 목록을 조회했습니다.", rentList));
     }
     
     /**
@@ -56,11 +57,11 @@ public class RentListController {
      * @return 생성된 대여 기록 정보
      */
     @PostMapping
-    public ResponseEntity<RentListResponseDto> createRentList(
+    public ResponseEntity<RsData<RentListResponseDto>> createRentList(
             @PathVariable Long borrowerUserId,
             @RequestBody RentListCreateRequestDto request) {
         RentListResponseDto response = rentListService.createRentList(borrowerUserId, request);
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(RsData.of("200", "대여 신청을 등록했습니다.", response));
     }
     
     /**
@@ -74,11 +75,11 @@ public class RentListController {
      * @return 생성된 리뷰 정보
      */
     @PostMapping("/{rentId}/review")
-    public ResponseEntity<ReviewResponseDto> createBorrowerReview(
+    public ResponseEntity<RsData<ReviewResponseDto>> createBorrowerReview(
             @PathVariable Long borrowerUserId,
             @PathVariable Integer rentId,
             @RequestBody ReviewCreateRequestDto request) {
         ReviewResponseDto review = reviewService.createBorrowerReview(borrowerUserId, rentId, request);
-        return ResponseEntity.ok(review);
+        return ResponseEntity.ok(RsData.of("200", "리뷰를 작성했습니다.", review));
     }
 }
