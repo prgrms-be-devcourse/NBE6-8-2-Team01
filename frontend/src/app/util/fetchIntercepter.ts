@@ -25,7 +25,7 @@ if (typeof window !== 'undefined') {
 
             try {
                 const refreshResponse = await originalFetch(
-                    `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/bookbook/auth/refresh-token`,
+                    `http://localhost:8080/api/v1/bookbook/auth/refresh-token`,
                     newInit
                 );
 
