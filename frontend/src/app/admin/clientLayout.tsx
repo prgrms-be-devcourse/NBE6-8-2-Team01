@@ -3,15 +3,13 @@
 import AdminGuard from "./adminGuard";
 
 export default function ClientLayout({
-    children,
+  children,
 }: Readonly<{
-    children: React.ReactNode;
+  children: React.ReactNode;
 }>) {
-    return (
-        <main className="flex-1 flex flex-col">
-            <AdminGuard>
-                {children}
-            </AdminGuard>
-        </main>
-    );
+  return (
+    <AdminGuard>
+        <main className="flex-1 flex flex-col">{children}</main>
+    </AdminGuard>
+  );
 }

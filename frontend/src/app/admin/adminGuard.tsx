@@ -1,56 +1,57 @@
 'use client';
 
 import { useRouter, usePathname } from "next/navigation";
-import { useEffect } from "react";
 import { useAuthContext } from "./global/hooks/useAuth";
+import { useEffect } from "react";
 
 interface AdminGuardProps {
     children: React.ReactNode;
 }
 
 export default function AdminGuard({ children }: AdminGuardProps) {
-    const { isLogin, isInitialized } = useAuthContext();
-    const router = useRouter();
+    const { isLogin, loading } = useAuthContext();
     const pathname = usePathname();
+    const router = useRouter();
 
     // 로그인 페이지는 가드 검증에서 제외
     const isLoginPage = pathname === '/admin/login';
 
+    // 라우팅 로직
     useEffect(() => {
-        // 로그인 페이지는 검증하지 않음
-        if (isLoginPage) return;
-        
-        // 초기화가 완료된 후에만 검증 실행
-        if (!isInitialized) return;
+        if (loading) return;
 
-        // 로그인하지 않은 경우 로그인 페이지로 리다이렉트
-        // if (!isLogin) {
-        //     router.replace("/admin/login");
-        //     return;
-        // }
-    }, [isLogin, isInitialized, isLoginPage, router]);
+        if (isLogin && isLoginPage) {
+            // 로그인된 상태에서 로그인 페이지에 있으면 대시보드로 이동
+            router.replace("/admin/dashboard");
+        }
+
+        if (!isLogin && !isLoginPage) {
+            // 로그인되지 않은 상태에서 로그인 페이지가 아니면 로그인 페이지로 이동
+            router.replace("/admin/login");
+        }
+    }, [isLogin, loading, isLoginPage, router]);
 
     // 로그인 페이지는 항상 렌더링
-    // if (isLoginPage) {
-    //     return <>{children}</>;
-    // }
-    //
-    // // 초기화 전에는 로딩만 표시 (보안상 children 렌더링 금지)
-    // if (!isInitialized) {
-    //     return <LoadingScreen message="인증 확인 중..." />;
-    // }
-    //
-    // // 로그인하지 않은 경우 로딩 표시 (리다이렉트 중)
-    // if (!isLogin) {
-    //     return <LoadingScreen message="로그인 페이지로 이동 중..." />;
-    // }
+    if (isLoginPage) {
+        return <>{children}</>;
+    }
+
+    // 초기화 전에는 로딩만 표시 (보안상 children 렌더링 금지)
+    if (loading) {
+        return <LoadingScreen message="인증 확인 중..." />;
+    }
+
+    // 로그인하지 않은 경우 로딩 표시 (리다이렉트 중)
+    if (!isLogin) {
+        return <LoadingScreen message="로그인 페이지로 이동 중..." />;
+    }
 
     // 모든 검증을 통과한 관리자만 children 렌더링
     return <>{children}</>;
 }
 
 // 로딩 화면 컴포넌트
-function LoadingScreen({ message }: { message: string }) {
+export function LoadingScreen({ message }: { message: string }) {
     return (
         <div className="flex items-center justify-center min-h-screen bg-gray-50">
             <div className="text-center">
