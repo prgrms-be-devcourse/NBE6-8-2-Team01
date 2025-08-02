@@ -14,12 +14,18 @@ import com.bookbook.domain.user.dto.response.UserLoginResponseDto;
 import com.bookbook.domain.user.entity.User;
 import com.bookbook.domain.user.service.AdminService;
 import com.bookbook.global.rsdata.RsData;
+import com.bookbook.global.security.CustomOAuth2User;
+import com.bookbook.global.security.jwt.JwtProvider;
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -31,27 +37,55 @@ public class AdminController {
     private final AdminService adminService;
     private final SuspendedUserService suspendedUserService;
     private final RentService rentService;
+    private final JwtProvider jwtProvider;
+
+    @Value("${jwt.cookie.name}")
+    private String jwtAccessTokenCookieName;
+
+    @Value("${jwt.cookie.refresh-name}")
+    private String jwtRefreshTokenCookieName;
 
     @PostMapping("/login")
     public ResponseEntity<RsData<UserLoginResponseDto>> adminLogin(
-            @Valid @RequestBody UserLoginRequestDto requestDto
+            @Valid @RequestBody UserLoginRequestDto requestDto,
+            HttpServletResponse response
     ) {
         User admin = adminService.login(requestDto);
+
+        String accessToken = jwtProvider.generateAccessToken(
+                admin.getId(),
+                admin.getUsername(),
+                admin.getRole().toString()
+        );
+        String refreshToken = jwtProvider.generateRefreshToken(admin.getId());
+
+        setCookie(response, jwtAccessTokenCookieName, accessToken, jwtProvider.getAccessTokenValidityInSeconds());
+        setCookie(response, jwtRefreshTokenCookieName, refreshToken, jwtProvider.getRefreshTokenValidityInSeconds());
+
         UserLoginResponseDto userLoginResponseDto = UserLoginResponseDto.from(admin);
 
-        RsData<UserLoginResponseDto> body = new RsData<>(
-                "200-1",
-                "관리자 %s님이 로그인하였습니다.".formatted(admin.getUsername()),
-                userLoginResponseDto
-        );
-
-        return ResponseEntity.status(body.getStatusCode()).body(body);
+        return ResponseEntity.ok(
+                RsData.of(
+                    "200-1",
+                    "관리자 %s님이 로그인하였습니다.".formatted(admin.getUsername()),
+                    userLoginResponseDto
+        ));
     }
 
     @DeleteMapping("/logout")
-    public ResponseEntity<RsData<Void>> adminLogout() {
+    public ResponseEntity<RsData<Void>> adminLogout(
+            @AuthenticationPrincipal CustomOAuth2User currentUser,
+            HttpServletResponse response
+    ) {
+        invalidateCookie(response, jwtAccessTokenCookieName);
+        invalidateCookie(response, jwtRefreshTokenCookieName);
+
+        if (currentUser != null) {
+            jwtProvider.deleteRefreshToken(currentUser.getUserId());
+        }
+
         RsData<Void> rsData = new RsData<>(
-                "204-1",
+                "200-1",
                 "로그아웃을 정상적으로 완료했습니다.",
                 null
         );
@@ -103,7 +137,7 @@ public class AdminController {
                 responseDto
         );
 
-        return  ResponseEntity.status(rsData.getStatusCode()).body(rsData);
+        return ResponseEntity.status(rsData.getStatusCode()).body(rsData);
     }
 
     @GetMapping("/users")
@@ -143,7 +177,7 @@ public class AdminController {
                 response
         );
 
-        return  ResponseEntity.status(rsData.getStatusCode()).body(rsData);
+        return ResponseEntity.status(rsData.getStatusCode()).body(rsData);
     }
 
     /*
@@ -182,4 +216,27 @@ public class AdminController {
         );
     }
      */
+
+    private void setCookie(
+            HttpServletResponse response,
+            String tokenName,
+            String token,
+            Integer maxAge
+    ) {
+        Cookie cookie = new Cookie(tokenName, token);
+        cookie.setHttpOnly(true);
+        cookie.setSecure(false);
+        cookie.setPath("/");
+        cookie.setMaxAge(maxAge);
+        response.addCookie(cookie);
+    }
+
+    private void invalidateCookie(HttpServletResponse response, String tokenName) {
+        Cookie cookie = new Cookie(tokenName, null);
+        cookie.setHttpOnly(true);
+        cookie.setSecure(false);
+        cookie.setPath("/");
+        cookie.setMaxAge(0);
+        response.addCookie(cookie);
+    }
 }

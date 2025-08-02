@@ -63,7 +63,7 @@ public class securityConfig {
                 .authorizeHttpRequests(authorize -> authorize
                       
                         .requestMatchers(
-                                "/api/*/admin/login", "/api/*/admin/logout",
+                                "/api/*/admin/login",
                                 "api/v1/bookbook/users/social/callback",
                                 "/login/**",
                                 "/bookbook/home",
@@ -90,7 +90,7 @@ public class securityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/v1/bookbook/users/me").authenticated()
                         .requestMatchers(HttpMethod.PATCH, "/api/v1/bookbook/users/me").authenticated()
                         .requestMatchers(HttpMethod.DELETE, "/api/v1/bookbook/users/me").authenticated()
-                        .requestMatchers("api/*/admin/**").hasRole("ADMIN")
+                        .requestMatchers("/api/*/admin/logout", "/api/*/admin/**").hasRole("ADMIN")
                         .anyRequest().authenticated() // 나머지 모든 요청은 인증 필요
                 )
                 .oauth2Login(oauth2 -> oauth2
