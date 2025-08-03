@@ -136,7 +136,7 @@ const PostDetailModal: React.FC<PostDetailModalProps> = ({
         />
 
         {/* 모달 컨텐츠 */}
-        <div className="relative bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+        <div className="relative bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] flex flex-col">
           {/* 헤더 */}
           <div className="flex items-center justify-between p-6 border-b">
             <h2 className="text-xl font-semibold text-gray-900">
@@ -163,7 +163,7 @@ const PostDetailModal: React.FC<PostDetailModalProps> = ({
           </div>
 
           {/* 본문 */}
-          <div className="p-6 space-y-4">
+          <div className="flex-1 p-6 space-y-4 overflow-y-auto">
             <PostBasicInfo post={currentPost} />
             <PostStatusInfo
                 post={currentPost}
@@ -174,7 +174,7 @@ const PostDetailModal: React.FC<PostDetailModalProps> = ({
           </div>
 
           {/* 푸터 */}
-          <div className="flex items-center justify-between p-4 border-t bg-gray-50">
+          <div className="flex items-center justify-between p-4 border-t bg-gray-50 flex-shrink-0">
             {/* 작성자 정보 버튼 */}
             <button
               onClick={handleUserDetailClick}

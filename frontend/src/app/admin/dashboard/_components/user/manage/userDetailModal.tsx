@@ -170,7 +170,7 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
         />
 
         {/* 모달 컨텐츠 */}
-        <div className="relative bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+        <div className="relative bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] flex flex-col">
           {/* 헤더 */}
           <div className="flex items-center justify-between p-6 border-b">
             <h2 className="text-xl font-semibold text-gray-900">
@@ -209,7 +209,7 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
               onSubmit={handleSuspendFormSubmit}
             />
           ) : (
-            <div className="p-6 space-y-4">
+            <div className="flex-1 p-6 space-y-4 overflow-y-auto">
               <UserBasicInfo user={currentUser} />
               <UserStatusInfo user={currentUser} />
               <UserJoinInfo user={currentUser} />
