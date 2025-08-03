@@ -1,25 +1,36 @@
 // src/app/bookbook/rent/[id]/page.tsx
+// 글 목록을 보여주는 페이지
+//08.02 현준 수정
+
 "use client";
 
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation'; // useRouter는 클라이언트 컴포넌트에서 사용
+import { useCurrentUser } from '../../../hooks/useCurrentUser'; // 현재 사용자 정보를 가져오는 훅 추가
 
 // 백엔드에서 받아올 책 상세 정보의 타입을 정의합니다.
 interface BookDetail {
+    
     id: number; // 글 ID
-    title: string; // 글 제목
-    bookTitle: string; // 책 제목
-    author: string; // 저자
-    publisher: string; // 출판사
-    category: string; // 카테고리
-    description: string; // 책 설명 (알라딘 API에서 가져온 상세 설명)
     bookCondition: string; // 책 상태
     address: string; // 거래 희망 지역
     contents: string; // 글 내용 (사용자가 직접 작성한 내용)
     bookImage: string; // 책 이미지 URL (DB에 저장된 경로)
     rentStatus: 'AVAILABLE' | 'RENTED' | 'EXPIRED'; // 대여 상태
     createdAt: string; // 등록일 (예: 2025/07/22)
-    lenderUserId?: number; // 대여자 ID (선택적)
+    lenderUserId: number; // 글 작성자 ID (백엔드 RentResponseDto에서 받아옴)
+
+    title: string; // 글 제목
+    bookTitle: string; // 책 제목
+    author: string; // 저자
+    publisher: string; // 출판사
+    category: string; // 카테고리
+    description: string; // 책 설명 (알라딘 API에서 가져온 상세 설명)
+    
+    // 대여자 정보 추가
+    nickname: string; // 대여자 닉네임
+    rating: number; // 대여자 매너 점수
+    lenderPostCount: number; // 대여자가 작성한 글 갯수
 }
 
 export default function BookDetailPage({ params }: { params: Promise<{ id: string }> }) {
@@ -31,6 +42,9 @@ export default function BookDetailPage({ params }: { params: Promise<{ id: strin
     const [error, setError] = useState<string | null>(null);
 
     const router = useRouter(); // 페이지 이동을 위한 useRouter 훅
+    
+    // 현재 로그인한 사용자 정보를 가져옵니다
+    const { user, loading: userLoading, userId } = useCurrentUser();
 
     // 컴포넌트가 마운트되거나 ID가 변경될 때 책 상세 정보를 불러옵니다.
     useEffect(() => {
@@ -107,7 +121,7 @@ export default function BookDetailPage({ params }: { params: Promise<{ id: strin
     };
 
     // 로딩 중일 때 표시
-    if (loading) {
+    if (loading || userLoading) {
         return (
             <div className="min-h-screen flex items-center justify-center bg-gray-100 font-inter">
                 <p className="text-gray-700 text-lg">책 정보를 불러오는 중...</p>
@@ -138,6 +152,9 @@ export default function BookDetailPage({ params }: { params: Promise<{ id: strin
     const defaultCoverImageUrl = 'https://i.postimg.cc/pLC9D2vW/noimg.gif';
     const backendBaseUrl = 'http://localhost:8080'; // 백엔드 서버 주소
     const displayImageUrl = `${backendBaseUrl}${bookDetail.bookImage}` || defaultCoverImageUrl; // 이미지가 없으면 기본 이미지 표시
+
+    // 현재 사용자가 글 작성자인지 확인
+    const isAuthor = userId && bookDetail.lenderUserId && userId === bookDetail.lenderUserId;
 
     return (
         <div className="min-h-screen bg-gray-100 py-8 px-4 sm:py-12 sm:px-16 md:py-16 md:px-24 font-inter">
@@ -228,6 +245,21 @@ export default function BookDetailPage({ params }: { params: Promise<{ id: strin
                                 <path fillRule="evenodd" d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" clipRule="evenodd" />
                             </svg>
                         </button>
+                        {/* 글 작성자인 경우에만 수정하기 버튼 표시 */}
+                        {isAuthor && (
+                            <button 
+                                onClick={() => router.push(`/bookbook/rent/edit/${id}`)}
+                                className="px-10 py-2 rounded-lg bg-[#D5BAA3] text-white font-semibold hover:bg-[#C2A794] shadow-md"
+                            >
+                                수정하기
+                            </button>
+                        )}
+                        {/* 글 작성자가 아니거나 로그인하지 않은 경우에만 대여하기 버튼 표시 */}
+                        {!isAuthor && (
+                            <button className="px-10 py-2 rounded-lg bg-[#D5BAA3] text-white font-semibold hover:bg-[#C2A794] shadow-md">
+                                대여하기
+                            </button>
+                        )}                        
                     </div>
                 </div>
             </div>
@@ -259,9 +291,9 @@ export default function BookDetailPage({ params }: { params: Promise<{ id: strin
                     <div className="flex items-center space-x-4 bg-gray-50 p-4 rounded-lg border border-gray-200">
 
                         <div>
-                            <p className="font-semibold text-gray-800">북북이1</p>
-                            <p className="text-sm text-gray-600">등록된 글: 21</p>
-                            <p className="text-sm text-gray-600">매너 점수: 4.5/5 &#x1F60A;</p>
+                            <p className="font-semibold text-gray-800">{bookDetail.nickname}</p>
+                            <p className="text-sm text-gray-600 mt-2">등록된 글: {bookDetail.lenderPostCount}</p>
+                            <p className="text-sm text-gray-600">매너 점수: {bookDetail.rating}/5</p>
                         </div>
                     </div>
                 </div>
@@ -282,7 +314,7 @@ export default function BookDetailPage({ params }: { params: Promise<{ id: strin
             {/* 하단 버튼 (이전 페이지로 돌아가기 등) */}
             <div className="mt-8 flex justify-center">
                 <button
-                    onClick={() => router.back()} // router.back() 기능 복구
+                    onClick={() => router.push('/bookbook')} // 특정 URL로 이동하도록 수정
                     className="px-6 py-2 text-white font-semibold rounded-lg shadow-md bg-gray-500 hover:bg-gray-600 transition duration-150"
                 >
                     목록으로 돌아가기
