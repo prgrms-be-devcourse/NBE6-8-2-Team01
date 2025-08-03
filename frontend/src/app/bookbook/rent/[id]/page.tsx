@@ -7,6 +7,7 @@
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation'; // useRouter는 클라이언트 컴포넌트에서 사용
 import { useCurrentUser } from '../../../hooks/useCurrentUser'; // 현재 사용자 정보를 가져오는 훅 추가
+import RentModal from '@/app/components/RentModal'; // 대여하기 팝업 모달 컴포넌트
 
 // 백엔드에서 받아올 책 상세 정보의 타입을 정의합니다.
 interface BookDetail {
@@ -40,6 +41,7 @@ export default function BookDetailPage({ params }: { params: Promise<{ id: strin
     const [bookDetail, setBookDetail] = useState<BookDetail | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [isRentModalOpen, setIsRentModalOpen] = useState(false);
 
     const router = useRouter(); // 페이지 이동을 위한 useRouter 훅
     
@@ -226,19 +228,7 @@ export default function BookDetailPage({ params }: { params: Promise<{ id: strin
                         </div>
                     </div>
                     {/* 북북톡/수정하기/대여하기/북마크 버튼 영역 */}
-                    <div className="flex items-center mt-auto space-x-3 justify-center">
-                        <button 
-                            onClick={handleChatClick}
-                            className="px-5 py-2 rounded-lg bg-[#D5BAA3] text-white font-semibold hover:bg-[#C2A794] shadow-md"
-                        >
-                            북북톡
-                        </button>
-                        <button className="px-5 py-2 rounded-lg bg-[#D5BAA3] text-white font-semibold hover:bg-[#C2A794] shadow-md">
-                            수정하기
-                        </button>
-                        <button className="px-5 py-2 rounded-lg bg-[#D5BAA3] text-white font-semibold hover:bg-[#C2A794] shadow-md">
-                            대여하기
-                        </button>
+                    <div className="flex items-center mt-auto space-x-3">
                         {/* 북마크 버튼 스타일링 */}
                         <button className="w-10 h-10 flex items-center justify-center rounded-lg border border-gray-400 bg-gray-50 hover:bg-gray-100 shadow-sm">
                             <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-500" viewBox="0 0 20 20" fill="currentColor">
@@ -254,12 +244,15 @@ export default function BookDetailPage({ params }: { params: Promise<{ id: strin
                                 수정하기
                             </button>
                         )}
-                        {/* 글 작성자가 아니거나 로그인하지 않은 경우에만 대여하기 버튼 표시 */}
-                        {!isAuthor && (
-                            <button className="px-10 py-2 rounded-lg bg-[#D5BAA3] text-white font-semibold hover:bg-[#C2A794] shadow-md">
-                                대여하기
-                            </button>
-                        )}                        
+                          {/* 글 작성자가 아니거나 로그인하지 않은 경우에만 대여하기 버튼 표시 */}
+                         {!isAuthor && (
+                             <button 
+                                 onClick={() => setIsRentModalOpen(true)}
+                                 className="px-10 py-2 rounded-lg bg-[#D5BAA3] text-white font-semibold hover:bg-[#C2A794] shadow-md"
+                             >
+                                 대여하기
+                             </button>
+                         )}                        
                     </div>
                 </div>
             </div>
@@ -321,6 +314,16 @@ export default function BookDetailPage({ params }: { params: Promise<{ id: strin
                 </button>
             </div>
         </div>
+
+        {/* 대여하기 팝업 모달 */}
+        {bookDetail && (
+            <RentModal
+                isOpen={isRentModalOpen}
+                onClose={() => setIsRentModalOpen(false)}
+                bookTitle={bookDetail.bookTitle}
+                lenderNickname={bookDetail.nickname}
+            />
+        )}
     </div>
     );
 }
