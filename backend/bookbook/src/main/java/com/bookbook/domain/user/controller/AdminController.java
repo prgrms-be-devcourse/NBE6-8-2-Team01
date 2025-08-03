@@ -176,7 +176,6 @@ public class AdminController {
         );
     }
 
-    /*
     @GetMapping("/posts")
     public ResponseEntity<RsData<PageResponse<RentSimpleResponseDto>>> getPosts(
             @RequestParam(defaultValue = "1") Integer page,
@@ -189,29 +188,33 @@ public class AdminController {
         Page<RentSimpleResponseDto> rentHistoryPage = rentService.getRentsPage(pageable, status, nickname);
         PageResponse<RentSimpleResponseDto> response = PageResponse.from(rentHistoryPage, page, size);
 
-        RsData<PageResponse<RentSimpleResponseDto>> rsData = new RsData<>(
-                "200-1",
-                "%d개의 글을 발견했습니다.".formatted(rentHistoryPage.getTotalElements()),
-                response
-        );
-
-        return ResponseEntity.status(rsData.getStatusCode()).body(rsData);
+        return ResponseEntity.ok(
+                RsData.of(
+                        "200-1",
+                        "%d개의 글을 발견했습니다.".formatted(rentHistoryPage.getTotalElements()),
+                        response
+                ));
     }
 
     @PatchMapping("/rent/{id}") // /rent/{id} 경로로 patch 요청을 처리
-    public RsData<RentResponseDto> changeRentStatus(
+    public ResponseEntity<RsData<RentResponseDto>> changeRentStatus(
             @PathVariable int id,
             @RequestBody ChangeRentStatusRequestDto status
     ){ // 경로 변수로 전달된 id를 사용
         RentResponseDto rentResponseDto = rentService.modifyRentPageStatus(id, status);
 
-        return new RsData<>(
-                "200-1",
-                "%d 번 글 삭제 완료",
-                rentResponseDto
+        return ResponseEntity.ok(
+                RsData.of("200-1","%d 번 글 상태 변경 완료", rentResponseDto)
         );
     }
-     */
+
+    @DeleteMapping("/rent/{id}") // /rent/{id} 경로로 DELETE 요청을 처리
+    public ResponseEntity<RsData<Void>> deleteRentPage(@PathVariable int id){ // 경로 변수로 전달된 id를 사용
+        rentService.removeRentPage(id);
+        return ResponseEntity.ok(
+                RsData.of("200-1", "%d 번 글 삭제 완료".formatted(id))
+        );
+    }
 
     private void setCookie(
             HttpServletResponse response,
