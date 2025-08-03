@@ -45,7 +45,7 @@ const PostBasicInfo: React.FC<PostBasicInfoProps> = ({ post }) => {
         </div>
         <div className="col-span-2 md:col-span-3">
           <label className="block font-medium text-gray-700 mb-1">내용</label>
-          <p className="text-gray-900 whitespace-pre-wrap">{post.contents}</p>
+          <p className="text-gray-900 whitespace-pre-wrap break-words">{post.contents}</p>
         </div>
       </div>
     </div>
