@@ -161,14 +161,15 @@ export default function RentPage() {
     fetchBooks(currentFilters, 1);
   }, []);
 
-  // 페이지네이션 번호 생성
+  // 개선된 페이지네이션 번호 생성 (5개씩 그룹)
   const generatePageNumbers = () => {
     const { currentPage, totalPages } = pagination;
     const pageNumbers: number[] = [];
     
-    // 최대 5개 페이지 버튼 표시
-    const startPage = Math.max(1, currentPage - 2);
-    const endPage = Math.min(totalPages, startPage + 4);
+    // 현재 페이지가 속한 그룹 계산 (1-5, 6-10, 11-15...)
+    const currentGroup = Math.ceil(currentPage / 5);
+    const startPage = (currentGroup - 1) * 5 + 1;
+    const endPage = Math.min(startPage + 4, totalPages);
     
     for (let i = startPage; i <= endPage; i++) {
       pageNumbers.push(i);
@@ -310,25 +311,24 @@ export default function RentPage() {
         )}
       </div>
 
-      {/* 📄 페이지네이션 - 개선된 디자인 */}
+      {/* 📄 개선된 페이지네이션 - 첫 페이지/마지막 페이지 이동 */}
       {!loading && !error && pagination.totalPages > 1 && (
         <div className="flex justify-center items-center gap-2 mt-12">
-          {/* 맨 처음 페이지 */}
-          {pagination.currentPage > 3 && (
-            <>
-              <button
-                onClick={() => handlePageChange(1)}
-                className="w-10 h-10 flex items-center justify-center rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-100 transition-colors"
-              >
-                1
-              </button>
-              {pagination.currentPage > 4 && (
-                <span className="px-2 text-gray-400">...</span>
-              )}
-            </>
-          )}
+          {/* << (첫 페이지로) */}
+          <button
+            onClick={() => handlePageChange(1)}
+            disabled={pagination.currentPage === 1}
+            className={`w-12 h-10 flex items-center justify-center rounded-lg text-sm font-medium transition-colors ${
+              pagination.currentPage === 1
+                ? 'text-gray-300 cursor-not-allowed'
+                : 'text-gray-600 hover:bg-gray-100'
+            }`}
+            title="첫 페이지로"
+          >
+            ≪
+          </button>
 
-          {/* 이전 페이지 */}
+          {/* < (이전 페이지) */}
           <button
             onClick={() => handlePageChange(pagination.currentPage - 1)}
             disabled={pagination.currentPage === 1}
@@ -337,11 +337,12 @@ export default function RentPage() {
                 ? 'text-gray-300 cursor-not-allowed'
                 : 'text-gray-600 hover:bg-gray-100'
             }`}
+            title="이전 페이지"
           >
             ‹
           </button>
 
-          {/* 페이지 번호 */}
+          {/* 페이지 번호 (5개씩 그룹) */}
           {generatePageNumbers().map((num) => (
             <button
               key={num}
@@ -351,12 +352,13 @@ export default function RentPage() {
                   ? 'bg-blue-600 text-white'
                   : 'text-gray-600 hover:bg-gray-100'
               }`}
+              title={`${num}페이지로`}
             >
               {num}
             </button>
           ))}
 
-          {/* 다음 페이지 */}
+          {/* > (다음 페이지) */}
           <button
             onClick={() => handlePageChange(pagination.currentPage + 1)}
             disabled={pagination.currentPage === pagination.totalPages}
@@ -365,24 +367,24 @@ export default function RentPage() {
                 ? 'text-gray-300 cursor-not-allowed'
                 : 'text-gray-600 hover:bg-gray-100'
             }`}
+            title="다음 페이지"
           >
             ›
           </button>
 
-          {/* 맨 마지막 페이지 */}
-          {pagination.currentPage < pagination.totalPages - 2 && (
-            <>
-              {pagination.currentPage < pagination.totalPages - 3 && (
-                <span className="px-2 text-gray-400">...</span>
-              )}
-              <button
-                onClick={() => handlePageChange(pagination.totalPages)}
-                className="w-10 h-10 flex items-center justify-center rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-100 transition-colors"
-              >
-                {pagination.totalPages}
-              </button>
-            </>
-          )}
+          {/* >> (마지막 페이지로) */}
+          <button
+            onClick={() => handlePageChange(pagination.totalPages)}
+            disabled={pagination.currentPage === pagination.totalPages}
+            className={`w-12 h-10 flex items-center justify-center rounded-lg text-sm font-medium transition-colors ${
+              pagination.currentPage === pagination.totalPages
+                ? 'text-gray-300 cursor-not-allowed'
+                : 'text-gray-600 hover:bg-gray-100'
+            }`}
+            title="마지막 페이지로"
+          >
+            ≫
+          </button>
         </div>
       )}
 
