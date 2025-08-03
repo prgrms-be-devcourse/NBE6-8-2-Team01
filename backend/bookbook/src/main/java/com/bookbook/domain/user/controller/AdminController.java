@@ -1,11 +1,13 @@
 package com.bookbook.domain.user.controller;
 
+import com.bookbook.domain.rent.dto.RentResponseDto;
 import com.bookbook.domain.rent.service.RentService;
 import com.bookbook.domain.suspend.dto.request.UserSuspendRequestDto;
-import com.bookbook.domain.suspend.dto.response.UserResumeResponseDto;
 import com.bookbook.domain.suspend.dto.response.UserSuspendResponseDto;
 import com.bookbook.domain.suspend.entity.SuspendedUser;
 import com.bookbook.domain.suspend.service.SuspendedUserService;
+import com.bookbook.domain.user.dto.ChangeRentStatusRequestDto;
+import com.bookbook.domain.user.dto.RentSimpleResponseDto;
 import com.bookbook.domain.user.dto.UserBaseDto;
 import com.bookbook.domain.user.dto.UserLoginRequestDto;
 import com.bookbook.domain.user.dto.response.PageResponse;
@@ -84,29 +86,25 @@ public class AdminController {
             jwtProvider.deleteRefreshToken(currentUser.getUserId());
         }
 
-        RsData<Void> rsData = new RsData<>(
-                "200-1",
-                "로그아웃을 정상적으로 완료했습니다.",
-                null
+        return ResponseEntity.ok(
+                RsData.of("200-1", "로그아웃을 정상적으로 완료했습니다.")
         );
-
-        return ResponseEntity.status(rsData.getStatusCode()).body(rsData);
     }
 
     @PatchMapping("/users/suspend")
-    public ResponseEntity<RsData<UserSuspendResponseDto>> suspendUser(
+    public ResponseEntity<RsData<UserDetailResponseDto>> suspendUser(
             @RequestBody UserSuspendRequestDto requestDto
     ) {
         SuspendedUser suspendedUser = suspendedUserService.addUserAsSuspended(requestDto);
-        UserSuspendResponseDto userSuspendResponseDto = UserSuspendResponseDto.from(suspendedUser);
+        UserDetailResponseDto userSuspendResponseDto = UserDetailResponseDto.from(suspendedUser.getUser());
 
-        RsData<UserSuspendResponseDto> rsData = new RsData<>(
-                "201-1",
-                "%s님을 정지하였습니다",
-                userSuspendResponseDto
+        return ResponseEntity.ok(
+                RsData.of(
+                        "200-1",
+                        "%s님을 정지하였습니다".formatted(suspendedUser.getUser().getUsername()),
+                        userSuspendResponseDto
+                )
         );
-
-        return ResponseEntity.status(rsData.getStatusCode()).body(rsData);
     }
 
     @GetMapping("/users/{userId}")
@@ -115,29 +113,27 @@ public class AdminController {
     ) {
         UserDetailResponseDto specificUserInfo = adminService.getSpecificUserInfo(userId);
 
-        RsData<UserDetailResponseDto> rsData = new RsData<>(
-                "200-1",
-                "%d 유저의 정보를 찾았습니다.".formatted(specificUserInfo.baseResponseDto().id()),
-                specificUserInfo
-        );
-
-        return ResponseEntity.status(rsData.getStatusCode()).body(rsData);
+        return ResponseEntity.ok(
+                RsData.of(
+                        "200-1",
+                        "%s 유저의 정보를 찾았습니다.".formatted(specificUserInfo.baseResponseDto().nickname()),
+                        specificUserInfo
+                ));
     }
 
     @PatchMapping("/users/{userId}/resume")
-    public ResponseEntity<RsData<UserResumeResponseDto>> resumeUser(
+    public ResponseEntity<RsData<UserDetailResponseDto>> resumeUser(
             @PathVariable Long userId
     ) {
         User user = suspendedUserService.resumeUser(userId);
-        UserResumeResponseDto responseDto = UserResumeResponseDto.from(user);
+        UserDetailResponseDto userSuspendResponseDto = UserDetailResponseDto.from(user);
 
-        RsData<UserResumeResponseDto> rsData = new RsData<>(
-                "200-1",
-                "%d번 유저의 정지가 해제되었습니다.".formatted(user.getId()),
-                responseDto
-        );
-
-        return ResponseEntity.status(rsData.getStatusCode()).body(rsData);
+        return ResponseEntity.ok(
+                RsData.of(
+                    "200-1",
+                    "%s님을 정지하였습니다".formatted(userSuspendResponseDto.baseResponseDto().nickname()),
+                    userSuspendResponseDto
+        ));
     }
 
     @GetMapping("/users")
@@ -152,13 +148,13 @@ public class AdminController {
         Page<UserBaseDto> userPage = adminService.getFilteredUsers(pageable, status, userId);
         PageResponse<UserBaseDto> response = PageResponse.from(userPage, page, size);
 
-        RsData<PageResponse<UserBaseDto>> rsData = new RsData<>(
-                "200-1",
-                "해당 조건에 맞는 %d명의 유저를 찾았습니다.".formatted(userPage.getTotalElements()),
-                response
+        return ResponseEntity.ok(
+                RsData.of(
+                        "200-1",
+                        "해당 조건에 맞는 %d명의 유저를 찾았습니다.".formatted(userPage.getTotalElements()),
+                        response
+                )
         );
-
-        return ResponseEntity.status(rsData.getStatusCode()).body(rsData);
     }
 
     @GetMapping("/users/suspend")
@@ -171,13 +167,13 @@ public class AdminController {
         Page<UserSuspendResponseDto> historyPage = suspendedUserService.getSuspendedHistoryPage(pageable);
         PageResponse<UserSuspendResponseDto> response = PageResponse.from(historyPage, page, size);
 
-        RsData<PageResponse<UserSuspendResponseDto>> rsData = new RsData<>(
-                "200-1",
-                "%d개의 정지 이력을 발견했습니다".formatted(historyPage.getTotalElements()),
-                response
+        return ResponseEntity.ok(
+                RsData.of(
+                        "200-1",
+                        "%d개의 정지 이력을 발견했습니다".formatted(historyPage.getTotalElements()),
+                        response
+                )
         );
-
-        return ResponseEntity.status(rsData.getStatusCode()).body(rsData);
     }
 
     /*
