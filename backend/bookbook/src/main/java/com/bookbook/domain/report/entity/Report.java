@@ -28,6 +28,8 @@ public class Report extends BaseEntity {
     @LastModifiedDate
     private LocalDateTime modifiedDate;
 
+    private LocalDateTime reviewedDate;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private ReportStatus status;
@@ -40,6 +42,10 @@ public class Report extends BaseEntity {
     @JoinColumn(name = "target_user_id", nullable = false)
     private User targetUser;
 
+    @ManyToOne
+    @JoinColumn(name = "reviewer_id")
+    private User reviewer;
+
     private String reason;
 
     public Report(User reporterUser, User targetUser, String reason) {
@@ -47,5 +53,17 @@ public class Report extends BaseEntity {
         this.targetUser = targetUser;
         this.reason = reason;
         this.status = ReportStatus.PENDING;
+    }
+
+    public void markAsReviewed(User reviewer) {
+        if (status == ReportStatus.PENDING) {
+            this.status = ReportStatus.REVIEWED;
+            this.reviewer = reviewer;
+            this.reviewedDate = LocalDateTime.now();
+        }
+    }
+
+    public void markAsProcessed() {
+        this.status = ReportStatus.PROCESSED;
     }
 }
