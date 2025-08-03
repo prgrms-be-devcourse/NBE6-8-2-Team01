@@ -1,6 +1,6 @@
 package com.bookbook.domain.report.controller;
 
-import com.bookbook.domain.report.dto.ReportRequestDto;
+import com.bookbook.domain.report.dto.request.ReportRequestDto;
 import com.bookbook.domain.report.service.ReportService;
 import com.bookbook.global.exception.ServiceException;
 import com.bookbook.global.rsdata.RsData;
