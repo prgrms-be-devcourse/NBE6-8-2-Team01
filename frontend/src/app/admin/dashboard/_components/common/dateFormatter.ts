@@ -1,4 +1,6 @@
-export const formatDate = (dateString: string) => {
+export const formatDate = (dateString?: string) => {
+    if (!dateString) return "";
+
     return new Date(dateString).toLocaleString('ko-KR', {
         year: 'numeric',
         month: '2-digit',
