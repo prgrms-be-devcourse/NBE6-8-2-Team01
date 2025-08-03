@@ -1,22 +1,24 @@
 "use client";
 
-import {createContext, use, useCallback, useEffect, useState} from "react";
+import { createContext, useContext, useCallback, useEffect, useState } from "react";
 import { MenuItem } from "@/app/admin/dashboard/_types/menuItem";
 import { menuItems } from "@/app/admin/dashboard/_components/sidebar/consts";
-import ApiClient from "@/app/bookbook/user/utils/apiClient";
+import { authFetch } from "@/app/util/authFetch";
+import { dummyFunction } from "@/app/admin/dashboard/_components/common/dummyFunction";
 
 export default function useDashboard() {
     const [activeItem, setActiveItem] = useState('dashboard');
     const [currentItem, setCurrentItem] = useState<MenuItem | null>(null as unknown as MenuItem);
-    const [loading, setLoading] = useState(false);
+    const [loading, setLoading] = useState(true);
     const [error, setError] = useState(false);
-    const [responseData, setResponseData] = useState<unknown>(null as unknown);;
+    const [responseData, setResponseData] = useState<unknown>(null as unknown);
 
     const fetchData = useCallback((apiPath: string) => {
         setError(false);
-        setLoading(true);
 
-        ApiClient(apiPath, { method: "GET" }).then(data => {
+        authFetch(apiPath, { method: "GET" }, dummyFunction)
+            .then(response => response.json())
+            .then(data => {
                 if (data) {
                     console.log('데이터 새로고침:', data);
                     setResponseData(data.data);
@@ -27,12 +29,14 @@ export default function useDashboard() {
                 setResponseData(null);
                 setError(true);
             })
-            .finally(() => {
-                setLoading(false);
-            });
+            .finally(() => {setLoading(false)}
+        );
     }, []);
 
     useEffect(() => {
+        setResponseData(null as unknown);
+        setLoading(true);
+
         const findMenuItem = (items: MenuItem[], id: string): MenuItem | null => {
             for (const item of items) {
                 if (item.id === id) return item;
@@ -68,7 +72,6 @@ export default function useDashboard() {
         currentItem,
         setCurrentItem,
         loading,
-        setLoading,
         responseData,
         setResponseData,
         refreshData,
@@ -92,7 +95,7 @@ export function DashboardProvider({
 }
 
 export function useDashBoardContext() {
-    const dashBoardState = use(DashBoardContext);
+    const dashBoardState = useContext(DashBoardContext);
 
     if (dashBoardState === null) throw new Error("DashBoardContext is not found");
 

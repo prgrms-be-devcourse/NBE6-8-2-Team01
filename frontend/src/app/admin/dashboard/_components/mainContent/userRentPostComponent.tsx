@@ -7,9 +7,10 @@ import { ContentComponentProps } from "./baseContentComponentProps";
 import { FilterState, PostFilterContainer } from "@/app/admin/dashboard/_components/post/filter";
 import { useDashBoardContext } from "@/app/admin/dashboard/_hooks/useDashboard";
 import Link from "next/link";
-import apiClient from "@/app/bookbook/user/utils/apiClient";
-import {formatDate} from "@/app/admin/dashboard/_components/common/dateFormatter";
+import { formatDate } from "@/app/admin/dashboard/_components/common/dateFormatter";
 import PostDetailWithUserModal from "../post/manage/postDetailWithUserModal";
+import { authFetch } from "@/app/util/authFetch";
+import { dummyFunction } from "@/app/admin/dashboard/_components/common/dummyFunction";
 
 interface ManagementButtonProps {
     rentPost: RentPostSimpleResponseDto;
@@ -73,13 +74,13 @@ export function UserRentPostComponent({ data, onRefresh }: ContentComponentProps
     const handleManageClick = async (post : RentPostSimpleResponseDto) => {
         console.log(`관리 버튼 클릭: 멤버 ID - ${post.id}`);
 
-        apiClient(`/bookbook/rent/${post.id}`, {
-            method: "GET",
-        }).then((data) => {
-            console.log(data.data);
-            setSelectedRentPost(data.data as RentPostDetailResponseDto);
-            setSelectedRentPostId(post.id);
-        });
+        const response = await authFetch(`/bookbook/rent/${post.id}`, {method: "GET"}, dummyFunction)
+        const data = JSON.parse(await response.text());
+
+        if (!data) return;
+
+        setSelectedRentPost(data as RentPostDetailResponseDto);
+        setSelectedRentPostId(post.id);
 
         setIsModalOpen(true);
     };
@@ -243,7 +244,6 @@ export function UserRentPostComponent({ data, onRefresh }: ContentComponentProps
             {/* 멤버 상세 정보 모달 */}
             {selectedRentPost && (
                 <PostDetailWithUserModal
-                    id={selectedRentPostId}
                     post={selectedRentPost}
                     isOpen={isModalOpen}
                     onClose={handleModalClose}
