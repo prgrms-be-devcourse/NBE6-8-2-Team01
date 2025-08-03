@@ -23,7 +23,7 @@ public record RentSimpleResponseDto(
         return RentSimpleResponseDto.builder()
                 .id(rent.getId())
                 .lenderUserId(rent.getLenderUserId())
-                .status(rent.getRentStatus().name()) // enum을 String으로 변환
+                .status(rent.getRentStatus())
                 .bookCondition(rent.getBookCondition())
                 .bookTitle(rent.getBookTitle())
                 .author(rent.getAuthor())
