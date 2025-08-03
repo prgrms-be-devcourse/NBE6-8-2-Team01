@@ -14,19 +14,23 @@ public record ReportDetailResponseDto(
         @NonNull ReportStatus status,
         @NonNull Long reporterUserId,
         @NonNull Long targetUserId,
-        @NonNull Long reviewerId,
+        Long closerId,
         @NonNull String reason,
         @NonNull LocalDateTime reportedDate,
         @NonNull LocalDateTime modifiedDate,
         @NonNull LocalDateTime reviewedDate
 ){
     public static ReportDetailResponseDto from(Report report){
+        Long closerId = report.getCloser() == null
+                ? null
+                : report.getCloser().getId();
+
         return ReportDetailResponseDto.builder()
                 .id(report.getId())
                 .status(report.getStatus())
                 .reporterUserId(report.getReporterUser().getId())
                 .targetUserId(report.getTargetUser().getId())
-                .reviewerId(report.getReviewer().getId())
+                .closerId(closerId)
                 .reason(report.getReason())
                 .reportedDate(report.getCreatedDate())
                 .modifiedDate(report.getModifiedDate())

@@ -55,12 +55,10 @@ public class ReportService {
     }
 
     @Transactional
-    public ReportDetailResponseDto getReportDetail(Long reportId, Long adminUserId) {
+    public ReportDetailResponseDto getReportDetail(Long reportId) {
         Report report = findReportById(reportId);
 
-        User admin = findAdminById(adminUserId);
-
-        report.markAsReviewed(admin);
+        report.markAsReviewed();
 
         return ReportDetailResponseDto.from(report);
     }
@@ -75,15 +73,13 @@ public class ReportService {
             throw new ServiceException("422-1", "해당 신고를 먼저 확인해야 합니다.");
         }
 
-        if (!report.getReviewer().getId().equals(userId)) {
-            throw new ServiceException("403-1", "신고를 확인한 관리자가 처리해야 합니다.");
-        }
-
         if (status == ReportStatus.PROCESSED) {
             throw new ServiceException("409-1", "해당 신고는 이미 처리가 완료되었습니다.");
         }
 
-        report.markAsProcessed();
+        User closerAdmin = findAdminById(userId);
+        // 신고 이슈를 닫은 사람을 표기할 수 있도록
+        report.markAsProcessed(closerAdmin);
     }
 
     private User findAdminById(Long adminId) {

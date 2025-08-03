@@ -43,8 +43,8 @@ public class Report extends BaseEntity {
     private User targetUser;
 
     @ManyToOne
-    @JoinColumn(name = "reviewer_id")
-    private User reviewer;
+    @JoinColumn(name = "closer_id")
+    private User closer;
 
     private String reason;
 
@@ -55,15 +55,15 @@ public class Report extends BaseEntity {
         this.status = ReportStatus.PENDING;
     }
 
-    public void markAsReviewed(User reviewer) {
+    public void markAsReviewed() {
         if (status == ReportStatus.PENDING) {
             this.status = ReportStatus.REVIEWED;
-            this.reviewer = reviewer;
             this.reviewedDate = LocalDateTime.now();
         }
     }
 
-    public void markAsProcessed() {
+    public void markAsProcessed(User closer) {
         this.status = ReportStatus.PROCESSED;
+        this.closer = closer;
     }
 }
