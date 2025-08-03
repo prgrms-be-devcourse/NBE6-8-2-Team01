@@ -45,12 +45,9 @@ public class ReportAdminController {
         );
     }
 
-    @GetMapping("/{reportId}")
-    public ResponseEntity<RsData<ReportDetailResponseDto>> getReportDetail(
-            @PathVariable Long reportId,
-            @AuthenticationPrincipal CustomOAuth2User adminUser
-    ) {
-        ReportDetailResponseDto reportDetail = reportService.getReportDetail(reportId, adminUser.getUserId());
+    @GetMapping("/{reportId}/review")
+    public ResponseEntity<RsData<ReportDetailResponseDto>> getReportDetail(@PathVariable Long reportId) {
+        ReportDetailResponseDto reportDetail = reportService.getReportDetail(reportId);
 
         return ResponseEntity.ok(
                 RsData.of(
@@ -61,7 +58,7 @@ public class ReportAdminController {
         );
     }
 
-    @PatchMapping("/{reportId}/processed")
+    @PatchMapping("/{reportId}/process")
     public ResponseEntity<RsData<Void>> processReport(
             @PathVariable Long reportId,
             @AuthenticationPrincipal CustomOAuth2User adminUser
