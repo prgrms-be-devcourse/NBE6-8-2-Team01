@@ -11,6 +11,7 @@ export const getRentStatus = (status: rentStatus): string => {
 }
 
 export interface RentPostDetailResponseDto {
+  id: number;
   lenderUserId: number;
   bookCondition: string;
   bookImage: string;
