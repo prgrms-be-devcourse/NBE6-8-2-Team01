@@ -4,6 +4,7 @@ import com.bookbook.domain.suspend.dto.request.UserSuspendRequestDto;
 import com.bookbook.domain.suspend.dto.response.UserSuspendResponseDto;
 import com.bookbook.domain.suspend.entity.SuspendedUser;
 import com.bookbook.domain.suspend.repository.SuspendedUserRepository;
+import com.bookbook.domain.user.enums.UserStatus;
 import com.bookbook.domain.user.service.AdminService;
 import com.bookbook.domain.user.entity.User;
 import com.bookbook.global.exception.ServiceException;
@@ -43,6 +44,9 @@ public class SuspendedUserService {
     @Transactional
     public User resumeUser(Long userId) {
         User user = adminService.findByUserId(userId);
+        if (user.getUserStatus() == UserStatus.ACTIVE) {
+            throw new ServiceException("409-1", "해당 유저의 정지가 이미 해제되어 있습니다");
+        }
         user.resume();
         return user;
     }
