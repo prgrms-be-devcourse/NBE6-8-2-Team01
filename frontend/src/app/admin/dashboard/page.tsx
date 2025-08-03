@@ -21,13 +21,11 @@ export default function AdminPage() {
 
   const handleLogout = () => {
     console.log("로그아웃 처리");
-    _logout(() => {
-      alert("로그아웃 완료");
-    });
+    _logout(() => {});
   };
 
   return (
-    <div className="flex min-h-screen bg-gray-100">
+    <div className="flex h-screen bg-gray-100">
       <SideBar
         expandedItems={expandedItems}
         onToggle={handleToggle}

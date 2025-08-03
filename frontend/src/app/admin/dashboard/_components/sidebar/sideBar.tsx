@@ -95,7 +95,7 @@ export function SideBar(props: SidebarProps) {
   const { loginMember } = useAuthContext();
 
   return (
-    <div className="min-w-50 w-64 bg-slate-700 min-h-screen flex flex-col">
+    <div className="min-w-64 bg-slate-700 h-screen flex overflow-hidden flex-col">
       {/* 헤더 영역 */}
       <div className="p-6">
         <h1 className="flex justify-between text-xl font-bold text-white">

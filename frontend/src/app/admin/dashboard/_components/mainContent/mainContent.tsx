@@ -5,7 +5,7 @@ export function MainContent() {
   const { currentItem, loading } = useDashBoardContext();
 
   return (
-    <div className="flex-1 bg-gray-50">
+    <div className="flex-1 bg-gray-50 h-screen overflow-y-auto">
       <header className="bg-white shadow-sm border-b">
         <div className="px-6 py-4">
           <h2 className="text-2xl font-semibold text-gray-800">
