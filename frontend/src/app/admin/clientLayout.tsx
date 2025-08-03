@@ -9,7 +9,7 @@ export default function ClientLayout({
 }>) {
   return (
     <AdminGuard>
-        <main className="flex-1 flex flex-col">{children}</main>
+      <main className="flex-1 flex flex-col">{children}</main>
     </AdminGuard>
   );
 }
