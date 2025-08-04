@@ -25,9 +25,9 @@ export const LoginModalProvider: React.FC<LoginModalProviderProps> = ({ children
 
     return (
         <LoginModalContext.Provider value={{ isLoginModalOpen, openLoginModal, closeLoginModal }}>
-    {children}
-    </LoginModalContext.Provider>
-);
+            {children}
+        </LoginModalContext.Provider>
+    );
 };
 
 // 컨텍스트 훅
