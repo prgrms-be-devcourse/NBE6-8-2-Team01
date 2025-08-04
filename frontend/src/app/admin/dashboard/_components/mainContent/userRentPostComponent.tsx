@@ -33,7 +33,6 @@ export function UserRentPostComponent({ data, onRefresh }: ContentComponentProps
     const [selectedRentPost, setSelectedRentPost] = useState<RentPostDetailResponseDto>(
         null as unknown as RentPostDetailResponseDto
     );
-    const [selectedRentPostId, setSelectedRentPostId] = useState(0);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const { currentItem, fetchData } = useDashBoardContext();
 
@@ -80,7 +79,6 @@ export function UserRentPostComponent({ data, onRefresh }: ContentComponentProps
         if (!data) return;
 
         setSelectedRentPost(data as RentPostDetailResponseDto);
-        setSelectedRentPostId(post.id);
 
         setIsModalOpen(true);
     };
