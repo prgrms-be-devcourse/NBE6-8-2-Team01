@@ -5,8 +5,13 @@ import { useRouter } from 'next/navigation';
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
+// 새로운 모달 컴포넌트 import
+import WithdrawalModal from '../../../components/WithdrawalModal';
 import AddressSelectionPopup from '../../../components/AddressSelectionPopup';
 
+
+// 인터페이스와 기타 함수는 동일합니다.
+// ... (이전 코드와 동일)
 interface UserResponseDto {
     id: number;
     username: string;
@@ -35,6 +40,10 @@ export default function MyPage() {
     const debounceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
     const [isPopupOpen, setIsPopupOpen] = useState(false);
+
+    // 회원 탈퇴 모달 상태를 위한 state 추가
+    const [isWithdrawalModalOpen, setIsWithdrawalModalOpen] = useState(false);
+
 
     useEffect(() => {
         const fetchUserData = async () => {
@@ -234,53 +243,62 @@ export default function MyPage() {
         }
     };
 
-    const handleDeactivateAccount = (event: React.MouseEvent<HTMLAnchorElement>) => {
+    // 회원 탈퇴 버튼 클릭 시 모달을 여는 핸들러
+    const handleOpenWithdrawalModal = (event: React.MouseEvent<HTMLAnchorElement>) => {
         event.preventDefault();
+        setIsWithdrawalModalOpen(true);
+    };
 
-        if (window.confirm('정말로 계정을 비활성화(회원 탈퇴) 하시겠습니까? 이 작업은 되돌릴 수 없습니다.')) {
-            const deletePromise = new Promise(async (resolve, reject) => {
-                try {
-                    const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/bookbook/users/me`, {
-                        method: 'DELETE',
-                    });
+    // 회원 탈퇴 모달에서 취소 버튼 클릭 시 모달을 닫는 핸들러
+    const handleCloseWithdrawalModal = () => {
+        setIsWithdrawalModalOpen(false);
+    };
 
-                    if (!response.ok) {
-                        let errorMessage = '회원 탈퇴 실패';
-                        try {
-                            const errorData = await response.json();
-                            errorMessage = errorData.message || errorMessage;
-                        } catch {
-                        }
-                        reject(new Error(errorMessage));
-                        return;
+    // 회원 탈퇴 모달에서 확인 버튼 클릭 시 실제 탈퇴 로직 실행
+    const handleConfirmDeactivateAccount = () => {
+        // 모달 닫기
+        handleCloseWithdrawalModal();
+
+        const deletePromise = new Promise(async (resolve, reject) => {
+            try {
+                const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/bookbook/users/me`, {
+                    method: 'DELETE',
+                });
+
+                if (!response.ok) {
+                    let errorMessage = '회원 탈퇴 실패';
+                    try {
+                        const errorData = await response.json();
+                        errorMessage = errorData.message || errorMessage;
+                    } catch {
                     }
-
-                    resolve(response);
-                } catch (error) {
-                    reject(error);
+                    reject(new Error(errorMessage));
+                    return;
                 }
-            });
 
-            toast.promise(
-                deletePromise,
-                {
-                    pending: '회원 탈퇴를 진행 중입니다...',
-                    success: '북북과 함께해주셔서 감사합니다.',
-                    error: {
-                        render({ data }) {
-                            const errorMessage = data instanceof Error ? data.message : '알 수 없는 오류가 발생했습니다.';
-                            console.error('회원 탈퇴 중 오류:', data);
-                            return `❌ 회원 탈퇴 실패: ${errorMessage}`;
-                        }
+                resolve(response);
+            } catch (error) {
+                reject(error);
+            }
+        });
+
+        toast.promise(
+            deletePromise,
+            {
+                pending: '회원 탈퇴를 진행 중입니다...',
+                success: '북북과 함께해주셔서 감사합니다.',
+                error: {
+                    render({ data }) {
+                        const errorMessage = data instanceof Error ? data.message : '알 수 없는 오류가 발생했습니다.';
+                        console.error('회원 탈퇴 중 오류:', data);
+                        return `❌ 회원 탈퇴 실패: ${errorMessage}`;
                     }
                 }
-            ).then(() => {
-                // 토스트 메시지 표시 후 바로 페이지 이동
-                router.push('/api/v1/bookbook/users/logout');
-            }).catch(() => {
-                // 에러 발생 시 페이지 이동을 막습니다.
-            });
-        }
+            }
+        ).then(() => {
+            router.push('/api/v1/bookbook/users/logout');
+        }).catch(() => {
+        });
     };
 
     const handleOpenPopup = () => {
@@ -462,7 +480,7 @@ export default function MyPage() {
                     <a
                         href="#"
                         className="text-gray-600 hover:text-gray-800 transition-colors"
-                        onClick={handleDeactivateAccount}
+                        onClick={handleOpenWithdrawalModal} // 모달을 여는 함수로 변경
                     >
                         회원탈퇴 &gt;
                     </a>
@@ -473,6 +491,12 @@ export default function MyPage() {
                 isOpen={isPopupOpen}
                 onClose={handleClosePopup}
                 onSelectAddress={handleSelectAddress}
+            />
+            {/* 커스텀 회원 탈퇴 모달 컴포넌트 추가 */}
+            <WithdrawalModal
+                isOpen={isWithdrawalModalOpen}
+                onClose={handleCloseWithdrawalModal}
+                onConfirm={handleConfirmDeactivateAccount}
             />
         </div>
     );
