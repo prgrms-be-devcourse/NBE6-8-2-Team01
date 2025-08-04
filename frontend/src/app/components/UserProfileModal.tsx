@@ -26,7 +26,7 @@ interface Book {
 
 const UserProfileModal = ({ userId, isOpen, onClose }: UserProfileModalProps) => {
     const [user, setUser] = useState<UserProfile | null>(null);
-    const [books, setBooks] = useState<Book[]>([]);
+    const [books, setBooks] = useState<Book[]>([]); // 초기값을 빈 배열로 설정
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [isReportModalOpen, setIsReportModalOpen] = useState(false);
@@ -39,18 +39,23 @@ const UserProfileModal = ({ userId, isOpen, onClose }: UserProfileModalProps) =>
             setIsLoading(true);
             setError(null);
             try {
+                // API 호출: 사용자 프로필 정보 및 등록된 책 목록
                 const [profileResponse, booksResponse] = await Promise.all([
                     fetch(`/api/v1/bookbook/users/${userId}`),
                     fetch(`/api/v1/user/${userId}/lendlist`)
                 ]);
+
                 if (!profileResponse.ok) {
                     throw new Error('프로필 정보를 불러오는 데 실패했습니다.');
                 }
                 if (!booksResponse.ok) {
                     throw new Error('등록된 책 목록을 불러오는 데 실패했습니다.');
                 }
+
                 const profileData = await profileResponse.json();
                 const booksData = await booksResponse.json();
+
+                // 프로필 정보 설정
                 setUser({
                     userId: profileData.data.userId,
                     nickname: profileData.data.nickname,
@@ -59,13 +64,18 @@ const UserProfileModal = ({ userId, isOpen, onClose }: UserProfileModalProps) =>
                 });
 
                 const backendBaseUrl = 'http://localhost:8080';
-                const fetchedBooks: Book[] = booksData.content.map((item: { id: number, bookTitle: string, bookImage: string, rentStatus: string }) => ({
-                    id: item.id,
-                    title: item.bookTitle,
-                    imageUrl: `${backendBaseUrl}${item.bookImage}` || `https://placehold.co/100x150/e2e8f0/64748b?text=Book`,
-                    status: item.rentStatus === 'LOANED' ? 'borrowed' : 'available',
-                }));
+
+                // 책 목록 데이터 설정: `booksData.data.content`를 안전하게 참조
+                const fetchedBooks: Book[] = booksData?.data?.content
+                    ?.map((item: { id: number, bookTitle: string, bookImage: string, rentStatus: string }) => ({
+                        id: item.id,
+                        title: item.bookTitle,
+                        imageUrl: `${backendBaseUrl}${item.bookImage}` || `https://placehold.co/100x150/e2e8f0/64748b?text=Book`,
+                        status: item.rentStatus === 'LOANED' ? 'borrowed' : 'available',
+                    })) || [];
+
                 setBooks(fetchedBooks);
+
             } catch (e: unknown) {
                 if (e instanceof Error) {
                     setError(e.message);
@@ -119,22 +129,25 @@ const UserProfileModal = ({ userId, isOpen, onClose }: UserProfileModalProps) =>
                         {error && <p className="text-center text-red-500">오류 발생: {error}</p>}
                         {!isLoading && !error && (
                             <ul className="space-y-3 max-h-64 overflow-y-auto">
-                                {books.map((book) => (
-                                    <li key={book.id} className="flex items-center p-3 border border-gray-200 rounded-lg">
-                                        <Image src={book.imageUrl} alt="책 표지 이미지" width={70} height={100} className="object-cover rounded-md mr-4" />
-                                        <div className="flex-1">
-                                            <p className="font-bold text-gray-800">{book.title}</p>
-                                            {book.status === 'available' ? (
-                                                <span className="text-xs font-semibold px-2 py-1 rounded-full mt-1 inline-block bg-blue-100 text-blue-800">대여 가능</span>
-                                            ) : (
-                                                <span className="text-xs font-semibold px-2 py-1 rounded-full mt-1 inline-block bg-pink-100 text-pink-800">대여 중</span>
-                                            )}
-                                        </div>
-                                    </li>
-                                ))}
+                                {books.length > 0 ? (
+                                    books.map((book) => (
+                                        <li key={book.id} className="flex items-center p-3 border border-gray-200 rounded-lg">
+                                            <Image src={book.imageUrl} alt="책 표지 이미지" width={70} height={100} className="object-cover rounded-md mr-4" />
+                                            <div className="flex-1">
+                                                <p className="font-bold text-gray-800">{book.title}</p>
+                                                {book.status === 'available' ? (
+                                                    <span className="text-xs font-semibold px-2 py-1 rounded-full mt-1 inline-block bg-blue-100 text-blue-800">대여 가능</span>
+                                                ) : (
+                                                    <span className="text-xs font-semibold px-2 py-1 rounded-full mt-1 inline-block bg-pink-100 text-pink-800">대여 중</span>
+                                                )}
+                                            </div>
+                                        </li>
+                                    ))
+                                ) : (
+                                    <p className="text-center text-gray-500">등록된 책이 없습니다.</p>
+                                )}
                             </ul>
                         )}
-                        {!isLoading && !error && books.length === 0 && (<p className="text-center text-gray-500">등록된 책이 없습니다.</p>)}
                     </div>
                 </div>
             </div>
