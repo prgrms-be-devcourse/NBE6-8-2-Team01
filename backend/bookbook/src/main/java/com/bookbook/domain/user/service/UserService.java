@@ -197,6 +197,10 @@ public class UserService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ServiceException("404-USER-NOT-FOUND", "사용자를 찾을 수 없습니다."));
 
+        if (user.getRole() == Role.ADMIN) {
+            return UserProfileResponseDto.from(user, 5.0, 0);
+        }
+        
         Optional<Double> averageRating = reviewRepository.findAverageRatingByRevieweeId(userId);
         long mannerScoreCount = reviewRepository.countByRevieweeId(userId);
 
