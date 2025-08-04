@@ -2,15 +2,18 @@
 
 import React, { useCallback, useEffect, useState } from "react";
 import { DataTable, ColumnDefinition } from "../common/Table";
-import {getRentStatus, RentPostDetailResponseDto, RentPostSimpleResponseDto, rentStatus} from "../../_types/rentPost";
 import { ContentComponentProps } from "./baseContentComponentProps";
 import { FilterState, PostFilterContainer } from "@/app/admin/dashboard/_components/post/filter";
 import { useDashBoardContext } from "@/app/admin/dashboard/_hooks/useDashboard";
 import Link from "next/link";
 import { formatDate } from "@/app/admin/dashboard/_components/common/dateFormatter";
 import PostDetailWithUserModal from "../post/manage/postDetailWithUserModal";
-import { authFetch } from "@/app/util/authFetch";
-import { dummyFunction } from "@/app/admin/dashboard/_components/common/dummyFunction";
+import {
+    getRentStatus,
+    RentPostDetailResponseDto,
+    RentPostSimpleResponseDto,
+    rentStatus
+} from "../../_types/rentPost";
 
 interface ManagementButtonProps {
     rentPost: RentPostSimpleResponseDto;
@@ -73,12 +76,17 @@ export function UserRentPostComponent({ data, onRefresh }: ContentComponentProps
     const handleManageClick = async (post : RentPostSimpleResponseDto) => {
         console.log(`관리 버튼 클릭: 멤버 ID - ${post.id}`);
 
-        const response = await authFetch(`/bookbook/rent/${post.id}`, {method: "GET"}, dummyFunction)
-        const data = JSON.parse(await response.text());
+        const response = await fetch(`/api/v1/admin/rent/${post.id}`, {
+            method: "GET",
+            headers: {
+                "Content-Type": "application/json; charset=utf-8",
+            }
+        })
+        const data = await response.json()
 
         if (!data) return;
 
-        setSelectedRentPost(data as RentPostDetailResponseDto);
+        setSelectedRentPost(data.data as RentPostDetailResponseDto);
 
         setIsModalOpen(true);
     };

@@ -3,8 +3,6 @@
 import { createContext, useContext, useCallback, useEffect, useState } from "react";
 import { MenuItem } from "@/app/admin/dashboard/_types/menuItem";
 import { menuItems } from "@/app/admin/dashboard/_components/sidebar/consts";
-import { authFetch } from "@/app/util/authFetch";
-import { dummyFunction } from "@/app/admin/dashboard/_components/common/dummyFunction";
 
 export default function useDashboard() {
     const [activeItem, setActiveItem] = useState('dashboard');
@@ -16,7 +14,7 @@ export default function useDashboard() {
     const fetchData = useCallback((apiPath: string) => {
         setError(false);
 
-        authFetch(apiPath, { method: "GET" }, dummyFunction)
+        fetch(apiPath)
             .then(response => response.json())
             .then(data => {
                 if (data) {

@@ -6,8 +6,6 @@ import UserBasicInfo from "./userBasicInfo";
 import UserStatusInfo from "./userStatusInfo";
 import UserJoinInfo from "./userJoinInfo";
 import SuspendForm from "./suspendForm";
-import { authFetch } from "@/app/util/authFetch";
-import { dummyFunction } from "@/app/admin/dashboard/_components/common/dummyFunction";
 
 interface UserDetailModalProps {
   user: UserDetailResponseDto;
@@ -52,7 +50,7 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
   };
 
   const doRequest = async (path: string, requestInit?: RequestInit) => {
-    const response = await authFetch(path, {method: "PATCH", ...requestInit}, dummyFunction);
+    const response = await fetch(path, {method: "PATCH", ...requestInit});
     return await response.json().catch(error => {
       console.error("API 요청 실패:", error);
       throw error;
