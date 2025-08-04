@@ -12,16 +12,16 @@ interface PostDetailModalProps {
   isOpen: boolean;
   onClose: () => void;
   onRefresh?: () => void;
-  onUserDetailClick: (userId: number) => void;
+  onUserDetailClick: () => void;
 }
 
-const PostDetailModal: React.FC<PostDetailModalProps> = ({
+export function PostDetailModal({
   post,
   isOpen,
   onClose,
   onRefresh,
   onUserDetailClick,
-}) => {
+} : PostDetailModalProps)  {
   const [currentPost, setCurrentPost] = useState(post);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [confirmAction, setConfirmAction] = useState<"delete" | "updateStatus" | null>(null);
@@ -34,7 +34,7 @@ const PostDetailModal: React.FC<PostDetailModalProps> = ({
       "px-4 py-2 text-sm font-medium text-white bg-gray-600 border border-transparent rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
       : "px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
 
-  if (!isOpen || !currentPost) return null;
+  if (!isOpen || !currentPost) return <></>;
 
   const handleDeleteClick = () => {
     setConfirmAction("delete");
@@ -46,10 +46,6 @@ const PostDetailModal: React.FC<PostDetailModalProps> = ({
     setConfirmAction("updateStatus");
     setShowConfirmModal(true);
   };
-
-  const handleUserDetailClick = () => {
-    onUserDetailClick(currentPost.lenderUserId);
-  }
 
   const handlePostChangeStatus = async () => {
     const body = {
@@ -177,7 +173,7 @@ const PostDetailModal: React.FC<PostDetailModalProps> = ({
           <div className="flex items-center justify-between p-4 border-t bg-gray-50 flex-shrink-0">
             {/* 작성자 정보 버튼 */}
             <button
-              onClick={handleUserDetailClick}
+              onClick={onUserDetailClick}
               className="px-4 py-2 text-sm font-medium text-blue-700 bg-blue-50 border border-blue-200 rounded-md hover:bg-blue-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
             >
               작성자 정보 보기
@@ -222,5 +218,3 @@ const PostDetailModal: React.FC<PostDetailModalProps> = ({
     </>
   );
 };
-
-export default PostDetailModal;

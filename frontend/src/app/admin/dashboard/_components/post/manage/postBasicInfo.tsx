@@ -17,9 +17,9 @@ const PostBasicInfo: React.FC<PostBasicInfoProps> = ({ post }) => {
         </div>
         <div>
           <label className="block font-medium text-gray-700 mb-1">
-            작성자명
+            작성자 ID
           </label>
-          <p className="text-gray-900">{post.name}</p>
+          <p className="text-gray-900">{post.lenderUserId}</p>
         </div>
         <div>
           <label className="block font-medium text-gray-700 mb-1">카테고리</label>
