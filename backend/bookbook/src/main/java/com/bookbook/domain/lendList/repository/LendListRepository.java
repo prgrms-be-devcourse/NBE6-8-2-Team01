@@ -11,9 +11,10 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface LendListRepository extends JpaRepository<Rent, Long> {
     
-    Page<Rent> findByLenderUserId(Long lenderUserId, Pageable pageable);
+    @Query("SELECT r FROM Rent r WHERE r.lenderUserId = :lenderUserId AND r.rentStatus != 'DELETED'")
+    Page<Rent> findByLenderUserId(@Param("lenderUserId") Long lenderUserId, Pageable pageable);
     
-    @Query("SELECT r FROM Rent r WHERE r.lenderUserId = :lenderUserId AND " +
+    @Query("SELECT r FROM Rent r WHERE r.lenderUserId = :lenderUserId AND r.rentStatus != 'DELETED' AND " +
            "(LOWER(r.bookTitle) LIKE LOWER(CONCAT('%', :searchKeyword, '%')) OR " +
            "LOWER(r.author) LIKE LOWER(CONCAT('%', :searchKeyword, '%')) OR " +
            "LOWER(r.publisher) LIKE LOWER(CONCAT('%', :searchKeyword, '%')) OR " +
