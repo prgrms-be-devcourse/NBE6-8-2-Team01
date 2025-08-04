@@ -40,7 +40,7 @@ public class LendListController {
             @PathVariable Long userId,
             @RequestParam(required = false) String search,
             @PageableDefault(size = 10, sort = "createdDate", direction = Sort.Direction.DESC) Pageable pageable) {
-        
+
         Page<LendListResponseDto> lendList;
         if (search != null && !search.trim().isEmpty()) {
             lendList = lendListService.getLendListByUserIdAndSearch(userId, search, pageable);
@@ -77,10 +77,19 @@ public class LendListController {
      */
     @PostMapping("/{rentId}/review")
     public ResponseEntity<RsData<ReviewResponseDto>> createLenderReview(
+            // @PathVariable - URL의 {userId} 값 (리뷰 작성자 = 대여자)
             @PathVariable Long userId,
+            // @PathVariable - URL의 {rentId} 값 (어떤 대여 건에 대한 리뷰인지)
             @PathVariable Integer rentId,
+            // @RequestBody - HTTP 요청 본문의 JSON 데이터를 객체로 변환
+            // 클라이언트가 보낸 JSON 데이터가 ReviewCreateRequestDto로 변환됨
             @RequestBody ReviewCreateRequestDto request) {
+        
+        // 리뷰 서비스의 대여자 리뷰 생성 메서드 호출
+        // 대여자(책을 빌려준 사람)가 대여받은 사람(책을 빌린 사람)을 평가
         ReviewResponseDto review = reviewService.createLenderReview(userId, rentId, request);
+        
+        // 생성된 리뷰 정보와 함께 성공 응답 반환
         return ResponseEntity.ok(RsData.of("200", "리뷰를 작성했습니다.", review));
     }
 }

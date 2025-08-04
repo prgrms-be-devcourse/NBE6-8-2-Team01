@@ -57,7 +57,7 @@ public class ReviewService {
             throw new IllegalArgumentException("본인이 작성한 게시글에만 리뷰를 작성할 수 있습니다.");
         }
 
-        // 공통 검증 로직 호출
+        // 공통 검증 로직 호출 - 중복 리뷰, 평점 유효성, 거래 완료 상태 확인
         validateReviewCreation(rent, lenderId, rentId, request.getRating());
 
         // 빌려간 사람 ID 조회
@@ -67,13 +67,19 @@ public class ReviewService {
                 .findFirst()
                 .orElseThrow(() -> new IllegalArgumentException("완료된 대여 기록을 찾을 수 없습니다."));
         
+        // 빌려간 사람의 ID 추출
         Long borrowerId = rentList.getBorrowerUser().getId();
         
-        // 리뷰 생성
+        // 리뷰 엔티티 생성 - 생성자를 통해 모든 정보 설정
+        // "LENDER_TO_BORROWER": 대여자가 대여받은 사람을 평가하는 리뷰
         Review review = new Review(rentId, lenderId, borrowerId, request.getRating(), "LENDER_TO_BORROWER");
+        //                         ↑       ↑         ↑           ↑                     ↑
+        //                      대여글ID  작성자ID   대상자ID     평점                리뷰타입
+        
+        // 데이터베이스에 저장 - JPA가 INSERT 쿼리 실행
         Review savedReview = reviewRepository.save(review);
         
-        // 사용자 평점 업데이트
+        // 대상자(대여받은 사람)의 평균 평점 업데이트
         updateUserRating(borrowerId);
 
         // 추가 정보 조회
@@ -147,18 +153,20 @@ public class ReviewService {
      * @param rating 평점
      */
     private void validateReviewCreation(Rent rent, Long reviewerId, Integer rentId, Integer rating) {
-        // 거래가 완료된 상태인지 확인
+        // 거래 완료 상태 확인 - FINISHED 상태일 때만 리뷰 작성 가능
         if (rent.getRentStatus() != RentStatus.FINISHED) {
             throw new IllegalStateException("거래가 완료된 경우에만 리뷰를 작성할 수 있습니다.");
         }
         
-        // 이미 리뷰를 작성했는지 확인
+        // 중복 리뷰 방지 - 같은 사람이 같은 대여 건에 이미 리뷰 작성했는지 확인
         Optional<Review> existingReview = reviewRepository.findByRentIdAndReviewerId(rentId, reviewerId);
+        // Optional.isPresent(): Optional에 값이 있으면 true (= 이미 리뷰 존재)
         if (existingReview.isPresent()) {
             throw new IllegalStateException("이미 리뷰를 작성하셨습니다.");
         }
         
-        // 별점 유효성 검사
+        // 평점 유효성 검사 - 1~5점 범위 확인
+        // 비즈니스 룰: 별점은 1점(최저) ~ 5점(최고) 사이만 허용
         if (rating < 1 || rating > 5) {
             throw new IllegalArgumentException("별점은 1점부터 5점까지 입력 가능합니다.");
         }
