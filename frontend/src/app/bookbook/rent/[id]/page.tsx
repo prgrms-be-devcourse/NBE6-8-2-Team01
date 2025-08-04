@@ -246,8 +246,8 @@ export default function BookDetailPage({ params }: { params: Promise<{ id: strin
                     {/* 북북톡/수정하기/대여하기/북마크 버튼 영역 */}
                     <div className="flex items-center mt-auto space-x-3">
 
-                        {/* 로그인 했을 때, 찜 버튼 */}
-                        {user && (
+                        {/* 로그인 했고, 글 작성자가 아닌경우에만만 찜 버튼 */}
+                        {user && !isAuthor && (
                             <button className="w-10 h-10 flex items-center justify-center rounded-lg border border-gray-400 bg-gray-50 hover:bg-gray-100 shadow-sm"
                                 // onClick={} 찜 버튼 클릭 로직이 들어갈 부분
                             >
@@ -258,7 +258,7 @@ export default function BookDetailPage({ params }: { params: Promise<{ id: strin
                         )}
 
                         {/* 로그인 하지 않았을 때, 찜 버튼 */}
-                        {!user && (
+                        {!user && !isAuthor &&(
                             <button className="w-10 h-10 flex items-center justify-center rounded-lg border border-gray-400 bg-gray-50 hover:bg-gray-100 shadow-sm"
                                 onClick={() => alert('로그인이 필요한 서비스입니다.')}
                             >
@@ -268,15 +268,17 @@ export default function BookDetailPage({ params }: { params: Promise<{ id: strin
                             </button>
                         )}
 
-                        {/* 로그인 했을 때, 북북톡 버튼 */}
-                        {user && (
+                        
+                        {/* 로그인 했고, 글 작성자가 아닌경우에만 북북톡 */}
+                        {user && !isAuthor && (
                             <button 
                                 onClick={handleChatClick}
                                 className="px-6 py-2 rounded-lg bg-blue-500 text-white font-semibold hover:bg-blue-600 shadow-md"
                             >
-                                북북톡
+                                북북톡1
                             </button>
                         )}
+
                         {/* 로그인 하지 않은 경우, 북북톡 버튼 */}
                         {!user && (
                             <button 
