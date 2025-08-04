@@ -1,12 +1,12 @@
 // src/app/bookbook/rent/[id]/page.tsx
-// 글 목록을 보여주는 페이지
+// 글 상세를 보여주는 페이지
 //08.02 현준 수정
 
 "use client";
 
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation'; // useRouter는 클라이언트 컴포넌트에서 사용
-import { useCurrentUser } from '../../../hooks/useCurrentUser'; // 현재 사용자 정보를 가져오는 훅 추가
+import { useAuthCheck } from '../../../hooks/useAuthCheck'; // 로그인 체크만 하는 훅 사용
 import RentModal from '@/app/components/RentModal'; // 대여하기 팝업 모달 컴포넌트
 import UserProfileModal from "@/app/components/UserProfileModal";
 
@@ -49,8 +49,8 @@ export default function BookDetailPage({ params }: { params: Promise<{ id: strin
 
     const router = useRouter(); // 페이지 이동을 위한 useRouter 훅
     
-    // 현재 로그인한 사용자 정보를 가져옵니다
-    const { user, loading: userLoading, userId } = useCurrentUser();
+    // 현재 로그인한 사용자 정보를 가져옵니다 (자동 로그인 없음)
+    const { user, loading: userLoading, userId, isAuthenticated } = useAuthCheck();
 
     // 컴포넌트가 마운트되거나 ID가 변경될 때 책 상세 정보를 불러옵니다.
     useEffect(() => {
@@ -138,8 +138,8 @@ export default function BookDetailPage({ params }: { params: Promise<{ id: strin
         }
     };
 
-    // 로딩 중일 때 표시
-    if (loading || userLoading) {
+    // 로딩 중일 때 표시 (책 정보 로딩만 확인, 사용자 정보는 비동기로 처리)
+    if (loading) {
         return (
             <div className="min-h-screen flex items-center justify-center bg-gray-100 font-inter">
                 <p className="text-gray-700 text-lg">책 정보를 불러오는 중...</p>
@@ -251,8 +251,17 @@ export default function BookDetailPage({ params }: { params: Promise<{ id: strin
                                 <path fillRule="evenodd" d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" clipRule="evenodd" />
                             </svg>
                         </button>
-                        {/* 글 작성자인 경우에만 수정하기 버튼 표시 */}
-                        {isAuthor && (
+
+                        {/* 항상 북북톡 버튼 표시 */}
+                        <button 
+                            onClick={handleChatClick}
+                            className="px-6 py-2 rounded-lg bg-blue-500 text-white font-semibold hover:bg-blue-600 shadow-md"
+                        >
+                            북북톡
+                        </button>
+                        
+                        {/* 로그인 했고, 글 작성자인 경우 수정하기 버튼 표시 */}
+                        {isAuthor && user && (
                             <button 
                                 onClick={() => router.push(`/bookbook/rent/edit/${id}`)}
                                 className="px-10 py-2 rounded-lg bg-[#D5BAA3] text-white font-semibold hover:bg-[#C2A794] shadow-md"
@@ -260,13 +269,23 @@ export default function BookDetailPage({ params }: { params: Promise<{ id: strin
                                 수정하기
                             </button>
                         )}
-                          {/* 글 작성자가 아니거나 로그인하지 않은 경우에만 대여하기 버튼 표시 */}
-                         {!isAuthor && (
+                          {/* 로그인 했고, 글 작성자가 아닌 경우 대여하기 버튼 표시 */}
+                         {!isAuthor && user && (
                              <button 
                                  onClick={() => setIsRentModalOpen(true)}
                                  className="px-10 py-2 rounded-lg bg-[#D5BAA3] text-white font-semibold hover:bg-[#C2A794] shadow-md"
                              >
                                  대여하기
+                             </button>
+                         )}
+                         {/* 로그인하지 않은 경우 안내 메시지 */}
+                         {!user && (
+                             <button 
+                                 onClick={() => alert('로그인이 필요한 서비스입니다.')}
+                                 className="px-10 py-2 rounded-lg bg-gray-400 text-white font-semibold cursor-not-allowed"
+                                 disabled
+                             >
+                                 로그인 후 대여하기
                              </button>
                          )}                        
                     </div>
