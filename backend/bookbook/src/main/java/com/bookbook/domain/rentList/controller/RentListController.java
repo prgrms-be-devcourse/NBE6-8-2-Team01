@@ -76,10 +76,19 @@ public class RentListController {
      */
     @PostMapping("/{rentId}/review")
     public ResponseEntity<RsData<ReviewResponseDto>> createBorrowerReview(
+            // @PathVariable - URL의 {borrowerUserId} 값 (리뷰 작성자 = 대여받은 사람)
             @PathVariable Long borrowerUserId,
+            // @PathVariable - URL의 {rentId} 값 (어떤 대여 건에 대한 리뷰인지)
             @PathVariable Integer rentId,
+            // @RequestBody - HTTP 요청 본문의 JSON 데이터를 객체로 변환
+            // 클라이언트가 보낸 JSON 데이터가 ReviewCreateRequestDto로 변환됨
             @RequestBody ReviewCreateRequestDto request) {
+        
+        // 리뷰 서비스의 대여받은 사람 리뷰 생성 메서드 호출
+        // 대여받은 사람(책을 빌린 사람)이 대여자(책을 빌려준 사람)를 평가
         ReviewResponseDto review = reviewService.createBorrowerReview(borrowerUserId, rentId, request);
+        
+        // 생성된 리뷰 정보와 함께 성공 응답 반환
         return ResponseEntity.ok(RsData.of("200", "리뷰를 작성했습니다.", review));
     }
 }

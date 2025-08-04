@@ -97,6 +97,8 @@ public class RentListService {
      * @return 생성된 대여 기록 정보
      * @throws IllegalArgumentException 사용자나 게시글을 찾을 수 없는 경우
      */
+    // @Transactional - 이 메서드는 쓰기 작업이므로 트랜잭션 필요
+    // readOnly = false (기본값)이므로 데이터 변경 가능
     @Transactional
     public RentListResponseDto createRentList(Long borrowerUserId, RentListCreateRequestDto request) {
         // User 엔티티 조회; 로그인하지 않은 사용자, 정지된 사용자 등
@@ -107,14 +109,19 @@ public class RentListService {
         Rent rent = rentRepository.findById(request.getRentId())
                 .orElseThrow(() -> new IllegalArgumentException("대여 게시글을 찾을 수 없습니다. rentId: " + request.getRentId()));
         
+        // 새로운 대여 기록 객체 생성
         RentList rentList = new RentList();
+        
+        // 대여일 설정 - 요청에서 받은 날짜 (사용자가 언제부터 빌릴지 지정)
         rentList.setLoanDate(request.getLoanDate());
-        // returnDate는 loanDate로부터 14일 후로 자동 계산
+        
+        // 반납일 자동 계산 - 대여일로부터 14일 후
+        // plusDays(14): LocalDateTime에 14일을 더하는 메서드
         rentList.setReturnDate(request.getLoanDate().plusDays(14));
         // 연관관계 설정
         rentList.setBorrowerUser(borrowerUser);
         rentList.setRent(rent);
-        
+
         RentList savedRentList = rentListRepository.save(rentList);
         String lenderNickname = userRepository.findById(rent.getLenderUserId())
                 .map(user -> user.getNickname())

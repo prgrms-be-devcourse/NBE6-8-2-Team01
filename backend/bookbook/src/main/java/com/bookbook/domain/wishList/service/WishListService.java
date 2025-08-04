@@ -109,7 +109,7 @@ public class WishListService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
 
-        // Rent 조회
+        // 대여 게시글 존재 여부 확인
         Rent rent = rentRepository.findById(request.rentId())
                 .orElseThrow(() -> new IllegalArgumentException("대여 게시글을 찾을 수 없습니다."));
 
@@ -136,9 +136,15 @@ public class WishListService {
      * @throws IllegalArgumentException 찜하지 않은 게시글인 경우
      */
     public void deleteWishList(Long userId, Integer rentId) {
+        // ACTIVE 상태인 찜 목록 조회 - 삭제된 것은 대상에서 제외
         WishList wishList = wishListRepository.findByUserIdAndRentIdAndStatus(userId, rentId, WishListStatus.ACTIVE)
                 .orElseThrow(() -> new IllegalArgumentException("찜하지 않은 게시글입니다."));
+        
+        // Soft Delete 실행 - 실제 삭제가 아닌 상태만 변경
+        // 데이터는 남겨두고 DELETED 상태로 변경하여 조회에서만 제외
         wishList.setStatus(WishListStatus.DELETED);
+        
+        // 변경사항을 데이터베이스에 저장 - JPA가 UPDATE 쿼리 실행
         wishListRepository.save(wishList);
     }
 }

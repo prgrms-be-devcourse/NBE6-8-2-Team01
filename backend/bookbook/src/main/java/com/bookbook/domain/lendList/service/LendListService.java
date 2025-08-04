@@ -20,6 +20,8 @@ import org.springframework.transaction.annotation.Transactional;
  */
 @Service
 @RequiredArgsConstructor
+// @Transactional(readOnly = true) - 기본적으로 읽기 전용 트랜잭션
+// 읽기 전용이므로 성능이 향상되고, 실수로 데이터를 변경하는 것을 방지
 @Transactional(readOnly = true)
 public class LendListService {
     
@@ -38,7 +40,11 @@ public class LendListService {
     public Page<LendListResponseDto> getLendListByUserId(Long userId, Pageable pageable) {
         Page<Rent> rentPage = lendListRepository.findByLenderUserId(userId, pageable);
         return rentPage.map(rent -> {
+            // 초기값 설정 - 대여자 닉네임은 null로 시작
             String borrowerNickname = null;
+            
+            // 조건문 - 대여 중이거나 완료된 상태인 경우에만 대여자 닉네임 조회
+            // LOANED: 현재 대여 중, FINISHED: 대여 완료 상태
             if (rent.getRentStatus() == RentStatus.LOANED || rent.getRentStatus() == RentStatus.FINISHED) {
                 borrowerNickname = rentListRepository.findByRentId(rent.getId())
                         .stream()
@@ -91,6 +97,8 @@ public class LendListService {
      * @throws IllegalArgumentException 게시글을 찾을 수 없거나 작성자가 아닌 경우
      * @throws IllegalStateException 현재 대출 중인 도서인 경우
      */
+    // @Transactional - 이 메서드는 쓰기 작업이므로 트랜잭션 필요
+    // readOnly = false (기본값)이므로 데이터 변경 가능
     @Transactional
     public void deleteLendList(Long userId, Integer rentId) {
         // 대여 게시글 조회
