@@ -16,7 +16,7 @@ public record ReportDetailResponseDto(
         @NonNull Long targetUserId,
         Long closerId,
         @NonNull String reason,
-        @NonNull LocalDateTime reportedDate,
+        @NonNull LocalDateTime createdDate,
         @NonNull LocalDateTime modifiedDate,
         @NonNull LocalDateTime reviewedDate
 ){
@@ -32,7 +32,7 @@ public record ReportDetailResponseDto(
                 .targetUserId(report.getTargetUser().getId())
                 .closerId(closerId)
                 .reason(report.getReason())
-                .reportedDate(report.getCreatedDate())
+                .createdDate(report.getCreatedDate())
                 .modifiedDate(report.getModifiedDate())
                 .reviewedDate(report.getReviewedDate())
                 .build();

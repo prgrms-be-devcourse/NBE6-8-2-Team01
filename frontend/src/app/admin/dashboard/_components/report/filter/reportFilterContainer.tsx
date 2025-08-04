@@ -3,7 +3,7 @@
 import React from "react";
 import { ReportStatusFilter } from "./reportStatusFilter";
 import { ReportStatus } from "@/app/admin/dashboard/_types/report";
-import { SearchBox } from "../../common/searchBox";
+import { SearchBox } from "../../common/filter/searchBox";
 
 interface FilterState {
   statuses: Set<ReportStatus>;
