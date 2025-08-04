@@ -1,4 +1,4 @@
-package com.bookbook.domain.report.dto;
+package com.bookbook.domain.report.dto.request;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
