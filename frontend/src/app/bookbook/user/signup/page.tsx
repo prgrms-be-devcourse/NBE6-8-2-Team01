@@ -4,7 +4,7 @@ import React, { useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { FaUser, FaMapMarkerAlt } from 'react-icons/fa';
 
-import { toast, ToastContainer } from 'react-toastify';
+import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import AddressSelectionPopup from '../../../components/AddressSelectionPopup';
 
@@ -154,7 +154,7 @@ const SignupPage = () => {
                 return;
             }
 
-            toast.success('회원 정보 업데이트가 성공적으로 완료되었습니다! 메인 페이지로 이동합니다.');
+            toast.success('회원 가입이 완료되었습니다.');
             router.push('/bookbook');
 
         } catch (error) {
@@ -324,19 +324,6 @@ const SignupPage = () => {
                 isOpen={isPopupOpen}
                 onClose={handleClosePopup}
                 onSelectAddress={handleSelectAddress}
-            />
-
-            <ToastContainer
-                position="top-center"
-                autoClose={3000}
-                hideProgressBar={false}
-                newestOnTop={false}
-                closeOnClick
-                rtl={false}
-                pauseOnFocusLoss
-                draggable
-                pauseOnHover
-                theme="light"
             />
         </div>
     );

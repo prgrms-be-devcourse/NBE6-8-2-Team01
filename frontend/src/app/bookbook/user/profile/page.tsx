@@ -2,10 +2,9 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { toast, ToastContainer } from 'react-toastify';
+import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
-// Import the AddressSelectionPopup component
 import AddressSelectionPopup from '../../../components/AddressSelectionPopup';
 
 interface UserResponseDto {
@@ -238,7 +237,7 @@ export default function MyPage() {
     const handleDeactivateAccount = (event: React.MouseEvent<HTMLAnchorElement>) => {
         event.preventDefault();
 
-        if (confirm('정말로 계정을 비활성화(회원 탈퇴) 하시겠습니까? 이 작업은 되돌릴 수 없습니다.')) {
+        if (window.confirm('정말로 계정을 비활성화(회원 탈퇴) 하시겠습니까? 이 작업은 되돌릴 수 없습니다.')) {
             const deletePromise = new Promise(async (resolve, reject) => {
                 try {
                     const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/bookbook/users/me`, {
@@ -266,7 +265,7 @@ export default function MyPage() {
                 deletePromise,
                 {
                     pending: '회원 탈퇴를 진행 중입니다...',
-                    success: '✅ 회원 탈퇴가 성공적으로 완료되었습니다! 북북과 함께해주셔서 감사합니다.',
+                    success: '북북과 함께해주셔서 감사합니다.',
                     error: {
                         render({ data }) {
                             const errorMessage = data instanceof Error ? data.message : '알 수 없는 오류가 발생했습니다.';
@@ -276,13 +275,14 @@ export default function MyPage() {
                     }
                 }
             ).then(() => {
+                // 토스트 메시지 표시 후 바로 페이지 이동
                 router.push('/api/v1/bookbook/users/logout');
             }).catch(() => {
+                // 에러 발생 시 페이지 이동을 막습니다.
             });
         }
     };
 
-    // New functions to handle the popup
     const handleOpenPopup = () => {
         setIsPopupOpen(true);
     };
@@ -473,19 +473,6 @@ export default function MyPage() {
                 isOpen={isPopupOpen}
                 onClose={handleClosePopup}
                 onSelectAddress={handleSelectAddress}
-            />
-
-            <ToastContainer
-                position="top-center"
-                autoClose={3000}
-                hideProgressBar={false}
-                newestOnTop={false}
-                closeOnClick
-                rtl={false}
-                pauseOnFocusLoss
-                draggable
-                pauseOnHover
-                theme="light"
             />
         </div>
     );

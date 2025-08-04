@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import React, { useState } from 'react';
 import { toast } from 'react-toastify';
@@ -42,10 +42,14 @@ const ReportModal = ({ isOpen, onClose, targetUserId, targetNickname }: ReportMo
             }
             const result = await response.json();
 
+            // 성공 알림을 먼저 띄웁니다.
             toast.success(result.msg);
 
-            setReportReason('');
+            // ✨ setTimeout 없이 바로 모달을 닫습니다.
             onClose();
+
+            setReportReason('');
+
         } catch (error: unknown) {
             console.error('신고 제출 오류:', error);
             if (error instanceof Error) {
