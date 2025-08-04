@@ -2,14 +2,15 @@
 
 'use client';
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import Modal from 'react-modal';
 
-if (typeof window !== 'undefined') {
-    Modal.setAppElement('#__next');
-}
-
 export default function SuspensionModal() {
+    // ✅ 수정된 부분: useEffect를 사용하여 DOM에 접근
+    useEffect(() => {
+        // 이 코드는 클라이언트 측에서 컴포넌트가 마운트될 때 한 번만 실행됩니다.
+        Modal.setAppElement('#__next');
+    }, []); // 의존성 배열을 비워 컴포넌트가 처음 렌더링될 때만 실행되도록 설정
 
     const customStyles: Modal.Styles = {
         overlay: {
@@ -28,7 +29,7 @@ export default function SuspensionModal() {
             border: 'none',
             background: 'none',
             padding: '0',
-            overflow: 'visible', // 'hidden' 대신 'visible' 또는 다른 유효한 값으로 변경
+            overflow: 'visible',
         },
     };
 

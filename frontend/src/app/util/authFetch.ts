@@ -50,6 +50,7 @@ export async function authFetch(
 
             if (refreshSuccessful) {
                 console.log('[authFetch] 토큰 갱신 성공! 원래 요청 재시도...');
+                sessionStorage.setItem('initialLoginSucceeded', 'true');
                 response = await fetch(fullUrl, options);
             } else {
                 console.error('[authFetch] 리프레시 토큰 갱신마저 실패. 재로그인 필요.');
