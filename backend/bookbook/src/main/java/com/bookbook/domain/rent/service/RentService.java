@@ -240,9 +240,9 @@ public class RentService {
 
     @Transactional(readOnly = true)
     public Page<RentSimpleResponseDto> getRentsPage(
-            Pageable pageable, List<String> status, String nickname
+            Pageable pageable, List<String> status, Long userId
     ) {
-        return rentRepository.findFilteredRentHistory(pageable, status, nickname)
+        return rentRepository.findFilteredRentHistory(pageable, status, userId)
                 .map(RentSimpleResponseDto::from);
     }
 

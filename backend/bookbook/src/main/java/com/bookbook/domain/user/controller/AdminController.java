@@ -181,11 +181,11 @@ public class AdminController {
             @RequestParam(defaultValue = "1") Integer page,
             @RequestParam(defaultValue = "10") Integer size,
             @RequestParam(required = false) List<String> status,
-            @RequestParam(required = false) String nickname
+            @RequestParam(required = false) Long userId
     ) {
         Pageable pageable = PageRequest.of(page - 1, size);
 
-        Page<RentSimpleResponseDto> rentHistoryPage = rentService.getRentsPage(pageable, status, nickname);
+        Page<RentSimpleResponseDto> rentHistoryPage = rentService.getRentsPage(pageable, status, userId);
         PageResponse<RentSimpleResponseDto> response = PageResponse.from(rentHistoryPage, page, size);
 
         return ResponseEntity.ok(

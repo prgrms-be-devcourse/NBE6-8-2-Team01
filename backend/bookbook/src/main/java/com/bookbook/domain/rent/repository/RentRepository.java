@@ -60,14 +60,14 @@ public interface RentRepository extends JpaRepository<Rent, Integer> { // findBy
                                                                     Pageable pageable);
 
     @Query("""
-        SELECT r FROM Rent r INNER JOIN User u ON (:nickname IS NULL OR u.nickname LIKE %:nickname%)
-        WHERE (:status IS NULL OR r.rentStatus in :status)
-        AND (:nickname IS NULL OR u.nickname LIKE %:nickname%)
+        SELECT r FROM Rent r WHERE
+        (:userId IS NULL OR :userId = r.lenderUserId) AND
+        (:status IS NULL OR r.rentStatus in :status)
         ORDER BY r.createdDate DESC
     """)
     Page<Rent> findFilteredRentHistory(
             Pageable pageable,
             @Param("status") List<String> status,
-            @Param("nickname") String nickname
+            @Param("userId") Long userId
     );
 }
