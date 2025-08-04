@@ -44,7 +44,7 @@ export function PostStatusFilter({
   return (
     <div>
       <label className="block text-sm font-medium text-gray-700 mb-2">
-        회원 상태
+        글 상태
       </label>
       <div className="flex flex-wrap gap-3">
         <PostStatusFilterItem

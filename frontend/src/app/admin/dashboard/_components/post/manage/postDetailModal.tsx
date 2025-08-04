@@ -4,10 +4,10 @@ import PostBasicInfo from "./postBasicInfo";
 import { PostStatusInfo } from "./postStatusInfo";
 import PostInfo from "./postInfo";
 import { getRentStatus, RentPostDetailResponseDto, rentStatus } from "@/app/admin/dashboard/_types/rentPost";
-import apiClient from "@/app/bookbook/user/utils/apiClient";
+import { authFetch } from "@/app/util/authFetch";
+import { dummyFunction } from "@/app/admin/dashboard/_components/common/dummyFunction";
 
 interface PostDetailModalProps {
-  postId: number;
   post: RentPostDetailResponseDto;
   isOpen: boolean;
   onClose: () => void;
@@ -16,17 +16,17 @@ interface PostDetailModalProps {
 }
 
 const PostDetailModal: React.FC<PostDetailModalProps> = ({
-  postId,
   post,
   isOpen,
   onClose,
   onRefresh,
   onUserDetailClick,
 }) => {
+  const [currentPost, setCurrentPost] = useState(post);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [confirmAction, setConfirmAction] = useState<"delete" | "updateStatus" | null>(null);
   const [newStatus, setNewStatus] = useState<string>("");
-  const initialRentStatus = post.rentStatus;
+  const initialRentStatus = currentPost.rentStatus;
   const [rentStatusValue, setRentStatusValue] = useState<rentStatus>(initialRentStatus);
   const isSameStatus = initialRentStatus == rentStatusValue;
 
@@ -34,7 +34,7 @@ const PostDetailModal: React.FC<PostDetailModalProps> = ({
       "px-4 py-2 text-sm font-medium text-white bg-gray-600 border border-transparent rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
       : "px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
 
-  if (!isOpen || !post) return null;
+  if (!isOpen || !currentPost) return null;
 
   const handleDeleteClick = () => {
     setConfirmAction("delete");
@@ -48,7 +48,7 @@ const PostDetailModal: React.FC<PostDetailModalProps> = ({
   };
 
   const handleUserDetailClick = () => {
-    onUserDetailClick(post.lenderUserId);
+    onUserDetailClick(currentPost.lenderUserId);
   }
 
   const handlePostChangeStatus = async () => {
@@ -56,20 +56,26 @@ const PostDetailModal: React.FC<PostDetailModalProps> = ({
       "status" : rentStatusValue
     }
 
-    apiClient(`/api/v1/admin/rent/${postId}`, {
-      method: "PATCH",
-      body: JSON.stringify(body),
-    }).then(data => {
-      alert("글 상태가 수정되었습니다.");
-    }).catch(error => {
-      throw error;
-    })
+    const response = await authFetch(`/api/v1/admin/rent/${currentPost.id}`,
+      {
+        method: "PATCH",
+        body: JSON.stringify(body),
+      },
+      dummyFunction
+    )
+
+    const data = await response.json()
+        .catch(error => {throw new error});
+
+    if (!data.data) return;
+
+    setCurrentPost(data.data);
   }
 
   const handlePostDelete =  async () => {
-    await apiClient(`/bookbook/rent/${postId}`, {method: "DELETE"})
+    await authFetch(`/api/v1/admin/rent/${currentPost.id}`, {method: "DELETE"}, dummyFunction)
         .then(data => {
-            alert(`${postId} 번 글이 성공적으로 삭제되었습니다`);
+            alert(`${currentPost.id} 번 글이 성공적으로 삭제되었습니다`);
             _onClose();
         }).catch(error => {
           throw error;
@@ -111,7 +117,7 @@ const PostDetailModal: React.FC<PostDetailModalProps> = ({
 
   const getConfirmMessage = (): string => {
     if (confirmAction === "delete") {
-      return `정말로 ${postId}번 글을 삭제하시겠습니까?`;
+      return `정말로 ${currentPost.id}번 글을 삭제하시겠습니까?`;
 
     } else if (confirmAction === "updateStatus") {
       return `정말로 글 상태를 변경하시겠습니까?\n
@@ -130,7 +136,7 @@ const PostDetailModal: React.FC<PostDetailModalProps> = ({
         />
 
         {/* 모달 컨텐츠 */}
-        <div className="relative bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+        <div className="relative bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] flex flex-col">
           {/* 헤더 */}
           <div className="flex items-center justify-between p-6 border-b">
             <h2 className="text-xl font-semibold text-gray-900">
@@ -157,18 +163,18 @@ const PostDetailModal: React.FC<PostDetailModalProps> = ({
           </div>
 
           {/* 본문 */}
-          <div className="p-6 space-y-4">
-            <PostBasicInfo id={postId} post={post} />
+          <div className="flex-1 p-6 space-y-4 overflow-y-auto">
+            <PostBasicInfo post={currentPost} />
             <PostStatusInfo
-                post={post}
+                post={currentPost}
                 initialRentStatus={initialRentStatus}
                 setRentStatusValue={setRentStatusValue}
             />
-            <PostInfo post={post} />
+            <PostInfo post={currentPost} />
           </div>
 
           {/* 푸터 */}
-          <div className="flex items-center justify-between p-4 border-t bg-gray-50">
+          <div className="flex items-center justify-between p-4 border-t bg-gray-50 flex-shrink-0">
             {/* 작성자 정보 버튼 */}
             <button
               onClick={handleUserDetailClick}

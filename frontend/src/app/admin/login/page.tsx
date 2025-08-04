@@ -3,9 +3,10 @@
 import { useState } from "react";
 import { Lock, User, Eye, EyeOff, BookOpen, AlertTriangle } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useAuthContext, UserLoginResponseDto } from "@/app/admin/global/hooks/useAuth";
+import { useAuthContext } from "@/app/admin/global/hooks/useAuth";
 import { UnauthorizedModal } from "../adminGuard";
-import apiClient from "@/app/bookbook/user/utils/apiClient";
+import { authFetch } from "@/app/util/authFetch";
+import { dummyFunction } from "@/app/admin/dashboard/_components/common/dummyFunction";
 
 export default function AdminLoginPage() {
     const { setLoginMember } = useAuthContext();
@@ -47,10 +48,21 @@ export default function AdminLoginPage() {
         }
 
         // TODO: 실제 로그인 API 연동
-        apiClient<UserLoginResponseDto>("/api/v1/admin/login", {
-            method: "POST",
-            body: JSON.stringify(reqBody),
-        }).then(data => {
+        try {
+            const response = await authFetch("/api/v1/admin/login", {
+                method: "POST",
+                body: JSON.stringify(reqBody),
+            }, dummyFunction)
+
+            const data = await response.json().catch(error => {
+                const message = error.message as string;
+                if (message.endsWith("fetch")) {
+                    alert("서버와 연결하지 못했습니다.");
+                }
+                console.log(error);
+                throw error;
+            })
+
             console.log(data);
             if (data.statusCode !== 200) {
                 setShowUnauthorizedModal(true);
@@ -59,17 +71,9 @@ export default function AdminLoginPage() {
 
             setLoginMember(data.data);
             router.push("/admin/dashboard");
-
-        }).catch(error => {
-            const message = error.message as string;
-            if (message.endsWith("fetch")) {
-                alert("서버와 연결하지 못했습니다.");
-                return;
-            }
-            console.log(error);
-        }).finally(() => {
+        } finally {
             setIsLoading(false);
-        })
+        }
     };
 
     return (

@@ -3,11 +3,14 @@ package com.bookbook.domain.rent.service;
 import com.bookbook.domain.notification.enums.NotificationType;
 import com.bookbook.domain.notification.service.NotificationService;
 import com.bookbook.domain.rent.dto.RentAvailableResponseDto;
+import com.bookbook.domain.rent.dto.RentDetailResponseDto;
 import com.bookbook.domain.rent.dto.RentRequestDto;
 import com.bookbook.domain.rent.dto.RentResponseDto;
 import com.bookbook.domain.rent.entity.Rent;
 import com.bookbook.domain.rent.entity.RentStatus;
 import com.bookbook.domain.rent.repository.RentRepository;
+import com.bookbook.domain.user.dto.ChangeRentStatusRequestDto;
+import com.bookbook.domain.user.dto.RentSimpleResponseDto;
 import com.bookbook.domain.user.entity.User;
 import com.bookbook.domain.user.repository.UserRepository;
 import com.bookbook.global.exception.ServiceException;
@@ -196,5 +199,31 @@ public class RentService {
                 RentAvailableResponseDto.PaginationInfo.from(rentPage);
         
         return RentAvailableResponseDto.success(books, pagination);
+    }
+
+    @Transactional(readOnly = true)
+    public Page<RentSimpleResponseDto> getRentsPage(
+            Pageable pageable, List<String> status, String nickname
+    ) {
+        return rentRepository.findFilteredRentHistory(pageable, status, nickname)
+                .map(RentSimpleResponseDto::from);
+    }
+
+    @Transactional
+    public RentDetailResponseDto modifyRentPageStatus(Integer id, ChangeRentStatusRequestDto requestDto) {
+        Rent rent = rentRepository.findById(id)
+                .orElseThrow(()-> new ServiceException("404-2", "해당 대여글을 찾을 수 없습니다."));
+
+        rent.setRentStatus(requestDto.status());
+        return RentDetailResponseDto.from(rent);
+    }
+
+    @Transactional
+    public void removeRentPage(Integer id) {
+        try {
+            rentRepository.deleteById(id);
+        } catch (RuntimeException e) {
+            throw new ServiceException("404-1", "해당 글은 존재하지 않습니다.");
+        }
     }
 }

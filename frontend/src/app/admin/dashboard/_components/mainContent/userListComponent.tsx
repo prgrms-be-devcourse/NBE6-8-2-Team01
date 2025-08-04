@@ -8,7 +8,8 @@ import UserDetailModal from "../user/manage/userDetailModal";
 import { ContentComponentProps } from "./baseContentComponentProps";
 import { UserFilterContainer, FilterState } from "../user/filter";
 import { useDashBoardContext } from "@/app/admin/dashboard/_hooks/useDashboard";
-import apiClient from "@/app/bookbook/user/utils/apiClient";
+import { authFetch } from "@/app/util/authFetch";
+import { dummyFunction } from "@/app/admin/dashboard/_components/common/dummyFunction";
 
 interface ManagementButtonProps {
   user: UserBaseResponseDto;
@@ -26,10 +27,7 @@ function ManagementButton({ user, onClick }: ManagementButtonProps) {
   );
 }
 
-export function UserListComponent({
-  data,
-  onRefresh,
-}: ContentComponentProps) {
+export function UserListComponent({ data }: ContentComponentProps) {
   const [selectedUser, setSelectedUser] = useState<UserDetailResponseDto>(
       null as unknown as UserDetailResponseDto
   );
@@ -75,10 +73,9 @@ export function UserListComponent({
   const handleManageClick = async (user: UserBaseResponseDto) => {
     console.log(`관리 버튼 클릭: 멤버 ID - ${user.id}, 닉네임 - ${user.nickname}`);
 
-    apiClient(`/api/v1/admin/users/${user.id}`, {
-      method: "GET",
-    })
-      .then((data) => {
+    authFetch(`/api/v1/admin/users/${user.id}`, {method: "GET"}, dummyFunction)
+      .then((data=> data.json()))
+      .then(data=> {
         console.log(data);
         setSelectedUser(data.data as UserDetailResponseDto);
       });
@@ -243,7 +240,6 @@ export function UserListComponent({
           user={selectedUser}
           isOpen={isModalOpen}
           onClose={handleModalClose}
-          onRefresh={onRefresh} // 새로고침 함수 전달
         />
       )}
     </>

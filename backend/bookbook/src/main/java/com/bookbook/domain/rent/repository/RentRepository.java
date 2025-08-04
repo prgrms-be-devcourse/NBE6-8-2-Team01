@@ -8,6 +8,8 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.util.List;
+
 public interface RentRepository extends JpaRepository<Rent, Integer> { // findById의 반환 타입이 Optional<Rent> 이므로, .orElseThrow()로 예외처리
 
     // 대여자가 작성한 글 갯수 조회
@@ -56,4 +58,16 @@ public interface RentRepository extends JpaRepository<Rent, Integer> { // findBy
                                                                     @Param("category") String category, 
                                                                     @Param("searchKeyword") String searchKeyword, 
                                                                     Pageable pageable);
+
+    @Query("""
+        SELECT r FROM Rent r INNER JOIN User u ON (:nickname IS NULL OR u.nickname LIKE %:nickname%)
+        WHERE (:status IS NULL OR r.rentStatus in :status)
+        AND (:nickname IS NULL OR u.nickname LIKE %:nickname%)
+        ORDER BY r.createdDate DESC
+    """)
+    Page<Rent> findFilteredRentHistory(
+            Pageable pageable,
+            @Param("status") List<String> status,
+            @Param("nickname") String nickname
+    );
 }

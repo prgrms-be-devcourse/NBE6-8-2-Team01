@@ -49,7 +49,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 String roleString = claims.get("role", String.class);
                 Role role = Role.valueOf(roleString);
 
-                List<GrantedAuthority> authorities = Collections.singletonList(new SimpleGrantedAuthority(role.name()));
+                List<GrantedAuthority> authorities = Collections.singletonList(new SimpleGrantedAuthority("ROLE_" + role.name()));
 
                 // ⭐ 변경된 부분: attributes 맵에 nameAttributeKey와 username 값을 넣어줍니다.
                 // DefaultOAuth2User가 attributes 맵이 비어있는 것을 허용하지 않기 때문입니다.

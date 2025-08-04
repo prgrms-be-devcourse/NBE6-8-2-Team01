@@ -3,10 +3,9 @@ import PostDetailModal from "./postDetailModal";
 import UserDetailModal from "../../user/manage/userDetailModal";
 import { RentPostDetailResponseDto } from "@/app/admin/dashboard/_types/rentPost";
 import { UserDetailResponseDto } from "@/app/admin/dashboard/_types/userResponseDto";
-import apiClient from "@/app/bookbook/user/utils/apiClient";
+import { authFetch } from "@/app/util/authFetch";
 
 interface PostDetailWithUserModalProps {
-  id: number;
   post: RentPostDetailResponseDto;
   isOpen: boolean;
   onClose: () => void;
@@ -14,7 +13,6 @@ interface PostDetailWithUserModalProps {
 }
 
 const PostDetailWithUserModal: React.FC<PostDetailWithUserModalProps> = ({
-   id,
    post,
    isOpen,
    onClose,
@@ -27,9 +25,8 @@ const PostDetailWithUserModal: React.FC<PostDetailWithUserModalProps> = ({
 
   const handleUserDetailClick = async (userId: number) => {
     try {
-      apiClient(`/api/v1/admin/users/${post.lenderUserId}`, {
-        method: "GET",
-      }).then((data) => {
+      const response = await authFetch(`/api/v1/admin/users/${post.lenderUserId}`)
+      await response.json().then((data) => {
         console.log(data);
         setUserDetail(data.data as UserDetailResponseDto);
         setUserDetailOpen(true);
@@ -51,7 +48,6 @@ const PostDetailWithUserModal: React.FC<PostDetailWithUserModalProps> = ({
   return (
       <>
         <PostDetailModal
-            postId={id}
             post={post}
             isOpen={isOpen || !userDetailOpen}
             onClose={onClose}

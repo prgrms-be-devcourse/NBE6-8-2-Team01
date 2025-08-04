@@ -6,21 +6,21 @@ import UserBasicInfo from "./userBasicInfo";
 import UserStatusInfo from "./userStatusInfo";
 import UserJoinInfo from "./userJoinInfo";
 import SuspendForm from "./suspendForm";
-import apiClient from "@/app/bookbook/user/utils/apiClient";
+import { authFetch } from "@/app/util/authFetch";
+import { dummyFunction } from "@/app/admin/dashboard/_components/common/dummyFunction";
 
 interface UserDetailModalProps {
   user: UserDetailResponseDto;
   isOpen: boolean;
   onClose: () => void;
-  onRefresh?: () => void;
 }
 
 const UserDetailModal: React.FC<UserDetailModalProps> = ({
   user,
   isOpen,
   onClose,
-  onRefresh,
 }) => {
+  const [currentUser, setCurrentUser] = useState<UserDetailResponseDto>(user);
   const [showSuspendForm, setShowSuspendForm] = useState(false);
   const [suspendPeriod, setSuspendPeriod] = useState<string>("");
   const [suspendReason, setSuspendReason] = useState<string>("");
@@ -29,10 +29,10 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
     "suspend" | "unsuspend" | null
   >(null);
 
-  if (!isOpen || !user) return null;
+  if (!isOpen || !currentUser) return null;
 
   const handleSuspendClick = () => {
-    if (user.baseResponseDto.userStatus === "SUSPENDED") {
+    if (currentUser.baseResponseDto.userStatus === "SUSPENDED") {
       // 정지 해제
       setConfirmAction("unsuspend");
       setShowConfirmModal(true);
@@ -51,32 +51,29 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
     setShowConfirmModal(true);
   };
 
-  const doRequest = async (url: string, requestInit?: RequestInit) => {
-    try {
-      await apiClient(url, {
-        method: "PATCH",
-        ...requestInit,
-      });
-
-    } catch (error) {
+  const doRequest = async (path: string, requestInit?: RequestInit) => {
+    const response = await authFetch(path, {method: "PATCH", ...requestInit}, dummyFunction);
+    return await response.json().catch(error => {
       console.error("API 요청 실패:", error);
       throw error;
-    }
+    });
   };
 
   const suspendUser = async () => {
     try {
       const requestDto = {
-        userId: user.baseResponseDto.id,
+        userId: currentUser.baseResponseDto.id,
         reason: suspendReason,
         period: getPeriodDays(suspendPeriod),
       };
 
-      await doRequest("/api/v1/admin/users/suspend", {
+      const data = await doRequest("/api/v1/admin/users/suspend", {
         body: JSON.stringify(requestDto),
       });
 
-      alert(`${user.baseResponseDto.nickname}님이 정지되었습니다.`);
+      alert(`${currentUser.baseResponseDto.nickname}님이 정지되었습니다.`);
+      setCurrentUser(data.data as UserDetailResponseDto);
+
     } catch (error) {
       throw new Error(`정지 처리 중 오류가 발생했습니다.\n${error}`, );
     }
@@ -84,16 +81,13 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
 
   const resumeUser = async () => {
     try {
-      const userId = user.baseResponseDto.id;
+      const userId = currentUser.baseResponseDto.id;
 
-      await doRequest(
-        `/api/v1/admin/users/${userId}/resume`,
-        {
-          body: null,
-        }
-      );
+      const data = await doRequest(`/api/v1/admin/users/${userId}/resume`);
 
-      alert(`${user.baseResponseDto.nickname}님의 정지가 해제되었습니다.`);
+      alert(`${currentUser.baseResponseDto.nickname}님의 정지가 해제되었습니다.`);
+      setCurrentUser(data.data as UserDetailResponseDto);
+
     } catch (error) {
       throw new Error(`정지 해제 처리 중 오류가 발생했습니다.\n${error}`, );
     }
@@ -108,9 +102,6 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
       }
 
       resetModalState();
-      onClose();
-      // 성공적으로 정지/해제 처리 후 리스트 새로고침
-      onRefresh?.();
     } catch (error) {
       // 에러 발생시 모달을 닫지 않고 사용자가 다시 시도할 수 있도록 함
       // toast.error(error as string);
@@ -158,13 +149,13 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
   const getConfirmMessage = (): string => {
     if (confirmAction === "suspend") {
       return `정말로 ${
-        user.baseResponseDto.nickname
+        currentUser.baseResponseDto.nickname
       }님을 정지하시겠습니까?\n정지일 수: ${getPeriodText(suspendPeriod)}`;
     } else if (confirmAction === "unsuspend") {
-      const resumeDate = user.resumedAt
-        ? formatDate(user.resumedAt)
+      const resumeDate = currentUser.resumedAt
+        ? formatDate(currentUser.resumedAt)
         : "즉시";
-      return `정말로 ${user.baseResponseDto.nickname}님의 정지를 해제하시겠습니까?\n정지 해제일: ${resumeDate}`;
+      return `정말로 ${currentUser.baseResponseDto.nickname}님의 정지를 해제하시겠습니까?\n정지 해제일: ${resumeDate}`;
     }
     return "";
   };
@@ -179,7 +170,7 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
         />
 
         {/* 모달 컨텐츠 */}
-        <div className="relative bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+        <div className="relative bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] flex flex-col">
           {/* 헤더 */}
           <div className="flex items-center justify-between p-6 border-b">
             <h2 className="text-xl font-semibold text-gray-900">
@@ -210,7 +201,7 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
           {/* 본문 */}
           {showSuspendForm ? (
             <SuspendForm
-              user={user}
+              user={currentUser}
               suspendPeriod={suspendPeriod}
               setSuspendPeriod={setSuspendPeriod}
               suspendReason={suspendReason}
@@ -218,10 +209,10 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
               onSubmit={handleSuspendFormSubmit}
             />
           ) : (
-            <div className="p-6 space-y-4">
-              <UserBasicInfo user={user} />
-              <UserStatusInfo user={user} />
-              <UserJoinInfo user={user} />
+            <div className="flex-1 p-6 space-y-4 overflow-y-auto">
+              <UserBasicInfo user={currentUser} />
+              <UserStatusInfo user={currentUser} />
+              <UserJoinInfo user={currentUser} />
             </div>
           )}
 
@@ -235,16 +226,16 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
             >
               취소
             </button>
-            {!showSuspendForm && (
+            {(!showSuspendForm && currentUser.baseResponseDto.role !== "ADMIN") && (
               <button
                 onClick={handleSuspendClick}
                 className={`px-4 py-2 text-sm font-medium text-white border border-transparent rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 transition-colors ${
-                  user.baseResponseDto.userStatus === "SUSPENDED"
+                  currentUser.baseResponseDto?.userStatus === "SUSPENDED"
                     ? "bg-green-600 hover:bg-green-700 focus:ring-green-500"
                     : "bg-red-600 hover:bg-red-700 focus:ring-red-500"
                 }`}
               >
-                {user.baseResponseDto.userStatus === "SUSPENDED"
+                {currentUser.baseResponseDto?.userStatus === "SUSPENDED"
                   ? "정지 해제"
                   : "활동 정지"}
               </button>

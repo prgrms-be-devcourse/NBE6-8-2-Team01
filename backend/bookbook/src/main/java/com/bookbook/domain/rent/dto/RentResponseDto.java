@@ -2,10 +2,12 @@
 package com.bookbook.domain.rent.dto;
 
 import com.bookbook.domain.rent.entity.RentStatus;
+import lombok.Builder;
 
 import java.time.LocalDateTime;
 
 // 대여 글 단건 조회를 위한 DTO
+@Builder
 public record RentResponseDto(
         int id, // 글 ID
         Long lenderUserId, // 대여자 ID

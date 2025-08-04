@@ -4,7 +4,7 @@ import { DashBoardComponent } from "./dashBoardComponent";
 import { UserListComponent } from "./userListComponent";
 import { UserRentPostComponent } from "./userRentPostComponent";
 import { ReportHistoryComponent } from "./reportHistoryComponent";
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { PageResponse } from "../../_types/page";
 import { useDashBoardContext } from "@/app/admin/dashboard/_hooks/useDashboard";
 
@@ -23,24 +23,20 @@ export function ListComponentContainer() {
         activeItem,
         error,
         refreshData,
-        responseData
+        responseData,
     } = useDashBoardContext();
 
     const ContentComponent = componentMap[activeItem] ?? DashBoardComponent;
 
     const [data, setData] = useState<PageResponse<unknown>>(null as unknown as PageResponse<unknown>);
 
-    const updateData = useCallback(() => {
+    useEffect(() => {
         const pageData = responseData as PageResponse<unknown>;
         setData(pageData);
-    }, [responseData])
-
-    useEffect(() => {
-        updateData();
-    }, [updateData]);
+    }, [responseData]);
 
     if (activeItem === 'dashboard') {
-        return <ContentComponent data={data} onRefresh={refreshData} />;
+        return <ContentComponent data={data} onRefresh={refreshData}/>;
     }
 
     if (error) {
@@ -58,25 +54,9 @@ export function ListComponentContainer() {
         );
     }
 
-    if (!data) {
-        return (
-            <div className="text-center text-gray-500 p-8">
-                <h3 className="text-lg font-semibold mb-2">데이터 없음</h3>
-                <p>표시할 데이터가 없습니다.</p>
-                <button
-                    onClick={refreshData}
-                    className="mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
-                >
-                    새로고침
-                </button>
-            </div>
-        );
+    if (data?.data)  {
+        return <ContentComponent data={data} onRefresh={refreshData}/>
     }
 
-    return (
-        <ContentComponent
-            data={data}
-            onRefresh={refreshData}
-        />
-    )
+    return null;
 }

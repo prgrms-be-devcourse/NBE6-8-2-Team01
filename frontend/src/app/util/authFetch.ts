@@ -35,6 +35,10 @@ export async function authFetch(
 ): Promise<Response> {
     const fullUrl = `${BACKEND_BASE_URL}${path}`;
     options.credentials = 'include';
+    options.headers = {
+        "Content-Type": "application/json; charset=utf-8",
+        ...(options.headers || {}),
+    }
 
     try {
         let response = await fetch(fullUrl, options);
