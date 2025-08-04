@@ -33,7 +33,6 @@ export function UserRentPostComponent({ data, onRefresh }: ContentComponentProps
     const [selectedRentPost, setSelectedRentPost] = useState<RentPostDetailResponseDto>(
         null as unknown as RentPostDetailResponseDto
     );
-    const [selectedRentPostId, setSelectedRentPostId] = useState(0);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const { currentItem, fetchData } = useDashBoardContext();
 
@@ -80,7 +79,6 @@ export function UserRentPostComponent({ data, onRefresh }: ContentComponentProps
         if (!data) return;
 
         setSelectedRentPost(data as RentPostDetailResponseDto);
-        setSelectedRentPostId(post.id);
 
         setIsModalOpen(true);
     };
@@ -140,8 +138,8 @@ export function UserRentPostComponent({ data, onRefresh }: ContentComponentProps
         filters.statuses.forEach(status => params.append("status", status));
 
         if (filters.searchTerm) {
-            const nickname = filters.searchTerm.trim();
-            params.append("nickname", `${nickname}`);
+            const userId = Number(filters.searchTerm.trim());
+            if (userId) params.append("userId", `${userId}`);
         }
 
         return params
@@ -179,7 +177,15 @@ export function UserRentPostComponent({ data, onRefresh }: ContentComponentProps
                 </>
             )
         },
-        { key: "author", label: "작가" },
+        {
+            key: "author",
+            label: "작가" ,
+            render : rentPost => {
+                if (!rentPost.author) return;
+
+                const representAuthor = rentPost.author.split(",", 2)
+                return representAuthor.length > 1 ? `${representAuthor[0]} 등` : representAuthor[0];
+            }  },
         {
             key: "createdDate",
             label: "작성일",

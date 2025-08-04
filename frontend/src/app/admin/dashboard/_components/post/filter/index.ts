@@ -1,3 +1,3 @@
 export { PostStatusFilter } from './postStatusFilter';
-export { PostSearchBox } from './postSearchBox';
+export { SearchBox } from '../../common/filter/searchBox';
 export { PostFilterContainer, type FilterState } from './postFilterContainer';

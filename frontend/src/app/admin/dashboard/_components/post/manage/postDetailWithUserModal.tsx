@@ -1,5 +1,5 @@
 import { useState } from "react";
-import PostDetailModal from "./postDetailModal";
+import { PostDetailModal } from "./postDetailModal";
 import UserDetailModal from "../../user/manage/userDetailModal";
 import { RentPostDetailResponseDto } from "@/app/admin/dashboard/_types/rentPost";
 import { UserDetailResponseDto } from "@/app/admin/dashboard/_types/userResponseDto";
@@ -23,7 +23,7 @@ const PostDetailWithUserModal: React.FC<PostDetailWithUserModalProps> = ({
       null as unknown as UserDetailResponseDto
   );
 
-  const handleUserDetailClick = async (userId: number) => {
+  const handleUserDetailClick = async () => {
     try {
       const response = await authFetch(`/api/v1/admin/users/${post.lenderUserId}`)
       await response.json().then((data) => {
@@ -32,7 +32,7 @@ const PostDetailWithUserModal: React.FC<PostDetailWithUserModalProps> = ({
         setUserDetailOpen(true);
       });
 
-      console.log("Fetching user detail for ID:", userId);
+      console.log("Fetching user detail for ID:", post.lenderUserId);
 
     } catch (error) {
       console.error("사용자 정보 조회 실패:", error);
