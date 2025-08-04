@@ -36,4 +36,6 @@ public class RentController {
     public RentResponseDto getRentPage(@PathVariable int id){ // 경로 변수로 전달된 id를 사용
         return rentService.getRentPage(id);
     }
+
+
 }

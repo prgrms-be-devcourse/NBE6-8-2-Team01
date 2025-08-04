@@ -1,8 +1,6 @@
 package com.bookbook.domain.rent.entity;
 import com.bookbook.global.jpa.entity.BaseEntity;
-import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
+import jakarta.persistence.*;
 import lombok.*;
 
 // 25.07.31 현준
@@ -15,6 +13,8 @@ import lombok.*;
 public class Rent extends BaseEntity {
 
     // 글 관련한 속성
+//    @ManyToOne
+//    @JoinColumn(name = )
     private Long lenderUserId; // 대여자 ID
     private String title; // 글 제목
     private String bookCondition; // 책 상태

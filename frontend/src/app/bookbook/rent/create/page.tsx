@@ -1,4 +1,7 @@
 // 25.07.31 현준
+// src/app/bookbook/rent/create/page.tsx
+// 글 작성을 위한 페이지
+
 "use client";
 
 import React, { useEffect, useState } from 'react';

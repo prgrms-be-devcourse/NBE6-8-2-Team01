@@ -88,10 +88,20 @@ public class RentService {
     @Transactional(readOnly = true) // 조회 기능이므로 readOnly=true 설정
     public RentResponseDto getRentPage(int id) {
 
+        // 글 ID로 대여글 정보 조회
         Rent rent = rentRepository.findById(id)
                 .orElseThrow(()-> new ServiceException("404-2", "해당 대여글을 찾을 수 없습니다."));
 
+        // ID로 대여자 정보 조회
+        User rentUser = userRepository.findById(rent.getLenderUserId())
+                .orElseThrow(() -> new ServiceException("404-3", "해당 대여자를 찾을 수 없습니다."));
+
+        // 대여자가 작성한 글 갯수 조회
+        // 새로운 RentRepository 메소드 추가
+        int lenderPostCount = rentRepository.countByLenderUserId(rentUser.getId());
+
         return new RentResponseDto(
+                // 글 관련 정보
                 rent.getId(),
                 rent.getLenderUserId(),
                 rent.getTitle(),
@@ -100,13 +110,20 @@ public class RentService {
                 rent.getAddress(),
                 rent.getContents(),
                 rent.getRentStatus(),
+
+                // 책 관련 정보
                 rent.getBookTitle(),
                 rent.getAuthor(),
                 rent.getPublisher(),
                 rent.getCategory(),
                 rent.getDescription(),
                 rent.getCreatedDate(),
-                rent.getModifiedDate()
+                rent.getModifiedDate(),
+
+                // 글쓴이 정보
+                rentUser.getNickname(),
+                rentUser.getRating(),
+                lenderPostCount
         );
     }
 

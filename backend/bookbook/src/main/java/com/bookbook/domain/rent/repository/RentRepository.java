@@ -10,6 +10,9 @@ import org.springframework.data.repository.query.Param;
 
 public interface RentRepository extends JpaRepository<Rent, Integer> { // findById의 반환 타입이 Optional<Rent> 이므로, .orElseThrow()로 예외처리
 
+    // 대여자가 작성한 글 갯수 조회
+    int countByLenderUserId(Long lenderUserId);
+
     // 대여 가능한 책 목록 조회 (기본)
     Page<Rent> findByRentStatus(RentStatus rentStatus, Pageable pageable);
     
