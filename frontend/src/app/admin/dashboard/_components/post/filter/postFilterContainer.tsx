@@ -2,7 +2,7 @@
 
 import React from "react";
 import { PostStatusFilter } from "./postStatusFilter";
-import { PostSearchBox } from "./postSearchBox";
+import { SearchBox } from "../../common/filter/searchBox";
 import {rentStatus} from "@/app/admin/dashboard/_types/rentPost";
 
 interface FilterState {
@@ -37,7 +37,7 @@ export function PostFilterContainer({
       />
 
       {/* 검색 */}
-      <PostSearchBox
+      <SearchBox
         searchTerm={filters.searchTerm}
         onSearchTermChange={onSearchTermChange}
         onReset={onReset}

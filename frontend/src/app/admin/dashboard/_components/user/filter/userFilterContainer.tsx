@@ -2,8 +2,8 @@
 
 import React from "react";
 import { UserStatusFilter } from "./userStatusFilter";
-import { UserSearchBox } from "./userSearchBox";
 import { userStatus } from "../../../_types/userResponseDto";
+import { SearchBox } from "@/app/admin/dashboard/_components/common/filter/searchBox";
 
 interface FilterState {
   userStatuses: Set<userStatus>;
@@ -37,7 +37,7 @@ export function UserFilterContainer({
       />
 
       {/* 검색 */}
-      <UserSearchBox
+      <SearchBox
         searchTerm={filters.searchTerm}
         onSearchTermChange={onSearchTermChange}
         onReset={onReset}

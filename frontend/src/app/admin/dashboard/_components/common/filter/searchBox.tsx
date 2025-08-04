@@ -1,20 +1,34 @@
 "use client";
 
-import React from "react";
+import React, { ChangeEvent, useState } from "react";
 
-interface UserSearchBoxProps {
+interface SearchBoxProps {
   searchTerm: string;
   onSearchTermChange: (value: string) => void;
   onReset: () => void;
   onSearch?: () => void;
 }
 
-export function UserSearchBox({
+export function SearchBox({
   searchTerm,
   onSearchTermChange,
   onReset,
   onSearch,
-}: UserSearchBoxProps) {
+}: SearchBoxProps) {
+
+  const [enableButton, setEnableButton] = useState(true);
+  const reset = () => {
+    setEnableButton(true);
+    onReset();
+  }
+
+  const checkNumber = (e : ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value.trim();
+    const canSubmit = /^\d*$/.test(e.target.value) || !value || value.length == 0;
+    setEnableButton(canSubmit);
+    onSearchTermChange(value);
+  }
+
   return (
     <div>
       <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -24,25 +38,35 @@ export function UserSearchBox({
         <input
           type="text"
           value={searchTerm}
-          onChange={(e) => onSearchTermChange(e.target.value)}
+          onChange={checkNumber}
           placeholder="(선택) 유저 ID로도 검색..."
           className="flex-1 block px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-sm"
         />
 
         <button
-          onClick={onReset}
+          onClick={reset}
+          style={{
+            cursor : "pointer",
+          }}
           className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
         >
           초기화
         </button>
 
         <button
-          onClick={onSearch}
+          onClick={enableButton ? onSearch : undefined}
+          style={{
+            cursor: enableButton ? "pointer" : "not-allowed",
+            opacity: enableButton ? 1 : 0.6,
+          }}
           className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
         >
           검색
         </button>
       </div>
+      {!enableButton && (
+          <span className="text-xs text-red-500">숫자만 입력 가능합니다!</span>
+      )}
     </div>
   );
 }
