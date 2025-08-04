@@ -1,45 +1,17 @@
-// src/app/components/SuspensionModal.tsx
-
 'use client';
 
-import React, { useEffect } from 'react';
+import React from 'react';
 import Modal from 'react-modal';
 
-export default function SuspensionModal() {
-    // ✅ 수정된 부분: useEffect를 사용하여 DOM에 접근
-    useEffect(() => {
-        // 이 코드는 클라이언트 측에서 컴포넌트가 마운트될 때 한 번만 실행됩니다.
-        Modal.setAppElement('#__next');
-    }, []); // 의존성 배열을 비워 컴포넌트가 처음 렌더링될 때만 실행되도록 설정
-
-    const customStyles: Modal.Styles = {
-        overlay: {
-            backgroundColor: 'rgba(0, 0, 0, 0.5)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            zIndex: 1000,
-        },
-        content: {
-            position: 'relative',
-            top: 'auto',
-            left: 'auto',
-            right: 'auto',
-            bottom: 'auto',
-            border: 'none',
-            background: 'none',
-            padding: '0',
-            overflow: 'visible',
-        },
-    };
-
+export default function SuspensionModal({ onClose }: { onClose: () => void }) {
     return (
         <Modal
             isOpen={true}
-            style={customStyles}
             contentLabel="회원 정지 알림"
             ariaHideApp={false}
-            className="bg-white rounded-lg p-8 shadow-xl max-w-lg mx-auto text-center animate-fade-in-up"
+            className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-white rounded-lg p-8 shadow-xl max-w-lg mx-auto text-center animate-fade-in-up"
+            overlayClassName="fixed inset-0 bg-transparent flex items-center justify-center z-50"
+            onRequestClose={onClose}
         >
             <div className="bg-white rounded-lg p-8 shadow-xl max-w-lg mx-auto text-center">
                 <h2 className="text-3xl font-bold text-red-600 mb-4">
@@ -56,6 +28,12 @@ export default function SuspensionModal() {
                     <p className="text-sm text-gray-600 mt-1">이메일: help@bookbook.com</p>
                     <p className="text-sm text-gray-600">전화: 02-1234-5678</p>
                 </div>
+                <button
+                    onClick={onClose}
+                    className="mt-6 px-6 py-2 rounded-lg bg-red-500 text-white font-bold hover:bg-red-600 transition-colors"
+                >
+                    확인
+                </button>
             </div>
         </Modal>
     );

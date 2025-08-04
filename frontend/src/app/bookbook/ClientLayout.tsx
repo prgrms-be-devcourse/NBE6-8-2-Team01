@@ -6,7 +6,8 @@ import UserSidebar from '../components/UserSidebar';
 import Header from '../components/Header';
 import { LoginModalProvider, useLoginModal } from '../context/LoginModalContext';
 import LoginModal from '../components/LoginModal';
-import { setFetchInterceptorOpenLoginModal } from '@/app/util/fetchIntercepter'
+import { setFetchInterceptorOpenLoginModal } from '@/app/util/fetchIntercepter';
+import ModalSetup from '../components/ModalSetup';
 
 function InterceptorSetup() {
     const { openLoginModal } = useLoginModal();
@@ -30,7 +31,7 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
 
     return (
         <LoginModalProvider>
-            {/*  인터셉터 설정을 담당하는 컴포넌트 */}
+            <ModalSetup />
             <InterceptorSetup />
             <Header />
             {isUserPage ? (

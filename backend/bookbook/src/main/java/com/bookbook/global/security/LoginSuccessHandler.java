@@ -71,7 +71,8 @@ public class LoginSuccessHandler implements AuthenticationSuccessHandler {
             redirectUrl = frontendBaseUrl + signupPath;
             log.info("Redirecting to signup page: {}", redirectUrl);
         } else {
-            redirectUrl = frontendBaseUrl + mainPath;
+            String queryParam = "?login_success=true";
+            redirectUrl = frontendBaseUrl + mainPath + queryParam;
             log.info("Redirecting to main page: {}", redirectUrl);
         }
 
