@@ -12,7 +12,7 @@ import UserProfileModal from "@/app/components/UserProfileModal";
 
 // 백엔드에서 받아올 책 상세 정보의 타입을 정의합니다.
 interface BookDetail {
-    
+
     id: number; // 글 ID
     bookCondition: string; // 책 상태
     address: string; // 거래 희망 지역
@@ -28,7 +28,7 @@ interface BookDetail {
     publisher: string; // 출판사
     category: string; // 카테고리
     description: string; // 책 설명 (알라딘 API에서 가져온 상세 설명)
-    
+
     // 대여자 정보 추가
     nickname: string; // 대여자 닉네임
     rating: number; // 대여자 매너 점수
@@ -48,7 +48,7 @@ export default function BookDetailPage({ params }: { params: Promise<{ id: strin
     const [selectedLenderId, setSelectedLenderId] = useState<number | null>(null);
 
     const router = useRouter(); // 페이지 이동을 위한 useRouter 훅
-    
+
     // 현재 로그인한 사용자 정보를 가져옵니다 (자동 로그인 없음)
     const { user, loading: userLoading, userId, isAuthenticated } = useAuthCheck();
 
@@ -99,7 +99,7 @@ export default function BookDetailPage({ params }: { params: Promise<{ id: strin
     // 북북톡 버튼 클릭 핸들러 - 채팅방 생성 후 채팅 페이지로 이동
     const handleChatClick = async () => {
         if (!bookDetail) return;
-        
+
         try {
             // 채팅방 생성 API 호출
             const response = await fetch('http://localhost:8080/api/v1/bookbook/chat/rooms', {
@@ -131,7 +131,7 @@ export default function BookDetailPage({ params }: { params: Promise<{ id: strin
 
             // 채팅 페이지로 이동 (ChatWindow 컴포넌트가 있는 경로)
             router.push(`/bookbook/MessagePopup/${chatRoom.roomId}?bookTitle=${encodeURIComponent(bookDetail.bookTitle)}&otherUserNickname=${encodeURIComponent('대여자')}`);
-            
+
         } catch (error: any) {
             console.error('채팅방 생성 실패:', error);
             alert('채팅방 생성에 실패했습니다. 다시 시도해주세요.');
@@ -176,199 +176,200 @@ export default function BookDetailPage({ params }: { params: Promise<{ id: strin
 
     return (
         <div className="min-h-screen bg-gray-100 py-8 px-4 sm:py-12 sm:px-16 md:py-16 md:px-24 font-inter">
-        <div className="bg-white py-6 px-8 sm:py-8 sm:px-10 md:py-10 md:px-12 rounded-xl shadow-lg w-full max-w-4xl mx-auto">
-            <div className="flex justify-between items-baseline mb-4">
-                <h1 className="text-2xl sm:text-3xl font-bold text-gray-800">
-                    {bookDetail.title}
-                </h1>
-                {bookDetail.createdAt && (
-                    <p className="text-base sm:text-lg text-gray-500">
-                        {bookDetail.createdAt.split('T')[0].replace(/-/g, '/')}
-                    </p>
-                )}
-            </div>
-            <hr className="border-t-2 border-gray-300 mb-6 sm:mb-8" />
-
-            <div className="flex flex-col md:flex-row gap-16 mb-8"> {/* gap-8에서 gap-16으로 변경 */}
-                {/* 책 이미지 영역 */}
-                <div className="flex-shrink-0 flex justify-center md:justify-start">
-                    <img
-                        src={displayImageUrl}
-                        alt={bookDetail.bookTitle || '책 표지'}
-                        className="w-80 h-80 object-cover rounded-lg shadow-md max-w-full"
-                        onError={(e) => {
-                            e.currentTarget.src = defaultCoverImageUrl;
-                            e.currentTarget.alt = "이미지 로드 실패";
-                        }}
-                    />
+            <div className="bg-white py-6 px-8 sm:py-8 sm:px-10 md:py-10 md:px-12 rounded-xl shadow-lg w-full max-w-4xl mx-auto">
+                <div className="flex justify-between items-baseline mb-4">
+                    <h1 className="text-2xl sm:text-3xl font-bold text-gray-800">
+                        {bookDetail.title}
+                    </h1>
+                    {bookDetail.createdAt && (
+                        <p className="text-base sm:text-lg text-gray-500">
+                            {bookDetail.createdAt.split('T')[0].replace(/-/g, '/')}
+                        </p>
+                    )}
                 </div>
+                <hr className="border-t-2 border-gray-300 mb-6 sm:mb-8" />
 
-                {/* 책 정보 영역 */}
-                <div className="flex-grow flex flex-col">
-                    <div className="flex justify-between items-baseline mb-2">
-                        <h2 className="text-xl sm:text-2xl font-bold text-gray-800">
-                            책 정보
-                        </h2>
-                        {/* 대여 상태 표시 */}
-                        {bookDetail.rentStatus === 'RENTED' && (
-                            <span className="text-red-500 font-bold ml-2 text-lg">대여불가</span>
-                        )}
-                        {bookDetail.rentStatus === 'AVAILABLE' && (
-                            <span className="text-green-600 font-bold ml-2 text-lg">대여가능</span>
-                        )}
-                        {bookDetail.rentStatus === 'EXPIRED' && (
-                            <span className="text-gray-500 font-bold ml-2 text-lg">기간만료</span>
-                        )}
+                <div className="flex flex-col md:flex-row gap-16 mb-8"> {/* gap-8에서 gap-16으로 변경 */}
+                    {/* 책 이미지 영역 */}
+                    <div className="flex-shrink-0 flex justify-center md:justify-start">
+                        <img
+                            src={displayImageUrl}
+                            alt={bookDetail.bookTitle || '책 표지'}
+                            className="w-80 h-80 object-cover rounded-lg shadow-md max-w-full"
+                            onError={(e) => {
+                                e.currentTarget.src = defaultCoverImageUrl;
+                                e.currentTarget.alt = "이미지 로드 실패";
+                            }}
+                        />
                     </div>
-                    <hr className="border-t border-gray-200 mb-4" />
-                    <div className="space-y-3 mt-4">
-                        <div className="flex items-center justify-center">
-                            <p className="font-semibold text-gray-600 w-24 text-left">책 제목:</p>
-                            <p className="text-gray-700 flex-grow text-left">{bookDetail.bookTitle}</p>
-                        </div>
-                        <div className="flex items-center justify-center">
-                            <p className="font-semibold text-gray-600 w-24 text-left">저자:</p>
-                            <p className="text-gray-700 flex-grow text-left">{bookDetail.author}</p>
-                        </div>
-                        <div className="flex items-center justify-center">
-                            <p className="font-semibold text-gray-600 w-24 text-left">출판사:</p>
-                            <p className="text-gray-700 flex-grow text-left">{bookDetail.publisher}</p>
-                        </div>
-                        <div className="flex items-center justify-center">
-                            <p className="font-semibold text-gray-600 w-24 text-left">카테고리:</p>
-                            <p className="text-gray-700 flex-grow text-left">{bookDetail.category}</p>
-                        </div>
-                        <div className="flex items-center justify-center">
-                            <p className="font-semibold text-gray-600 w-24 text-left">책 상태:</p>
-                            <p className="text-gray-700 flex-grow text-left">{bookDetail.bookCondition}</p>
-                        </div>
-                    </div>
-                    {/* 북북톡/수정하기/대여하기/북마크 버튼 영역 */}
-                    <div className="flex items-center mt-auto space-x-3">
-                        {/* 북마크 버튼 스타일링 */}
-                        <button className="w-10 h-10 flex items-center justify-center rounded-lg border border-gray-400 bg-gray-50 hover:bg-gray-100 shadow-sm">
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-500" viewBox="0 0 20 20" fill="currentColor">
-                                <path fillRule="evenodd" d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" clipRule="evenodd" />
-                            </svg>
-                        </button>
 
-                        {/* 항상 북북톡 버튼 표시 */}
-                        <button 
-                            onClick={handleChatClick}
-                            className="px-6 py-2 rounded-lg bg-blue-500 text-white font-semibold hover:bg-blue-600 shadow-md"
-                        >
-                            북북톡
-                        </button>
-                        
-                        {/* 로그인 했고, 글 작성자인 경우 수정하기 버튼 표시 */}
-                        {isAuthor && user && (
-                            <button 
-                                onClick={() => router.push(`/bookbook/rent/edit/${id}`)}
-                                className="px-10 py-2 rounded-lg bg-[#D5BAA3] text-white font-semibold hover:bg-[#C2A794] shadow-md"
-                            >
-                                수정하기
+                    {/* 책 정보 영역 */}
+                    <div className="flex-grow flex flex-col">
+                        <div className="flex justify-between items-baseline mb-2">
+                            <h2 className="text-xl sm:text-2xl font-bold text-gray-800">
+                                책 정보
+                            </h2>
+                            {/* 대여 상태 표시 */}
+                            {bookDetail.rentStatus === 'RENTED' && (
+                                <span className="text-red-500 font-bold ml-2 text-lg">대여불가</span>
+                            )}
+                            {bookDetail.rentStatus === 'AVAILABLE' && (
+                                <span className="text-green-600 font-bold ml-2 text-lg">대여가능</span>
+                            )}
+                            {bookDetail.rentStatus === 'EXPIRED' && (
+                                <span className="text-gray-500 font-bold ml-2 text-lg">기간만료</span>
+                            )}
+                        </div>
+                        <hr className="border-t border-gray-200 mb-4" />
+                        <div className="space-y-3 mt-4">
+                            <div className="flex items-center justify-center">
+                                <p className="font-semibold text-gray-600 w-24 text-left">책 제목:</p>
+                                <p className="text-gray-700 flex-grow text-left">{bookDetail.bookTitle}</p>
+                            </div>
+                            <div className="flex items-center justify-center">
+                                <p className="font-semibold text-gray-600 w-24 text-left">저자:</p>
+                                <p className="text-gray-700 flex-grow text-left">{bookDetail.author}</p>
+                            </div>
+                            <div className="flex items-center justify-center">
+                                <p className="font-semibold text-gray-600 w-24 text-left">출판사:</p>
+                                <p className="text-gray-700 flex-grow text-left">{bookDetail.publisher}</p>
+                            </div>
+                            <div className="flex items-center justify-center">
+                                <p className="font-semibold text-gray-600 w-24 text-left">카테고리:</p>
+                                <p className="text-gray-700 flex-grow text-left">{bookDetail.category}</p>
+                            </div>
+                            <div className="flex items-center justify-center">
+                                <p className="font-semibold text-gray-600 w-24 text-left">책 상태:</p>
+                                <p className="text-gray-700 flex-grow text-left">{bookDetail.bookCondition}</p>
+                            </div>
+                        </div>
+                        {/* 북북톡/수정하기/대여하기/북마크 버튼 영역 */}
+                        <div className="flex items-center mt-auto space-x-3">
+                            {/* 북마크 버튼 스타일링 */}
+                            <button className="w-10 h-10 flex items-center justify-center rounded-lg border border-gray-400 bg-gray-50 hover:bg-gray-100 shadow-sm">
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-500" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fillRule="evenodd" d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" clipRule="evenodd" />
+                                </svg>
                             </button>
-                        )}
-                          {/* 로그인 했고, 글 작성자가 아닌 경우 대여하기 버튼 표시 */}
-                         {!isAuthor && user && (
-                             <button 
-                                 onClick={() => setIsRentModalOpen(true)}
-                                 className="px-10 py-2 rounded-lg bg-[#D5BAA3] text-white font-semibold hover:bg-[#C2A794] shadow-md"
-                             >
-                                 대여하기
-                             </button>
-                         )}
-                         {/* 로그인하지 않은 경우 안내 메시지 */}
-                         {!user && (
-                             <button 
-                                 onClick={() => alert('로그인이 필요한 서비스입니다.')}
-                                 className="px-10 py-2 rounded-lg bg-gray-400 text-white font-semibold cursor-not-allowed"
-                                 disabled
-                             >
-                                 로그인 후 대여하기
-                             </button>
-                         )}                        
+
+                            {/* 항상 북북톡 버튼 표시 */}
+                            <button
+                                onClick={handleChatClick}
+                                className="px-6 py-2 rounded-lg bg-blue-500 text-white font-semibold hover:bg-blue-600 shadow-md"
+                            >
+                                북북톡
+                            </button>
+
+                            {/* 로그인 했고, 글 작성자인 경우 수정하기 버튼 표시 */}
+                            {isAuthor && user && (
+                                <button
+                                    onClick={() => router.push(`/bookbook/rent/edit/${id}`)}
+                                    className="px-10 py-2 rounded-lg bg-[#D5BAA3] text-white font-semibold hover:bg-[#C2A794] shadow-md"
+                                >
+                                    수정하기
+                                </button>
+                            )}
+                            {/* 로그인 했고, 글 작성자가 아닌 경우 대여하기 버튼 표시 */}
+                            {!isAuthor && user && (
+                                <button
+                                    onClick={() => setIsRentModalOpen(true)}
+                                    className="px-10 py-2 rounded-lg bg-[#D5BAA3] text-white font-semibold hover:bg-[#C2A794] shadow-md"
+                                >
+                                    대여하기
+                                </button>
+                            )}
+                            {/* 로그인하지 않은 경우 안내 메시지 */}
+                            {!user && (
+                                <button
+                                    onClick={() => alert('로그인이 필요한 서비스입니다.')}
+                                    className="px-10 py-2 rounded-lg bg-gray-400 text-white font-semibold cursor-not-allowed"
+                                    disabled
+                                >
+                                    로그인 후 대여하기
+                                </button>
+                            )}
+                        </div>
                     </div>
                 </div>
-            </div>
 
-            <hr className="border-t-2 border-gray-300 my-6 sm:my-8" />
+                <hr className="border-t-2 border-gray-300 my-6 sm:my-8" />
 
-            {/* 글 내용 영역 및 대여자 정보 영역을 가로로 배치 */}
-            <div className="flex flex-col md:flex-row gap-8">
-                {/* 글 내용 영역 (70% 너비) */}
-                <div className="w-full md:w-7/10">
+                {/* 글 내용 영역 및 대여자 정보 영역을 가로로 배치 */}
+                <div className="flex flex-col md:flex-row gap-8">
+                    {/* 글 내용 영역 (70% 너비) */}
+                    <div className="w-full md:w-7/10">
+                        <h2 className="text-xl sm:text-2xl font-bold text-gray-800 mb-3">
+                            글 내용
+                        </h2>
+                        <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                            <p className="text-gray-800 leading-relaxed whitespace-pre-wrap">
+                                {bookDetail.contents}
+                            </p>
+                        </div>
+                    </div>
+
+                    {/* 수직 구분선 (모바일에서는 숨김) */}
+                    <div className="hidden md:block border-l-2 border-gray-300 mx-4"></div>
+
+                    {/* 대여자 정보 영역 (30% 너비) */}
+                    <div className="w-full md:w-3/10">
+                        <h2 className="text-xl sm:text-2xl font-bold text-gray-800 mb-3">
+                            대여자 정보
+                        </h2>
+                        <button
+                            onClick={isAuthenticated ? handleOpenProfileModal : () => alert('로그인이 필요한 서비스입니다.')}
+                            disabled={!isAuthenticated}
+                            className={`w-full text-left p-4 rounded-lg border border-gray-200 bg-gray-50 transition-colors ${isAuthenticated ? 'hover:bg-gray-100 cursor-pointer' : 'cursor-not-allowed opacity-50'}`}
+                        >
+                            <div className="flex items-center space-x-4 bg-gray-50 p-4 rounded-lg border border-gray-200">
+
+                                <div>
+                                    <p className="font-semibold text-gray-800">{bookDetail.nickname}</p>
+                                    <p className="text-sm text-gray-600 mt-2">등록된 글: {bookDetail.lenderPostCount}</p>
+                                    <p className="text-sm text-gray-600">매너 점수: {bookDetail.rating}/5</p>
+                                </div>
+                            </div>
+                        </button>
+                    </div>
+                </div>
+
+                {/* 책 설명 영역 (알라딘 API에서 가져온 내용) - 기존 위치 유지 */}
+                <div className="mt-8 mb-8">
                     <h2 className="text-xl sm:text-2xl font-bold text-gray-800 mb-3">
-                        글 내용
+                        책 설명
                     </h2>
                     <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
                         <p className="text-gray-800 leading-relaxed whitespace-pre-wrap">
-                            {bookDetail.contents}
+                            {bookDetail.description}
                         </p>
                     </div>
                 </div>
 
-                {/* 수직 구분선 (모바일에서는 숨김) */}
-                <div className="hidden md:block border-l-2 border-gray-300 mx-4"></div>
-
-                {/* 대여자 정보 영역 (30% 너비) */}
-                <div className="w-full md:w-3/10">
-                    <h2 className="text-xl sm:text-2xl font-bold text-gray-800 mb-3">
-                        대여자 정보
-                    </h2>
+                {/* 하단 버튼 (이전 페이지로 돌아가기 등) */}
+                <div className="mt-8 flex justify-center">
                     <button
-                        onClick={handleOpenProfileModal}
-                        className="w-full text-left p-4 rounded-lg border border-gray-200 bg-gray-50 hover:bg-gray-100 transition-colors cursor-pointer"
+                        onClick={() => router.push('/bookbook')} // 특정 URL로 이동하도록 수정
+                        className="px-6 py-2 text-white font-semibold rounded-lg shadow-md bg-gray-500 hover:bg-gray-600 transition duration-150"
                     >
-                        <div className="flex items-center space-x-4 bg-gray-50 p-4 rounded-lg border border-gray-200">
-
-                            <div>
-                                <p className="font-semibold text-gray-800">{bookDetail.nickname}</p>
-                                <p className="text-sm text-gray-600 mt-2">등록된 글: {bookDetail.lenderPostCount}</p>
-                                <p className="text-sm text-gray-600">매너 점수: {bookDetail.rating}/5</p>
-                            </div>
-                        </div>
+                        목록으로 돌아가기
                     </button>
                 </div>
             </div>
 
-            {/* 책 설명 영역 (알라딘 API에서 가져온 내용) - 기존 위치 유지 */}
-            <div className="mt-8 mb-8">
-                <h2 className="text-xl sm:text-2xl font-bold text-gray-800 mb-3">
-                    책 설명
-                </h2>
-                <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
-                    <p className="text-gray-800 leading-relaxed whitespace-pre-wrap">
-                        {bookDetail.description}
-                    </p>
-                </div>
-            </div>
-
-            {/* 하단 버튼 (이전 페이지로 돌아가기 등) */}
-            <div className="mt-8 flex justify-center">
-                <button
-                    onClick={() => router.push('/bookbook')} // 특정 URL로 이동하도록 수정
-                    className="px-6 py-2 text-white font-semibold rounded-lg shadow-md bg-gray-500 hover:bg-gray-600 transition duration-150"
-                >
-                    목록으로 돌아가기
-                </button>
-            </div>
-        </div>
-
-        {/* 대여하기 팝업 모달 */}
-        {bookDetail && (
-            <RentModal
-                isOpen={isRentModalOpen}
-                onClose={() => setIsRentModalOpen(false)}
-                bookTitle={bookDetail.bookTitle}
-                lenderNickname={bookDetail.nickname}
-            />
-        )}
+            {/* 대여하기 팝업 모달 */}
+            {bookDetail && (
+                <RentModal
+                    isOpen={isRentModalOpen}
+                    onClose={() => setIsRentModalOpen(false)}
+                    bookTitle={bookDetail.bookTitle}
+                    lenderNickname={bookDetail.nickname}
+                />
+            )}
             <UserProfileModal
                 isOpen={isProfileModalOpen}
                 onClose={handleCloseProfileModal}
                 userId={selectedLenderId}
             />
-    </div>
+        </div>
     );
 }
