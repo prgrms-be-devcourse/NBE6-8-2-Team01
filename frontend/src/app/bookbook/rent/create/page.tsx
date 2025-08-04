@@ -210,6 +210,7 @@ export default function BookRentPage() {
             description: description
         };
 
+        // 백엔드 Rent 페이지 생성 POST 요청으로 전송
         try{
             const res = await fetch("http://localhost:8080/bookbook/rent/create", {
             method: "POST",

@@ -11,6 +11,7 @@ import com.bookbook.domain.rent.repository.RentRepository;
 import com.bookbook.domain.user.entity.User;
 import com.bookbook.domain.user.repository.UserRepository;
 import com.bookbook.global.exception.ServiceException;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -41,6 +42,7 @@ public class RentService {
 
         // Rent 엔티티 생성 (Builder 패턴 활용)
         Rent rent = Rent.builder()
+                // 글 관련 정보
                 .lenderUserId(userId)
                 .title(dto.title())
                 .bookCondition(dto.bookCondition())
@@ -48,6 +50,8 @@ public class RentService {
                 .address(dto.address())
                 .contents(dto.contents())
                 .rentStatus(dto.rentStatus())
+
+                // 책 관련 정보
                 .bookTitle(dto.bookTitle())
                 .author(dto.author())
                 .publisher(dto.publisher())
@@ -125,6 +129,39 @@ public class RentService {
                 rentUser.getRating(),
                 lenderPostCount
         );
+    }
+
+    // Rent 페이지 수정 Put 요청
+    // /bookbook/rent/edit/{id}
+    @Transactional
+    public void editRentPage(int id, @Valid RentRequestDto dto, Long userId) {
+        // 글 ID로 대여글 정보 조회
+        Rent rent = rentRepository.findById(id)
+                .orElseThrow(() -> new ServiceException("404-2", "해당 대여글을 찾을 수 없습니다."));
+
+        // 글 작성자와 현재 로그인한 사용자가 일치하는지 확인
+        if (!rent.getLenderUserId().equals(userId)) {
+            throw new ServiceException("403", "해당 대여글을 수정할 권한이 없습니다.");
+        }
+
+        // Rent 엔티티 업데이트
+        // 글 관련 정보
+        rent.setTitle(dto.title());
+        rent.setBookCondition(dto.bookCondition());
+        rent.setBookImage(dto.bookImage());
+        rent.setAddress(dto.address());
+        rent.setContents(dto.contents());
+        rent.setRentStatus(dto.rentStatus());
+
+        // 책 관련 정보
+        rent.setBookTitle(dto.bookTitle());
+        rent.setAuthor(dto.author());
+        rent.setPublisher(dto.publisher());
+        rent.setCategory(dto.category());
+        rent.setDescription(dto.description());
+
+        // Rent 테이블에 업데이트
+        rentRepository.save(rent);
     }
 
     // 대여 가능한 책 목록 조회 (필터링 및 페이지네이션 지원)
