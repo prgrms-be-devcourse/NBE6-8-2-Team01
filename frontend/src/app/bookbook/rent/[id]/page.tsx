@@ -139,7 +139,7 @@ export default function BookDetailPage({ params }: { params: Promise<{ id: strin
     };
 
     // 로딩 중일 때 표시 (책 정보 로딩만 확인, 사용자 정보는 비동기로 처리)
-    if (loading) {
+    if (loading || userLoading) {
         return (
             <div className="min-h-screen flex items-center justify-center bg-gray-100 font-inter">
                 <p className="text-gray-700 text-lg">책 정보를 불러오는 중...</p>
