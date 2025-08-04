@@ -3,7 +3,7 @@ import com.bookbook.global.jpa.entity.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;
 
-// 25.07.31 현준
+// 25.08.04 현준
 @Entity
 @Getter
 @Setter
@@ -12,9 +12,6 @@ import lombok.*;
 @AllArgsConstructor
 public class Rent extends BaseEntity {
 
-    // 글 관련한 속성
-//    @ManyToOne
-//    @JoinColumn(name = )
     private Long lenderUserId; // 대여자 ID
     private String title; // 글 제목
     private String bookCondition; // 책 상태
@@ -23,7 +20,7 @@ public class Rent extends BaseEntity {
     private String contents; // 대여 내용
 
     @Enumerated(EnumType.STRING) // enum 이름을 String으로 DB에 저장하도록 지정
-    private RentStatus rentStatus; // 대여 상태(Available, Loaned, Finished)
+    private RentStatus rentStatus; // 대여 상태(Available, Loaned, Finished, Deleted)
 
     // 알라딘 API로 받아온 책 관련 속성
     private String bookTitle; // 책 제목
