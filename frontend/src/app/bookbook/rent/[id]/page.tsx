@@ -8,6 +8,7 @@ import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation'; // useRouter는 클라이언트 컴포넌트에서 사용
 import { useCurrentUser } from '../../../hooks/useCurrentUser'; // 현재 사용자 정보를 가져오는 훅 추가
 import RentModal from '@/app/components/RentModal'; // 대여하기 팝업 모달 컴포넌트
+import UserProfileModal from "@/app/components/UserProfileModal";
 
 // 백엔드에서 받아올 책 상세 정보의 타입을 정의합니다.
 interface BookDetail {
@@ -42,6 +43,9 @@ export default function BookDetailPage({ params }: { params: Promise<{ id: strin
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [isRentModalOpen, setIsRentModalOpen] = useState(false);
+
+    const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
+    const [selectedLenderId, setSelectedLenderId] = useState<number | null>(null);
 
     const router = useRouter(); // 페이지 이동을 위한 useRouter 훅
     
@@ -79,6 +83,18 @@ export default function BookDetailPage({ params }: { params: Promise<{ id: strin
 
         fetchBookDetail();
     }, [id]); // id가 변경될 때마다 useEffect 재실행
+
+    const handleOpenProfileModal = () => {
+        if (bookDetail?.lenderUserId) {
+            setSelectedLenderId(bookDetail.lenderUserId);
+            setIsProfileModalOpen(true);
+        }
+    };
+
+    const handleCloseProfileModal = () => {
+        setIsProfileModalOpen(false);
+        setSelectedLenderId(null);
+    };
 
     // 북북톡 버튼 클릭 핸들러 - 채팅방 생성 후 채팅 페이지로 이동
     const handleChatClick = async () => {
@@ -281,14 +297,19 @@ export default function BookDetailPage({ params }: { params: Promise<{ id: strin
                     <h2 className="text-xl sm:text-2xl font-bold text-gray-800 mb-3">
                         대여자 정보
                     </h2>
-                    <div className="flex items-center space-x-4 bg-gray-50 p-4 rounded-lg border border-gray-200">
+                    <button
+                        onClick={handleOpenProfileModal}
+                        className="w-full text-left p-4 rounded-lg border border-gray-200 bg-gray-50 hover:bg-gray-100 transition-colors cursor-pointer"
+                    >
+                        <div className="flex items-center space-x-4 bg-gray-50 p-4 rounded-lg border border-gray-200">
 
-                        <div>
-                            <p className="font-semibold text-gray-800">{bookDetail.nickname}</p>
-                            <p className="text-sm text-gray-600 mt-2">등록된 글: {bookDetail.lenderPostCount}</p>
-                            <p className="text-sm text-gray-600">매너 점수: {bookDetail.rating}/5</p>
+                            <div>
+                                <p className="font-semibold text-gray-800">{bookDetail.nickname}</p>
+                                <p className="text-sm text-gray-600 mt-2">등록된 글: {bookDetail.lenderPostCount}</p>
+                                <p className="text-sm text-gray-600">매너 점수: {bookDetail.rating}/5</p>
+                            </div>
                         </div>
-                    </div>
+                    </button>
                 </div>
             </div>
 
@@ -324,6 +345,11 @@ export default function BookDetailPage({ params }: { params: Promise<{ id: strin
                 lenderNickname={bookDetail.nickname}
             />
         )}
+            <UserProfileModal
+                isOpen={isProfileModalOpen}
+                onClose={handleCloseProfileModal}
+                userId={selectedLenderId}
+            />
     </div>
     );
 }
