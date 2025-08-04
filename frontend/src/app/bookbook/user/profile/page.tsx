@@ -259,6 +259,11 @@ export default function MyPage() {
         // 모달 닫기
         handleCloseWithdrawalModal();
 
+        if (userData?.userStatus === 'SUSPENDED') {
+            toast.error('❌ 정지된 계정은 탈퇴할 수 없습니다.');
+            return;
+        }
+
         const deletePromise = new Promise(async (resolve, reject) => {
             try {
                 const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/bookbook/users/me`, {
