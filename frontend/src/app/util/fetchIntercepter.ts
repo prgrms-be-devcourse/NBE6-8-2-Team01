@@ -31,6 +31,7 @@ if (typeof window !== 'undefined') {
 
                 if (refreshResponse.ok) {
                     console.log('[fetchInterceptor] 토큰 갱신 성공! 원래 요청 재시도...');
+                    sessionStorage.setItem('refreshSucceeded', 'true');
                     return originalFetch(input, newInit);
                 } else {
                     // ✅ 토큰 갱신 요청 자체가 실패한 경우, 명확한 에러를 발생시켜 호출자에게 알립니다.
