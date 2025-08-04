@@ -61,7 +61,7 @@ public class securityConfig {
                                 })
                 )
                 .authorizeHttpRequests(authorize -> authorize
-                      
+
                         .requestMatchers(
                                 "/api/*/admin/login",
                                 "api/v1/bookbook/users/social/callback",
@@ -92,6 +92,8 @@ public class securityConfig {
                                 "/webjars/**" // WebJars 접근 허용
                         ).permitAll()
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll() // OPTIONS 메서드 요청은 모든 경로에 대해 허용 (Preflight 요청)
+                        .requestMatchers(HttpMethod.GET, "/api/v1/bookbook/users/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/user/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/bookbook/users/me").authenticated()
                         .requestMatchers(HttpMethod.PATCH, "/api/v1/bookbook/users/me").authenticated()
                         .requestMatchers(HttpMethod.DELETE, "/api/v1/bookbook/users/me").authenticated()
