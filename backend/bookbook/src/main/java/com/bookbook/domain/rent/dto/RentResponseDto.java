@@ -1,7 +1,6 @@
 // 25.08.03 현준
 package com.bookbook.domain.rent.dto;
 
-import com.bookbook.domain.rent.entity.Rent;
 import com.bookbook.domain.rent.entity.RentStatus;
 import lombok.Builder;
 
@@ -33,23 +32,4 @@ public record RentResponseDto(
         int lenderPostCount // 글쓴이 대여글 작성 수
 
 ) {
-    public static RentResponseDto from(Rent rent) {
-        return RentResponseDto.builder()
-                .id(rent.getId())
-                .lenderUserId(rent.getLenderUserId())
-                .title(rent.getTitle())
-                .bookCondition(rent.getBookCondition())
-                .bookImage(rent.getBookImage())
-                .address(rent.getAddress())
-                .contents(rent.getContents())
-                .rentStatus(rent.getRentStatus())
-                .bookTitle(rent.getBookTitle())
-                .author(rent.getAuthor())
-                .publisher(rent.getPublisher())
-                .category(rent.getCategory())
-                .description(rent.getDescription())
-                .createdDate(rent.getCreatedDate())
-                .modifiedDate(rent.getModifiedDate())
-                .build();
-    }
 }

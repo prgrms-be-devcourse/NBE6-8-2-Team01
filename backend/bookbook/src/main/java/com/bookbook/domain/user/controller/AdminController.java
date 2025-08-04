@@ -1,6 +1,6 @@
 package com.bookbook.domain.user.controller;
 
-import com.bookbook.domain.rent.dto.RentResponseDto;
+import com.bookbook.domain.rent.dto.RentDetailResponseDto;
 import com.bookbook.domain.rent.service.RentService;
 import com.bookbook.domain.suspend.dto.request.UserSuspendRequestDto;
 import com.bookbook.domain.suspend.dto.response.UserSuspendResponseDto;
@@ -197,14 +197,14 @@ public class AdminController {
     }
 
     @PatchMapping("/rent/{id}") // /rent/{id} 경로로 patch 요청을 처리
-    public ResponseEntity<RsData<RentResponseDto>> changeRentStatus(
+    public ResponseEntity<RsData<RentDetailResponseDto>> changeRentStatus(
             @PathVariable int id,
             @RequestBody ChangeRentStatusRequestDto status
     ){ // 경로 변수로 전달된 id를 사용
-        RentResponseDto rentResponseDto = rentService.modifyRentPageStatus(id, status);
+        RentDetailResponseDto responseDto = rentService.modifyRentPageStatus(id, status);
 
         return ResponseEntity.ok(
-                RsData.of("200-1","%d 번 글 상태 변경 완료", rentResponseDto)
+                RsData.of("200-1","%d 번 글 상태 변경 완료", responseDto)
         );
     }
 

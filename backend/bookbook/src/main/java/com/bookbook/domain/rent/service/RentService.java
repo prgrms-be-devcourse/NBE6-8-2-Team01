@@ -3,6 +3,7 @@ package com.bookbook.domain.rent.service;
 import com.bookbook.domain.notification.enums.NotificationType;
 import com.bookbook.domain.notification.service.NotificationService;
 import com.bookbook.domain.rent.dto.RentAvailableResponseDto;
+import com.bookbook.domain.rent.dto.RentDetailResponseDto;
 import com.bookbook.domain.rent.dto.RentRequestDto;
 import com.bookbook.domain.rent.dto.RentResponseDto;
 import com.bookbook.domain.rent.entity.Rent;
@@ -209,12 +210,12 @@ public class RentService {
     }
 
     @Transactional
-    public RentResponseDto modifyRentPageStatus(Integer id, ChangeRentStatusRequestDto requestDto) {
+    public RentDetailResponseDto modifyRentPageStatus(Integer id, ChangeRentStatusRequestDto requestDto) {
         Rent rent = rentRepository.findById(id)
                 .orElseThrow(()-> new ServiceException("404-2", "해당 대여글을 찾을 수 없습니다."));
 
         rent.setRentStatus(requestDto.status());
-        return RentResponseDto.from(rent);
+        return RentDetailResponseDto.from(rent);
     }
 
     @Transactional
