@@ -9,7 +9,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 @Repository
-public interface LendListRepository extends JpaRepository<Rent, Long> {
+public interface LendListRepository extends JpaRepository<Rent, Integer> {
     
     @Query("SELECT r FROM Rent r WHERE r.lenderUserId = :lenderUserId AND r.rentStatus != 'DELETED'")
     Page<Rent> findByLenderUserId(@Param("lenderUserId") Long lenderUserId, Pageable pageable);
