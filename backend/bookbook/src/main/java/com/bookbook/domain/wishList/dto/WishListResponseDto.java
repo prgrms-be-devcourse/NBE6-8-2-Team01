@@ -5,7 +5,7 @@ import com.bookbook.domain.wishList.entity.WishList;
 import java.time.LocalDateTime;
 
 public record WishListResponseDto(
-        Long id,
+        Integer id,
         Integer rentId,
         String title,
         String bookTitle,
@@ -31,7 +31,7 @@ public record WishListResponseDto(
                 wishList.getRent().getBookImage(),
                 wishList.getRent().getAddress(),
                 lenderNickname,
-                wishList.getCreateDate()
+                wishList.getCreatedDate()
         );
     }
 }

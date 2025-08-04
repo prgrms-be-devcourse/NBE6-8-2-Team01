@@ -7,6 +7,7 @@ import com.bookbook.domain.user.repository.UserRepository;
 import com.bookbook.domain.wishList.dto.WishListCreateRequestDto;
 import com.bookbook.domain.wishList.dto.WishListResponseDto;
 import com.bookbook.domain.wishList.entity.WishList;
+import com.bookbook.domain.wishList.enums.WishListStatus;
 import com.bookbook.domain.wishList.repository.WishListRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -30,13 +31,13 @@ public class WishListService {
     /**
      * 사용자의 찜 목록 조회
      * 
-     * 사용자의 모든 찜 목록을 생성일 역순으로 조회합니다.
+     * 사용자의 모든 활성 상태인 찜 목록을 생성일 역순으로 조회합니다.
      * 
      * @param userId 사용자 ID
      * @return 찜 목록 리스트
      */
     public List<WishListResponseDto> getWishListByUserId(Long userId) {
-        return wishListRepository.findByUserIdOrderByCreateDateDesc(userId)
+        return wishListRepository.findByUserIdAndStatusOrderByCreatedDateDesc(userId, WishListStatus.ACTIVE)
                 .stream()
                 .map(wishList -> {
                     String lenderNickname = userRepository.findById(wishList.getRent().getLenderUserId())
@@ -55,7 +56,7 @@ public class WishListService {
      * @return 검색된 찜 목록
      */
     public List<WishListResponseDto> searchWishListByUserId(Long userId, String searchKeyword) {
-        List<WishList> wishLists = wishListRepository.findByUserIdOrderByCreateDateDesc(userId);
+        List<WishList> wishLists = wishListRepository.findByUserIdAndStatusOrderByCreatedDateDesc(userId, WishListStatus.ACTIVE);
         
         if (searchKeyword == null || searchKeyword.trim().isEmpty()) {
             return wishLists.stream()
@@ -99,8 +100,8 @@ public class WishListService {
      * @throws IllegalArgumentException 이미 찜한 게시글이거나 사용자/게시글을 찾을 수 없는 경우
      */
     public WishListResponseDto addWishList(Long userId, WishListCreateRequestDto request) {
-        // 중복 체크 로직
-        if (wishListRepository.findByUserIdAndRentId(userId, request.rentId()).isPresent()) {
+        // 중복 체크 로직 (ACTIVE 상태인 것만 체크)
+        if (wishListRepository.findByUserIdAndRentIdAndStatus(userId, request.rentId(), WishListStatus.ACTIVE).isPresent()) {
             throw new IllegalArgumentException("이미 찜한 게시글입니다.");
         }
 
@@ -126,17 +127,18 @@ public class WishListService {
     }
 
     /**
-     * 찜 목록에서 도서 삭제
+     * 찜 목록에서 도서 삭제 (Soft Delete)
      * 
-     * 사용자의 찜 목록에서 특정 도서를 제거합니다.
+     * 사용자의 찜 목록에서 특정 도서를 제거합니다. (실제 데이터는 삭제하지 않고 상태만 변경)
      * 
      * @param userId 사용자 ID
      * @param rentId 삭제할 도서 게시글 ID
      * @throws IllegalArgumentException 찜하지 않은 게시글인 경우
      */
     public void deleteWishList(Long userId, Integer rentId) {
-        WishList wishList = wishListRepository.findByUserIdAndRentId(userId, rentId)
+        WishList wishList = wishListRepository.findByUserIdAndRentIdAndStatus(userId, rentId, WishListStatus.ACTIVE)
                 .orElseThrow(() -> new IllegalArgumentException("찜하지 않은 게시글입니다."));
-        wishListRepository.delete(wishList);
+        wishList.setStatus(WishListStatus.DELETED);
+        wishListRepository.save(wishList);
     }
 }
