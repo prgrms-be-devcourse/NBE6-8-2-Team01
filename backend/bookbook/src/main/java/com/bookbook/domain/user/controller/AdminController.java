@@ -196,6 +196,17 @@ public class AdminController {
                 ));
     }
 
+    @GetMapping("/rent/{id}") // /rent/{id} 경로로 get 요청을 처리
+    public ResponseEntity<RsData<RentDetailResponseDto>> getRentDetail(
+            @PathVariable int id
+    ){ // 경로 변수로 전달된 id를 사용
+        RentDetailResponseDto responseDto = rentService.getRentPostDetail(id);
+
+        return ResponseEntity.ok(
+                RsData.of("200-1","%d 번 글 상태 변경 완료", responseDto)
+        );
+    }
+
     @PatchMapping("/rent/{id}") // /rent/{id} 경로로 patch 요청을 처리
     public ResponseEntity<RsData<RentDetailResponseDto>> changeRentStatus(
             @PathVariable int id,

@@ -263,4 +263,13 @@ public class RentService {
             throw new ServiceException("404-1", "해당 글은 존재하지 않습니다.");
         }
     }
+
+    @Transactional(readOnly = true)
+    public RentDetailResponseDto getRentPostDetail(int id) {
+        Rent rent = rentRepository.findById(id)
+                .orElseThrow(() -> new ServiceException("404-2", "해당 대여글을 찾을 수 없습니다."));
+
+        return RentDetailResponseDto.from(rent);
+
+    }
 }
