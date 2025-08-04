@@ -107,7 +107,8 @@ public class LendListService {
             throw new IllegalStateException("현재 대출 중인 도서는 삭제할 수 없습니다.");
         }
         
-        // 삭제 실행
-        rentRepository.delete(rent);
+        // Soft Delete 실행 - 상태를 DELETED로 변경
+//        rent.setRentStatus(RentStatus.DELETED);
+        rentRepository.save(rent);
     }
 }
