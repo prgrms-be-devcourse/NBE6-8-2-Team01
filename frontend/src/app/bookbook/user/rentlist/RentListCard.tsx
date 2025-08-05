@@ -10,13 +10,20 @@ interface RentListCardProps {
 }
 
 export default function RentListCard({ book, onReview, formatDate }: RentListCardProps) {
+  // 이미지 URL 처리
+  const backendBaseUrl = 'http://localhost:8080';
+  const defaultCoverImageUrl = 'https://i.postimg.cc/pLC9D2vW/noimg.gif';
+  const displayImageUrl = book.bookImage 
+    ? (book.bookImage.startsWith('http') ? book.bookImage : `${backendBaseUrl}${book.bookImage}`)
+    : defaultCoverImageUrl;
+
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'Available':
+      case 'AVAILABLE':
         return 'bg-green-100 text-green-800';
-      case 'Loaned':
+      case 'LOANED':
         return 'bg-blue-100 text-blue-800';
-      case 'Finished':
+      case 'FINISHED':
         return 'bg-gray-100 text-gray-800';
       default:
         return 'bg-gray-100 text-gray-800';
@@ -25,11 +32,11 @@ export default function RentListCard({ book, onReview, formatDate }: RentListCar
 
   const getStatusText = (status: string) => {
     switch (status) {
-      case 'Available':
+      case 'AVAILABLE':
         return '대여가능';
-      case 'Loaned':
+      case 'LOANED':
         return '대여중';
-      case 'Finished':
+      case 'FINISHED':
         return '대여완료';
       default:
         return status;
@@ -42,12 +49,12 @@ export default function RentListCard({ book, onReview, formatDate }: RentListCar
         {/* 책 이미지 */}
         <div className="flex-shrink-0">
           <img
-            src={book.bookImage || "/book-placeholder.png"}
+            src={displayImageUrl}
             alt={book.bookTitle}
             className="w-20 h-28 object-cover rounded border border-gray-200"
             onError={(e) => {
               const target = e.target as HTMLImageElement;
-              target.src = "/book-placeholder.png";
+              target.src = defaultCoverImageUrl;
             }}
           />
         </div>
@@ -90,12 +97,12 @@ export default function RentListCard({ book, onReview, formatDate }: RentListCar
               <span>대여일: {formatDate(book.loanDate)}</span>
             </div>
             <div className={`flex items-center gap-1 ${
-              book.rentStatus === 'Loaned' 
+              book.rentStatus === 'LOANED' 
                 ? 'px-3 py-1 bg-red-50 border border-red-200 rounded-lg' 
                 : ''
             }`}>
-              <Clock className={`h-4 w-4 ${book.rentStatus === 'Loaned' ? 'text-red-500' : ''}`} />
-              <span className={book.rentStatus === 'Loaned' ? 'font-semibold text-red-700' : ''}>
+              <Clock className={`h-4 w-4 ${book.rentStatus === 'LOANED' ? 'text-red-500' : ''}`} />
+              <span className={book.rentStatus === 'LOANED' ? 'font-semibold text-red-700' : ''}>
                 반납일: {formatDate(book.returnDate)}
               </span>
             </div>
@@ -106,7 +113,7 @@ export default function RentListCard({ book, onReview, formatDate }: RentListCar
             <span className={`px-3 py-1 text-xs font-medium rounded-full ${getStatusColor(book.rentStatus || '')}`}>
               {getStatusText(book.rentStatus || '')}
             </span>
-            {book.rentStatus === 'Finished' && (
+            {book.rentStatus === 'FINISHED' && (
               book.hasReview ? (
                 <span className="px-3 py-1 text-xs bg-gray-400 text-white rounded">
                   리뷰완료
