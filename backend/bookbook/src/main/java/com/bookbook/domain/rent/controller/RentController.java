@@ -33,8 +33,13 @@ public class RentController {
     // Rent 페이지 조회 Get요청
     @GetMapping("/{id}") // /rent/{id} 경로로 GET 요청을 처리
     @Operation(summary = " Rent 페이지 단건 조회")
-    public RentResponseDto getRentPage(@PathVariable int id){ // 경로 변수로 전달된 id를 사용, 글 id
-        return rentService.getRentPage(id);
+    public RentResponseDto getRentPage(
+            @PathVariable int id, // 경로 변수로 전달된 id를 사용, 글 id
+            @AuthenticationPrincipal CustomOAuth2User customOAuth2User
+    ){ 
+        // 인증된 사용자 ID 가져오기 (비로그인 사용자는 null)
+        Long currentUserId = customOAuth2User != null ? customOAuth2User.getUserId() : null;
+        return rentService.getRentPage(id, currentUserId);
     }
 
     // Rent 페이지 수정 Put 요청
