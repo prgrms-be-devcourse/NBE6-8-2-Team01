@@ -129,8 +129,12 @@ export default function RentListPage() {
 
   const submitReview = async (rentId: number, rating: number) => {
     try {
+      const apiUrl = `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/user/${userId}/rentlist/${rentId}/review`;
+      console.log('리뷰 API 호출 URL:', apiUrl);
+      console.log('Request body:', { rating });
+      
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/user/${userId}/rentlist/${rentId}/review`,
+        apiUrl,
         {
           method: 'POST',
           headers: {
