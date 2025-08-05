@@ -65,6 +65,6 @@ public class ReportAdminController {
     ) {
         reportService.markReportAsProcessed(reportId, adminUser.getUserId());
 
-        return ResponseEntity.ok(RsData.of("200-1", "%d번 글이 정상적으로 처리되었습니다.".formatted(reportId)));
+        return ResponseEntity.ok(RsData.of("200-1", "%d번 신고가 정상적으로 처리되었습니다.".formatted(reportId)));
     }
 }
