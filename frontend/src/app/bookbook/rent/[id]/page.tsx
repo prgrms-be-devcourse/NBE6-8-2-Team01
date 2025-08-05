@@ -325,21 +325,39 @@ export default function BookDetailPage({ params }: { params: Promise<{ id: strin
 
                         {/* 로그인 했고, 글 작성자가 아닌경우에만만 찜 버튼 */}
                         {user && !isAuthor && (
-                            <button className="w-10 h-10 flex items-center justify-center rounded-lg border border-gray-400 bg-gray-50 hover:bg-gray-100 shadow-sm"
-                                // onClick={} 찜 버튼 클릭 로직이 들어갈 부분
+                            <button 
+                                onClick={handleWishlistToggle}
+                                disabled={wishlistLoading}
+                                className={`w-10 h-10 flex items-center justify-center rounded-lg border shadow-sm transition-colors ${
+                                    isWishlisted 
+                                        ? 'border-red-400 bg-red-50 hover:bg-red-100' 
+                                        : 'border-gray-400 bg-gray-50 hover:bg-gray-100'
+                                } ${wishlistLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                title={isWishlisted ? '찜 해제' : '찜하기'}
                             >
-                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-500" viewBox="0 0 20 20" fill="currentColor">
-                                    <path fillRule="evenodd" d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" clipRule="evenodd" />
-                                </svg>
+                                {wishlistLoading ? (
+                                    <svg className="animate-spin h-5 w-5 text-gray-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                    </svg>
+                                ) : (
+                                    <svg xmlns="http://www.w3.org/2000/svg" className={`h-5 w-5 ${
+                                        isWishlisted ? 'text-red-500' : 'text-gray-500'
+                                    }`} viewBox="0 0 20 20" fill={isWishlisted ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2">
+                                        <path fillRule="evenodd" d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" clipRule="evenodd" />
+                                    </svg>
+                                )}
                             </button>
                         )}
 
                         {/* 로그인 하지 않았을 때, 찜 버튼 */}
                         {!user && !isAuthor &&(
-                            <button className="w-10 h-10 flex items-center justify-center rounded-lg border border-gray-400 bg-gray-50 hover:bg-gray-100 shadow-sm"
+                            <button 
+                                className="w-10 h-10 flex items-center justify-center rounded-lg border border-gray-300 bg-gray-100 cursor-not-allowed shadow-sm"
                                 onClick={() => alert('로그인이 필요한 서비스입니다.')}
+                                title="로그인이 필요합니다"
                             >
-                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-500" viewBox="0 0 20 20" fill="currentColor">
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-400" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="2">
                                     <path fillRule="evenodd" d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" clipRule="evenodd" />
                                 </svg>
                             </button>
