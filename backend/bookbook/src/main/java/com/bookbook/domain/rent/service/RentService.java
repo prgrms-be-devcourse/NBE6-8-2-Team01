@@ -13,6 +13,8 @@ import com.bookbook.domain.user.dto.ChangeRentStatusRequestDto;
 import com.bookbook.domain.user.dto.RentSimpleResponseDto;
 import com.bookbook.domain.user.entity.User;
 import com.bookbook.domain.user.repository.UserRepository;
+import com.bookbook.domain.wishList.enums.WishListStatus;
+import com.bookbook.domain.wishList.repository.WishListRepository;
 import com.bookbook.global.exception.ServiceException;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -34,6 +36,7 @@ public class RentService {
     private final RentRepository rentRepository;
     private final NotificationService notificationService;
     private final UserRepository userRepository;
+    private final WishListRepository wishListRepository;
 
     // Rent 페이지 등록 Post 요청
     // /bookbook/rent/create
@@ -93,7 +96,7 @@ public class RentService {
     // Rent 페이지 조회 Get 요청
     // /bookbook/rent/{id}
     @Transactional(readOnly = true) // 조회 기능이므로 readOnly=true 설정
-    public RentResponseDto getRentPage(int id) {
+    public RentResponseDto getRentPage(int id, Long currentUserId) {
 
         // 글 ID로 대여글 정보 조회
         Rent rent = rentRepository.findById(id)
@@ -106,6 +109,13 @@ public class RentService {
         // 대여자가 작성한 글 갯수 조회
         // 새로운 RentRepository 메소드 추가
         int lenderPostCount = rentRepository.countByLenderUserId(rentUser.getId());
+        
+        // 현재 사용자의 찜 상태 확인
+        boolean isWishlisted = false;
+        if (currentUserId != null) {
+            isWishlisted = wishListRepository.findByUserIdAndRentIdAndStatus(
+                    currentUserId, id, WishListStatus.ACTIVE).isPresent();
+        }
 
         return new RentResponseDto(
                 // 글 관련 정보
@@ -130,7 +140,10 @@ public class RentService {
                 // 글쓴이 정보
                 rentUser.getNickname(),
                 rentUser.getRating(),
-                lenderPostCount
+                lenderPostCount,
+                
+                // 찜 상태 정보
+                isWishlisted
         );
     }
 
