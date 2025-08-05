@@ -16,6 +16,7 @@ interface NotificationApiResponse {
     imageUrl: string;
     requester: string;
     type: string;
+    rentId?: number; // 백엔드에서 제공하는 rent ID
   }> | null;
   statusCode: number;
   success: boolean;
@@ -156,6 +157,7 @@ type Notification = {
   imageUrl: string;
   requester: string;
   type: string;
+  rentId?: number; // rent ID 추가
 };
 
 export default function NotificationPage() {
@@ -167,6 +169,7 @@ export default function NotificationPage() {
   const [needLogin, setNeedLogin] = useState(false);
   const [rentRequestDetail, setRentRequestDetail] = useState<RentRequestDetail | null>(null);
   const [isProcessingDecision, setIsProcessingDecision] = useState(false);
+  const [imageLoadStates, setImageLoadStates] = useState<{[key: number]: 'loading' | 'loaded' | 'error'}>({});
 
   const loadNotifications = useCallback(async () => {
     try {
@@ -285,15 +288,156 @@ export default function NotificationPage() {
     }
   };
 
-  // 책 상세페이지로 이동하는 함수 (수정됨)
-  const handleBookImageClick = (event: React.MouseEvent) => {
+  // 이미지 URL 유효성 검사 함수 (선택사항)
+  const checkImageExists = async (url: string): Promise<boolean> => {
+    try {
+      const response = await fetch(url, { method: 'HEAD' });
+      const exists = response.ok;
+      console.log(`🔍 이미지 존재 확인 - ${url}: ${exists ? '✅ 존재' : '❌ 없음'}`);
+      return exists;
+    } catch (error) {
+      console.log(`🔍 이미지 존재 확인 실패 - ${url}:`, error);
+      return false;
+    }
+  };
+
+  // 이미지 URL 생성 함수
+  const getImageUrl = (imageUrl: string | undefined | null): string => {
+    console.log('🖼️ getImageUrl 호출 - 원본 URL:', imageUrl);
+    
+    if (!imageUrl || imageUrl.trim() === '') {
+      console.log('❌ 이미지 URL이 없음 - placeholder 사용');
+      return '/book-placeholder.png';
+    }
+    
+    const trimmedUrl = imageUrl.trim();
+    let result: string;
+    
+    // 이미 완전한 URL인 경우
+    if (trimmedUrl.startsWith('http://') || trimmedUrl.startsWith('https://')) {
+      result = trimmedUrl;
+      console.log('✅ 완전한 URL - 그대로 사용:', result);
+    }
+    // 상대 경로 처리
+    else if (trimmedUrl.startsWith('/')) {
+      result = `http://localhost:8080${trimmedUrl}`;
+      console.log('🔧 절대경로 변환:', result);
+    }
+    // uploads로 시작하는 경우
+    else if (trimmedUrl.startsWith('uploads/')) {
+      result = `http://localhost:8080/${trimmedUrl}`;
+      console.log('🔧 uploads 경로 변환:', result);
+    }
+    // 파일명만 있는 경우
+    else {
+      result = `http://localhost:8080/uploads/${trimmedUrl}`;
+      console.log('🔧 파일명만 있음 - uploads 폴더에서 찾기:', result);
+    }
+    
+    return result;
+  };
+
+  // 이미지 로드 에러 처리
+  const handleImageError = (e: React.SyntheticEvent<HTMLImageElement>, notification: Notification) => {
+    const img = e.currentTarget;
+    const originalSrc = img.src;
+    
+    console.log('🖼️ 이미지 로드 실패:', {
+      originalSrc,
+      notificationId: notification.id,
+      imageUrl: notification.imageUrl,
+      bookTitle: notification.bookTitle,
+      rentRequestDetailImage: rentRequestDetail?.bookImage
+    });
+    
+    // 상태 업데이트
+    setImageLoadStates(prev => ({
+      ...prev,
+      [notification.id]: 'error'
+    }));
+    
+    // 이미 placeholder인 경우 더 이상 변경하지 않음
+    if (img.src.includes('book-placeholder.png')) {
+      console.log('⚠️ 이미 placeholder 이미지입니다.');
+      return;
+    }
+    
+    console.log('🔄 placeholder로 교체합니다...');
+    // placeholder로 대체
+    img.src = '/book-placeholder.png';
+  };
+
+  // 이미지 로드 성공 처리
+  const handleImageLoad = (e: React.SyntheticEvent<HTMLImageElement>, notificationId: number) => {
+    const img = e.currentTarget;
+    console.log('✅ 이미지 로드 성공:', img.src);
+    
+    // 상태 업데이트
+    setImageLoadStates(prev => ({
+      ...prev,
+      [notificationId]: 'loaded'
+    }));
+  };
+  const handleBookImageClick = (event: React.MouseEvent, notification: Notification) => {
     event.stopPropagation(); // 알림 클릭 이벤트 방지
     
-    if (rentRequestDetail?.rentId) {
-      // 실제 rent 상세페이지로 이동
-      router.push(`/rent/${rentRequestDetail.rentId}`);
+    console.log('📖 책 이미지 클릭 - 알림 정보:', {
+      notificationId: notification.id,
+      rentId: notification.rentId,
+      rentRequestDetail: rentRequestDetail,
+      bookTitle: notification.bookTitle
+    });
+    
+    // 1. 우선순위: rentRequestDetail에서 rentId 사용
+    let rentId = rentRequestDetail?.rentId;
+    
+    // 2. 차선책: notification에서 직접 rentId 사용 (백엔드에서 제공)
+    if (!rentId && notification.rentId) {
+      rentId = notification.rentId;
+      console.log('✅ notification에서 rent ID 사용:', rentId);
+    }
+    
+    // 3. 최후 수단: 메시지에서 ID 추출 시도
+    if (!rentId) {
+      console.log('⚠️ rentId를 찾을 수 없어 메시지에서 추출을 시도합니다.');
+      console.log('알림 메시지:', notification.message);
+      console.log('상세 메시지:', notification.detailMessage);
+      
+      // 다양한 패턴으로 ID 추출 시도
+      const patterns = [
+        /rentId[:\s]*(\d+)/i,
+        /rent\s*id[:\s]*(\d+)/i,
+        /글\s*번호[:\s]*(\d+)/i,
+        /글\s*ID[:\s]*(\d+)/i,
+        /게시글[:\s]*(\d+)/i,
+        /번호[:\s]*(\d+)/i,
+        /ID[:\s]*(\d+)/i,
+        /id[:\s]*(\d+)/i
+      ];
+      
+      for (const pattern of patterns) {
+        const match = notification.message.match(pattern) || notification.detailMessage.match(pattern);
+        if (match) {
+          rentId = parseInt(match[1]);
+          console.log(`✅ 패턴 "${pattern}" 으로 ID 추출 성공:`, rentId);
+          break;
+        }
+      }
+    }
+    
+    if (rentId && rentId > 0) {
+      console.log('🚀 rent 상세페이지로 이동:', `/bookbook/rent/${rentId}`);
+      router.push(`/bookbook/rent/${rentId}`);
     } else {
-      console.log('Rent ID를 찾을 수 없습니다.');
+      console.error('❌ rent ID를 찾을 수 없습니다:', {
+        notificationId: notification.id,
+        rentId: notification.rentId,
+        rentRequestDetailRentId: rentRequestDetail?.rentId,
+        message: notification.message,
+        detailMessage: notification.detailMessage
+      });
+      
+      alert('해당 글의 상세 정보를 찾을 수 없습니다. 백엔드에서 rent ID를 확인해주세요.');
     }
   };
 
@@ -379,7 +523,7 @@ export default function NotificationPage() {
       ) : (
         <div className="flex flex-col gap-3">
           {notifications.map((item) => (
-            <div key={item.id}>
+            <div key={item.id} data-notification-id={item.id}>
               <div
                 onClick={() => handleNotificationClick(item.id)}
                 className={`p-4 border rounded-lg shadow-sm cursor-pointer transition-all duration-200 relative ${
@@ -429,20 +573,35 @@ export default function NotificationPage() {
                 <div className="mt-2 mb-4 p-6 border rounded-lg shadow-md bg-white animate-fade-in">
                   <div className="flex gap-6">
                     <div className="flex-shrink-0">
-                      {/* 이미지 URL 검증과 fallback 개선 */}
-                      <img
-                        src={rentRequestDetail?.bookImage || item.imageUrl || '/book-placeholder.png'}
-                        alt="책 이미지"
-                        width={120}
-                        height={180}
-                        className="rounded-lg object-cover shadow-sm cursor-pointer hover:opacity-80 transition-opacity border-2 border-transparent hover:border-blue-300"
-                        onError={(e) => {
-                          console.log('이미지 로드 실패, placeholder 사용');
-                          e.currentTarget.src = '/book-placeholder.png';
-                        }}
-                        onClick={handleBookImageClick}
-                        title="클릭하여 상세 페이지로 이동"
-                      />
+                      {/* 개선된 이미지 로딩 처리 */}
+                      <div className="relative">
+                        <img
+                          src={getImageUrl(rentRequestDetail?.bookImage || item.imageUrl)}
+                          alt="책 이미지"
+                          width={120}
+                          height={180}
+                          className={`rounded-lg object-cover shadow-sm cursor-pointer hover:opacity-80 transition-all duration-200 border-2 border-transparent hover:border-blue-300 ${
+                            imageLoadStates[item.id] === 'error' ? 'grayscale' : ''
+                          }`}
+                          onError={(e) => handleImageError(e, item)}
+                          onLoad={(e) => handleImageLoad(e, item.id)}
+                          onClick={(e) => handleBookImageClick(e, item)}
+                          title="클릭하여 상세 페이지로 이동"
+                          loading="lazy"
+                        />
+                        {/* 로딩 상태 표시 */}
+                        {imageLoadStates[item.id] === 'loading' && (
+                          <div className="absolute inset-0 bg-gray-200 rounded-lg flex items-center justify-center">
+                            <div className="text-gray-500 text-xs">로딩 중...</div>
+                          </div>
+                        )}
+                        {/* 에러 상태 표시 */}
+                        {imageLoadStates[item.id] === 'error' && (
+                          <div className="absolute bottom-1 right-1 bg-red-500 text-white text-xs px-1 py-0.5 rounded">
+                            ❌
+                          </div>
+                        )}
+                      </div>
                     </div>
                     <div className="space-y-4 flex-1">
                       <div>
@@ -478,6 +637,17 @@ export default function NotificationPage() {
                           <span className="font-semibold text-gray-700 min-w-[60px]">메시지:</span>
                           <span className="text-gray-800 ml-2 leading-relaxed">{item.detailMessage}</span>
                         </div>
+                        
+                        {/* 디버깅을 위한 ID 정보 표시 (개발 환경에서만) */}
+                        {process.env.NODE_ENV === 'development' && (
+                          <div className="flex items-start">
+                            <span className="font-semibold text-gray-700 min-w-[60px]">디버그:</span>
+                            <span className="text-gray-500 ml-2 text-xs">
+                              알림ID: {item.id}, RentID: {item.rentId || 'null'}, 
+                              DetailRentID: {rentRequestDetail?.rentId || 'null'}
+                            </span>
+                          </div>
+                        )}
                       </div>
                       
                       {/* 대여 신청인 경우 수락/거절 버튼 표시 */}
