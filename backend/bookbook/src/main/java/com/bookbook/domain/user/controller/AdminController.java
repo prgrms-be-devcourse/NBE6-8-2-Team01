@@ -219,13 +219,13 @@ public class AdminController {
         );
     }
 
-    @DeleteMapping("/rent/{id}") // /rent/{id} 경로로 DELETE 요청을 처리
-    public ResponseEntity<RsData<Void>> deleteRentPage(@PathVariable int id){ // 경로 변수로 전달된 id를 사용
-        rentService.removeRentPage(id);
-        return ResponseEntity.ok(
-                RsData.of("200-1", "%d 번 글 삭제 완료".formatted(id))
-        );
-    }
+//    @DeleteMapping("/rent/{id}") // /rent/{id} 경로로 DELETE 요청을 처리
+//    public ResponseEntity<RsData<Void>> deleteRentPage(@PathVariable int id){ // 경로 변수로 전달된 id를 사용
+//        rentService.removeRentPage(id);
+//        return ResponseEntity.ok(
+//                RsData.of("200-1", "%d 번 글 삭제 완료".formatted(id))
+//        );
+//    }
 
     private void setCookie(
             HttpServletResponse response,
