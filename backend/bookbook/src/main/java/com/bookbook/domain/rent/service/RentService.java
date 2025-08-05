@@ -279,6 +279,17 @@ public class RentService {
         Rent rent = rentRepository.findById(rentId)
                 .orElseThrow(()-> new ServiceException("404-2", "해당 대여글을 찾을 수 없습니다."));
 
+        boolean isSameStatus = rent.getRentStatus() == requestDto.status();
+        boolean alreadyDeleted = isSameStatus && rent.getRentStatus() == RentStatus.DELETED;
+
+        if (alreadyDeleted) {
+            throw new ServiceException("409-1", "이미 해당 글은 삭제되었습니다.");
+        }
+
+        if (isSameStatus) {
+            throw new ServiceException("409-1", "현재 상태와 동일합니다.");
+        }
+
         rent.setRentStatus(requestDto.status());
         return RentDetailResponseDto.from(rent);
     }
@@ -288,6 +299,7 @@ public class RentService {
      *
      * @param rentId 대여 게시글의 ID
      * @throws ServiceException (404) 해당 대여 게시글이 존재하지 않을 때
+     * @deprecated 사용되지 않습니다
      */
     @Deprecated
     @Transactional
