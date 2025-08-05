@@ -6,6 +6,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface RentListRepository extends JpaRepository<RentList, Long> {
@@ -13,11 +14,13 @@ public interface RentListRepository extends JpaRepository<RentList, Long> {
     List<RentList> findByBorrowerUserId(Long borrowerUserId);
     
     List<RentList> findByBorrowerUserIdAndStatus(Long borrowerUserId, RentRequestStatus status);
-    
+
     List<RentList> findByRentId(Integer rentId);
-    
+
+    Optional<RentList> findByBorrowerUserIdAndRentId(Long borrowerUserId, Integer rentId);
+
     List<RentList> findByRentIdAndStatus(Integer rentId, RentRequestStatus status);
-    
+
     // 중복 신청 방지를 위한 메서드
     boolean existsByBorrowerUserIdAndRentIdAndStatus(Long borrowerUserId, Integer rentId, RentRequestStatus status);
 }
