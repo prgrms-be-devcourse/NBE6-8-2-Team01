@@ -12,7 +12,7 @@ import UserProfileModal from "@/app/components/UserProfileModal";
 
 // 백엔드에서 받아올 책 상세 정보의 타입을 정의합니다.
 interface BookDetail {
-    
+
     id: number; // 글 ID
     bookCondition: string; // 책 상태
     address: string; // 거래 희망 지역
@@ -28,11 +28,14 @@ interface BookDetail {
     publisher: string; // 출판사
     category: string; // 카테고리
     description: string; // 책 설명 (알라딘 API에서 가져온 상세 설명)
-    
+
     // 대여자 정보 추가
     nickname: string; // 대여자 닉네임
     rating: number; // 대여자 매너 점수
     lenderPostCount: number; // 대여자가 작성한 글 갯수
+
+    // 찜 상태 정보 추가
+    isWishlisted: boolean; // 현재 사용자의 찜 상태
 }
 
 export default function BookDetailPage({ params }: { params: Promise<{ id: string }> }) {
@@ -47,8 +50,12 @@ export default function BookDetailPage({ params }: { params: Promise<{ id: strin
     const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
     const [selectedLenderId, setSelectedLenderId] = useState<number | null>(null);
 
+    // 찜하기 상태 관리
+    const [isWishlisted, setIsWishlisted] = useState(false);
+    const [wishlistLoading, setWishlistLoading] = useState(false);
+
     const router = useRouter(); // 페이지 이동을 위한 useRouter 훅
-    
+
     // 현재 로그인한 사용자 정보를 가져옵니다 (자동 로그인 없음)
     const { user, loading: userLoading, userId, isAuthenticated } = useAuthCheck();
 
@@ -73,6 +80,9 @@ export default function BookDetailPage({ params }: { params: Promise<{ id: strin
 
                 const data: BookDetail = await response.json();
                 setBookDetail(data);
+
+                // 찜 상태 초기화
+                setIsWishlisted(data.isWishlisted || false);
             } catch (err: any) {
                 console.error("책 상세 정보 불러오기 실패:", err);
                 setError(`책 정보를 불러오는 데 실패했습니다: ${err.message || '알 수 없는 오류'}`);
@@ -99,7 +109,7 @@ export default function BookDetailPage({ params }: { params: Promise<{ id: strin
     // 북북톡 버튼 클릭 핸들러 - 채팅방 생성 후 채팅 페이지로 이동
     const handleChatClick = async () => {
         if (!bookDetail) return;
-        
+
         try {
             // 채팅방 생성 API 호출
             const response = await fetch('http://localhost:8080/api/v1/bookbook/chat/rooms', {
@@ -131,10 +141,77 @@ export default function BookDetailPage({ params }: { params: Promise<{ id: strin
 
             // 채팅 페이지로 이동 (ChatWindow 컴포넌트가 있는 경로)
             router.push(`/bookbook/MessagePopup/${chatRoom.roomId}?bookTitle=${encodeURIComponent(bookDetail.bookTitle)}&otherUserNickname=${encodeURIComponent('대여자')}`);
-            
+
         } catch (error: any) {
             console.error('채팅방 생성 실패:', error);
             alert('채팅방 생성에 실패했습니다. 다시 시도해주세요.');
+        }
+    };
+
+    // 찜하기 토글 함수
+    const handleWishlistToggle = async () => {
+        if (!user || !userId || !bookDetail) {
+            alert('로그인이 필요한 서비스입니다.');
+            return;
+        }
+
+        if (wishlistLoading) return; // 이미 처리 중이면 중복 실행 방지
+
+        setWishlistLoading(true);
+
+        try {
+            if (isWishlisted) {
+                // 찜 삭제
+                const response = await fetch(`http://localhost:8080/api/v1/user/${userId}/wishlist/${bookDetail.id}`, {
+                    method: 'DELETE',
+                    credentials: 'include',
+                });
+
+                if (!response.ok) {
+                    if (response.status === 401) {
+                        alert('로그인이 필요합니다.');
+                        return;
+                    }
+                    throw new Error(`찜 삭제 실패: ${response.status}`);
+                }
+
+                setIsWishlisted(false);
+                alert('찜 목록에서 제거되었습니다.');
+            } else {
+                // 찜 추가
+                const response = await fetch(`http://localhost:8080/api/v1/user/${userId}/wishlist`, {
+                    method: 'POST',
+                    credentials: 'include',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        rentId: bookDetail.id
+                    })
+                });
+
+                if (!response.ok) {
+                    if (response.status === 401) {
+                        alert('로그인이 필요합니다.');
+                        return;
+                    }
+                    const errorData = await response.json();
+                    if (errorData.message && errorData.message.includes('이미 찜한 게시글')) {
+                        alert('이미 찜한 게시글입니다.');
+                        setIsWishlisted(true); // 상태 동기화
+                        return;
+                    }
+                    throw new Error(`찜 추가 실패: ${response.status}`);
+                }
+
+                setIsWishlisted(true);
+                alert('찜 목록에 추가되었습니다.');
+            }
+        } catch (error: any) {
+            console.error('찜하기 처리 실패:', error);
+            alert('찜하기 처리에 실패했습니다. 다시 시도해주세요.');
+        } finally {
+            setWishlistLoading(false);
         }
     };
 
@@ -270,7 +347,7 @@ export default function BookDetailPage({ params }: { params: Promise<{ id: strin
 
                         {/* 로그인 했고, 글 작성자가 아닌경우에만 북북톡 */}
                         {user && !isAuthor && (
-                            <button 
+                            <button
                                 onClick={handleChatClick}
                                 className="px-6 py-2 rounded-lg bg-blue-500 text-white font-semibold hover:bg-blue-600 shadow-md"
                             >
@@ -280,17 +357,17 @@ export default function BookDetailPage({ params }: { params: Promise<{ id: strin
 
                         {/* 로그인 하지 않은 경우, 북북톡 버튼 */}
                         {!user && (
-                            <button 
+                            <button
                                 onClick={() => alert('로그인이 필요한 서비스입니다.')}
                                 className="px-6 py-2 rounded-lg bg-blue-500 text-white font-semibold hover:bg-blue-600 shadow-md"
                             >
                                 북북톡
                             </button>
                         )}
-                        
+
                         {/* 로그인 했고, 글 작성자인 경우 수정하기 버튼 표시 */}
                         {isAuthor && user && (
-                            <button 
+                            <button
                                 onClick={() => router.push(`/bookbook/rent/edit/${id}`)}
                                 className="px-10 py-2 rounded-lg bg-[#D5BAA3] text-white font-semibold hover:bg-[#C2A794] shadow-md"
                             >
@@ -299,7 +376,7 @@ export default function BookDetailPage({ params }: { params: Promise<{ id: strin
                         )}
                           {/* 로그인 했고, 글 작성자가 아닌 경우 대여하기 버튼 */}
                          {!isAuthor && user && (
-                             <button 
+                             <button
                                  onClick={() => setIsRentModalOpen(true)}
                                  className="px-10 py-2 rounded-lg bg-[#D5BAA3] text-white font-semibold hover:bg-[#C2A794] shadow-md"
                              >
@@ -308,13 +385,13 @@ export default function BookDetailPage({ params }: { params: Promise<{ id: strin
                          )}
                          {/* 로그인하지 않은 경우 대여하기 버튼 */}
                          {!user && (
-                             <button 
+                             <button
                                  onClick={() => alert('로그인이 필요한 서비스입니다.')}
                                  className="px-10 py-2 rounded-lg bg-[#D5BAA3] text-white font-semibold hover:bg-[#C2A794] shadow-md"
                              >
                                  대여하기
                              </button>
-                         )}                        
+                         )}
                     </div>
                 </div>
             </div>
