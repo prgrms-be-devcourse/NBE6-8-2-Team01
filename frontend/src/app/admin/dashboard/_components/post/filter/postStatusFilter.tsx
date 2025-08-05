@@ -35,7 +35,7 @@ export function PostStatusFilter({
   onStatusToggle,
   onSelectAll,
 }: PostStatusFilterProps) {
-  const allStatuses: rentStatus[] = ["AVAILABLE", "LOANED", "FINISHED"];
+  const allStatuses: rentStatus[] = ["AVAILABLE", "LOANED", "FINISHED", "DELETED"];
 
   const isAllSelected = allStatuses.every((status) =>
     selectedStatuses.has(status)
@@ -64,7 +64,7 @@ export function PostStatusFilter({
         <PostStatusFilterItem
             checked={selectedStatuses.has("LOANED")}
             onChange={() => onStatusToggle("LOANED")}
-            fontStyle="ml-2 text-sm text-red-700"
+            fontStyle="ml-2 text-sm text-blue-700"
             value={getRentStatus("LOANED")}
         />
 
@@ -74,6 +74,13 @@ export function PostStatusFilter({
             fontStyle="ml-2 text-sm text-gray-700"
             value={getRentStatus("FINISHED")}
         />
+
+          <PostStatusFilterItem
+              checked={selectedStatuses.has("DELETED")}
+              onChange={() => onStatusToggle("DELETED")}
+              fontStyle="ml-2 text-sm text-red-700"
+              value={getRentStatus("DELETED")}
+          />
       </div>
     </div>
   );

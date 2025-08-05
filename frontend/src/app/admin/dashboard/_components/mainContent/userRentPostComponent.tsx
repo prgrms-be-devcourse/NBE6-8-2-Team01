@@ -38,6 +38,7 @@ export function UserRentPostComponent({ data, onRefresh }: ContentComponentProps
     );
     const [isModalOpen, setIsModalOpen] = useState(false);
     const { currentItem, fetchData } = useDashBoardContext();
+    const statusList : rentStatus[] = ["AVAILABLE", "LOANED", "FINISHED", "DELETED"];
 
     const getInitialFilters = (): FilterState => {
         try {
@@ -45,7 +46,7 @@ export function UserRentPostComponent({ data, onRefresh }: ContentComponentProps
             if (saved) {
                 const parsed = JSON.parse(saved);
                 return {
-                    statuses: new Set(parsed.statuses || ["AVAILABLE", "LOANED", "FINISHED"]),
+                    statuses: new Set(parsed.statuses || statusList),
                     searchTerm: parsed.searchTerm || "",
                 };
             }
@@ -54,7 +55,7 @@ export function UserRentPostComponent({ data, onRefresh }: ContentComponentProps
         }
 
         return {
-            statuses: new Set(["AVAILABLE", "LOANED", "FINISHED"]),
+            statuses: new Set(statusList),
             searchTerm: "",
         };
     };
@@ -109,14 +110,14 @@ export function UserRentPostComponent({ data, onRefresh }: ContentComponentProps
         }
 
         if (newStatuses.size === 0) {
-            setFilters((prev) => ({ ...prev, statuses: new Set(["AVAILABLE", "LOANED", "FINISHED"])}));
+            setFilters((prev) => ({ ...prev, statuses: new Set(["AVAILABLE", "LOANED", "FINISHED", "DELETED"])}));
         } else {
             setFilters((prev) => ({ ...prev, statuses: newStatuses }));
         }
     };
 
     const handleSelectAll = () => {
-        const allStatuses: rentStatus[] = ["AVAILABLE", "LOANED", "FINISHED"];
+        const allStatuses: rentStatus[] = ["AVAILABLE", "LOANED", "FINISHED", "DELETED"];
         const isAllSelected = allStatuses.every((status) =>
             filters.statuses.has(status)
         );
@@ -134,7 +135,7 @@ export function UserRentPostComponent({ data, onRefresh }: ContentComponentProps
 
     const resetFilters = () => {
         const resetState: FilterState = {
-            statuses: new Set(["AVAILABLE", "LOANED", "FINISHED"]),
+            statuses: new Set(["AVAILABLE", "LOANED", "FINISHED", "DELETED"]),
             searchTerm: "",
         };
         setFilters(resetState);

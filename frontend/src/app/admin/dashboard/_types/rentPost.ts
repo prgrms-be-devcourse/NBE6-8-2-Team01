@@ -1,12 +1,14 @@
-export type rentStatus = "AVAILABLE" | "LOANED" | "FINISHED";
+export type rentStatus = "AVAILABLE" | "LOANED" | "FINISHED" | "DELETED" | "UNKNOWN";
 // export type rentStatus = "대여 가능" | "대여 중" | "대여 완료";
 
 export const getRentStatus = (status: rentStatus): string => {
   const map: Record<rentStatus, string> = {
     AVAILABLE: "대여 가능",
     LOANED: "대여 중",
-    FINISHED: "대여 종료"
-  }
+    FINISHED: "대여 종료",
+    DELETED : "삭제됨",
+    UNKNOWN : "알 수 없음"
+  };
   return map[status];
 }
 

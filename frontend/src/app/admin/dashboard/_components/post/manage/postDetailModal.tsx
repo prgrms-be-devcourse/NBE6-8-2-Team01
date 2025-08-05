@@ -22,15 +22,19 @@ export function PostDetailModal({
 } : PostDetailModalProps)  {
   const [currentPost, setCurrentPost] = useState(post);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
-  const [confirmAction, setConfirmAction] = useState<"delete" | "updateStatus" | null>(null);
-  const initialRentStatus = currentPost.rentStatus;
+  const [confirmAction, setConfirmAction] = useState<"delete" | "updateStatus" | "restore" | null>(null);
+  const initialRentStatus = currentPost?.rentStatus ? currentPost.rentStatus : "UNKNOWN";
   const [rentStatusValue, setRentStatusValue] = useState<rentStatus>(initialRentStatus);
-  const isSameStatus = initialRentStatus == rentStatusValue;
+  const isSameStatus = post.rentStatus == rentStatusValue;
+  const isDeleted = initialRentStatus === "DELETED";
 
-  const rentStatusButtonClassName = isSameStatus ?
-      "px-4 py-2 text-sm font-medium text-white bg-gray-600 border border-transparent rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
-      : "px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
+  const rentStatusButtonClassName = isSameStatus
+      ? "px-4 py-2 text-sm font-medium text-white bg-gray-600 border border-transparent rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
+      : "px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors";
 
+  const rentPostButtonClassName = isDeleted
+      ? "px-4 py-2 text-sm font-medium text-white bg-green-600 border border-transparent rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors"
+      : "px-4 py-2 text-sm font-medium text-white bg-red-600 border border-transparent rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-colors";
   if (!isOpen || !currentPost) return <></>;
 
   const handleDeleteClick = () => {
@@ -43,15 +47,32 @@ export function PostDetailModal({
     setShowConfirmModal(true);
   };
 
-  const handlePostChangeStatus = () => {
+  const handleRestoreClick = () => {
+    setConfirmAction("restore");
+    setShowConfirmModal(true);
+  }
+
+  const handleRestoreRequest = () => {
     const body = {
+      "status" : "AVAILABLE"
+    }
+
+    handlePostChangeStatus(body);
+    alert("글이 복원되었습니다!");
+  }
+
+  const handlePostChangeStatus = (body? : unknown) => {
+    const reqBody = body ? body : {
       "status" : rentStatusValue
     }
 
     fetch(`/api/v1/admin/rent/${currentPost.id}`,
       {
         method: "PATCH",
-        body: JSON.stringify(body),
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(reqBody),
       }
     ).then(response => response.json())
      .then(data => {
@@ -63,17 +84,12 @@ export function PostDetailModal({
   }
 
   const handlePostDelete =  () => {
-    fetch(`/api/v1/admin/rent/${currentPost.id}`,
-      {
-        method: "DELETE"
-      }
-    ).then(response => response.json())
-     .then(data => {
-        alert(`${currentPost.id} 번 글이 성공적으로 삭제되었습니다`);
-        onClose();
-    }).catch(error => {
-      throw error;
-    })
+    const body = {
+      "status" : "DELETED"
+    };
+
+    handlePostChangeStatus(body);
+    alert("글이 삭제되었습니다!");
   }
 
   const onClose = () => {
@@ -87,6 +103,8 @@ export function PostDetailModal({
         handlePostDelete();
       } else if (confirmAction === "updateStatus") {
         handlePostChangeStatus();
+      } else if (confirmAction === "restore") {
+        handleRestoreRequest();
       }
 
       handleCancelAction();
@@ -115,6 +133,9 @@ export function PostDetailModal({
     } else if (confirmAction === "updateStatus") {
       return `정말로 글 상태를 변경하시겠습니까?\n
       ${getRentStatus(initialRentStatus)} → ${getRentStatus(rentStatusValue)}`;
+    } else if (confirmAction === "restore") {
+      return `정말로 글을 복원하시겠습니까?\n
+          복원 시 대여 가능으로 변경됩니다.`;
     }
     return "";
   };
@@ -184,18 +205,20 @@ export function PostDetailModal({
               >
                 닫기
               </button>
-              <button
+              {!isDeleted && (
+                <button
                 onClick={handleStatusUpdate}
                 disabled={initialRentStatus == rentStatusValue}
                 className={rentStatusButtonClassName}
-              >
-                상태 변경
-              </button>
+                >
+                  상태 변경
+                </button>
+              )}
               <button
-                onClick={handleDeleteClick}
-                className="px-4 py-2 text-sm font-medium text-white bg-red-600 border border-transparent rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-colors"
+                onClick={isDeleted ? handleRestoreClick : handleDeleteClick}
+                className={rentPostButtonClassName}
               >
-                글 삭제
+                {isDeleted ? "글 복원" : "글 삭제"}
               </button>
             </div>
           </div>
