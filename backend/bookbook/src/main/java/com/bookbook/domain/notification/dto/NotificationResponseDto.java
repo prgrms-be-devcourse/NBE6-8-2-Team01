@@ -36,6 +36,9 @@ public class NotificationResponseDto {
     
     @JsonProperty("requester")
     private String requester;
+    
+    @JsonProperty("type")
+    private String type;
 
     public static NotificationResponseDto from(Notification notification) {
         NotificationResponseDto dto = new NotificationResponseDto();
@@ -47,6 +50,7 @@ public class NotificationResponseDto {
         dto.setDetailMessage(notification.getMessage() != null ? notification.getMessage() : ""); // 상세 메시지
         dto.setImageUrl(formatImageUrl(notification.getBookImageUrl())); // 이미지 URL 포맷팅
         dto.setRequester(notification.getSender() != null ? notification.getSender().getNickname() : "시스템");
+        dto.setType(notification.getType().name()); // 알림 타입 추가
         return dto;
     }
 

@@ -214,4 +214,35 @@ public class NotificationController {
             return RsData.of("500-1", "테스트 알림 생성 실패: " + e.getMessage());
         }
     }
+    
+    /**
+     * 대여 신청에 대한 상세 정보 조회
+     * 
+     * @param id 알림 ID
+     * @param customOAuth2User 현재 로그인한 사용자
+     * @return 대여 신청 상세 정보
+     */
+    @GetMapping("/{id}/rent-request-detail")
+    @Operation(summary = "대여 신청 상세 정보 조회", description = "알림의 대여 신청에 대한 상세 정보를 조회합니다.")
+    public RsData<Object> getRentRequestDetail(
+            @PathVariable Long id,
+            @AuthenticationPrincipal CustomOAuth2User customOAuth2User
+    ) {
+        if (customOAuth2User == null || customOAuth2User.getUserId() == null) {
+            return new RsData<>("401-1", "로그인 후 사용해주세요.", null);
+        }
+
+        User user = userService.findById(customOAuth2User.getUserId());
+        if (user == null) {
+            return new RsData<>("404-1", "사용자 정보를 찾을 수 없습니다.", null);
+        }
+
+        try {
+            Object detail = notificationService.getRentRequestDetail(id, user);
+            return RsData.of("200-1", "대여 신청 상세 정보를 조회했습니다.", detail);
+        } catch (RuntimeException e) {
+            log.error("대여 신청 상세 정보 조회 실패: {}", e.getMessage());
+            return RsData.of("400-1", e.getMessage(), null);
+        }
+    }
 }

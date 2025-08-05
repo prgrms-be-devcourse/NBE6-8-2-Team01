@@ -19,6 +19,10 @@ public class RentList extends BaseEntity {
     private LocalDateTime loanDate;
     private LocalDateTime returnDate;
     
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private RentRequestStatus status = RentRequestStatus.PENDING;
+    
     @ManyToOne
     private User borrowerUser;
     
