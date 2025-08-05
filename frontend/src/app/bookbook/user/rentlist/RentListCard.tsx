@@ -17,10 +17,22 @@ export default function RentListCard({ book, onReview, formatDate }: RentListCar
     ? (book.bookImage.startsWith('http') ? book.bookImage : `${backendBaseUrl}${book.bookImage}`)
     : defaultCoverImageUrl;
 
+  // 날짜 기준으로 실제 대여 상태 계산
+  const calculateRentStatus = () => {
+    const now = new Date();
+    const returnDate = new Date(book.returnDate);
+    
+    if (now <= returnDate) {
+      return 'LOANED'; // 대여중
+    } else {
+      return 'FINISHED'; // 대여완료 (반납일 지남)
+    }
+  };
+
+  const actualStatus = calculateRentStatus();
+
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'AVAILABLE':
-        return 'bg-green-100 text-green-800';
       case 'LOANED':
         return 'bg-blue-100 text-blue-800';
       case 'FINISHED':
@@ -32,8 +44,6 @@ export default function RentListCard({ book, onReview, formatDate }: RentListCar
 
   const getStatusText = (status: string) => {
     switch (status) {
-      case 'AVAILABLE':
-        return '대여가능';
       case 'LOANED':
         return '대여중';
       case 'FINISHED':
@@ -97,12 +107,12 @@ export default function RentListCard({ book, onReview, formatDate }: RentListCar
               <span>대여일: {formatDate(book.loanDate)}</span>
             </div>
             <div className={`flex items-center gap-1 ${
-              book.rentStatus === 'LOANED' 
+              actualStatus === 'LOANED' 
                 ? 'px-3 py-1 bg-red-50 border border-red-200 rounded-lg' 
                 : ''
             }`}>
-              <Clock className={`h-4 w-4 ${book.rentStatus === 'LOANED' ? 'text-red-500' : ''}`} />
-              <span className={book.rentStatus === 'LOANED' ? 'font-semibold text-red-700' : ''}>
+              <Clock className={`h-4 w-4 ${actualStatus === 'LOANED' ? 'text-red-500' : ''}`} />
+              <span className={actualStatus === 'LOANED' ? 'font-semibold text-red-700' : ''}>
                 반납일: {formatDate(book.returnDate)}
               </span>
             </div>
@@ -110,10 +120,10 @@ export default function RentListCard({ book, onReview, formatDate }: RentListCar
 
           {/* 상태 및 리뷰 버튼 */}
           <div className="flex items-center gap-2 mt-4 mb-3">
-            <span className={`px-3 py-1 text-xs font-medium rounded-full ${getStatusColor(book.rentStatus || '')}`}>
-              {getStatusText(book.rentStatus || '')}
+            <span className={`px-3 py-1 text-xs font-medium rounded-full ${getStatusColor(actualStatus)}`}>
+              {getStatusText(actualStatus)}
             </span>
-            {book.rentStatus === 'FINISHED' && (
+            {actualStatus === 'FINISHED' && (
               book.hasReview ? (
                 <span className="px-3 py-1 text-xs bg-gray-400 text-white rounded">
                   리뷰완료
