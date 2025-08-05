@@ -38,8 +38,8 @@ export default function LendListCard({ book, onDelete, onReview, formatDate }: L
   };
 
   const handleCardClick = () => {
-    // 대여중이거나 대여완료 상태가 아닌 경우에만 상세페이지로 이동
-    if (book.rentStatus?.toUpperCase() === 'AVAILABLE') {
+    // 대여중이 아닌 경우에만 상세페이지로 이동
+    if (book.rentStatus?.toUpperCase() !== 'LOANED') {
       window.location.href = `/bookbook/rent/${book.id}`;
     }
   };
