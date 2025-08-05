@@ -7,6 +7,7 @@ import com.bookbook.domain.review.dto.ReviewCreateRequestDto;
 import com.bookbook.domain.review.dto.ReviewResponseDto;
 import com.bookbook.domain.review.service.ReviewService;
 import com.bookbook.global.rsdata.RsData;
+import io.swagger.v3.oas.annotations.Operation;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -56,12 +57,14 @@ public class RentListController {
      * @param request 대여 신청 정보 (대여일, 게시글 ID)
      * @return 생성된 대여 기록 정보
      */
-    @PostMapping
-    public ResponseEntity<RsData<RentListResponseDto>> createRentList(
+    // /api/v1/user/{borrowerUserId}/rentlist/create
+    @PostMapping("/create")
+    @Operation(summary = "Rent_List 페이지 등록") // Swagger 에서 API 문서화에 사용되는 설명
+    public void createRentList(
             @PathVariable Long borrowerUserId,
-            @RequestBody RentListCreateRequestDto request) {
-        RentListResponseDto response = rentListService.createRentList(borrowerUserId, request);
-        return ResponseEntity.ok(RsData.of("200", "대여 신청을 등록했습니다.", response));
+            @RequestBody RentListCreateRequestDto request
+    ) {
+        rentListService.createRentList(borrowerUserId, request);
     }
     
     /**
