@@ -10,11 +10,19 @@ interface RentListCardProps {
   formatDate: (dateString: string) => string;
 }
 
+export default function RentListCard({ book, onReview, formatDate }: RentListCardProps) {
+  // 이미지 URL 처리
+  const backendBaseUrl = 'http://localhost:8080';
+  const defaultCoverImageUrl = 'https://i.postimg.cc/pLC9D2vW/noimg.gif';
+  const displayImageUrl = book.bookImage
+    ? (book.bookImage.startsWith('http') ? book.bookImage : `${backendBaseUrl}${book.bookImage}`)
+    : defaultCoverImageUrl;
+
 export default function RentListCard({ book, onReview, onReturn, formatDate }: RentListCardProps) {
   // 이미지 URL 처리
   const backendBaseUrl = 'http://localhost:8080';
   const defaultCoverImageUrl = 'https://i.postimg.cc/pLC9D2vW/noimg.gif';
-  const displayImageUrl = book.bookImage 
+  const displayImageUrl = book.bookImage
     ? (book.bookImage.startsWith('http') ? book.bookImage : `${backendBaseUrl}${book.bookImage}`)
     : defaultCoverImageUrl;
 
@@ -24,11 +32,11 @@ export default function RentListCard({ book, onReview, onReturn, formatDate }: R
     if (book.rentStatus === 'FINISHED') {
       return 'FINISHED';
     }
-    
+
     // 그렇지 않으면 날짜 기준으로 판단
     const now = new Date();
     const returnDate = new Date(book.returnDate);
-    
+
     if (now <= returnDate) {
       return 'LOANED'; // 대여중
     } else {
@@ -40,6 +48,9 @@ export default function RentListCard({ book, onReview, onReturn, formatDate }: R
 
   const getStatusColor = (status: string) => {
     switch (status) {
+      case 'AVAILABLE':
+        return 'bg-green-100 text-green-800';
+      case 'LOANED':
       case 'LOANED':
         return 'bg-blue-100 text-blue-800';
       case 'FINISHED':
@@ -51,6 +62,9 @@ export default function RentListCard({ book, onReview, onReturn, formatDate }: R
 
   const getStatusText = (status: string) => {
     switch (status) {
+      case 'AVAILABLE':
+        return '대여가능';
+      case 'LOANED':
       case 'LOANED':
         return '대여중';
       case 'FINISHED':
@@ -137,7 +151,7 @@ export default function RentListCard({ book, onReview, onReturn, formatDate }: R
             </span>
             {/* 반납하기 버튼 - 대여중일 때만 표시 */}
             {actualStatus === 'LOANED' && onReturn && (
-              <button 
+              <button
                 onClick={(e) => {
                   e.stopPropagation();
                   onReturn(book.rentId);
@@ -147,7 +161,7 @@ export default function RentListCard({ book, onReview, onReturn, formatDate }: R
                 반납하기
               </button>
             )}
-            
+
             {/* 리뷰 버튼 - 대여완료일 때만 표시 */}
             {actualStatus === 'FINISHED' && (
               book.hasReview ? (
