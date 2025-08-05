@@ -97,10 +97,8 @@ public class RentListService {
      * @return 생성된 대여 기록 정보
      * @throws IllegalArgumentException 사용자나 게시글을 찾을 수 없는 경우
      */
-    // @Transactional - 이 메서드는 쓰기 작업이므로 트랜잭션 필요
-    // readOnly = false (기본값)이므로 데이터 변경 가능
     @Transactional
-    public RentListResponseDto createRentList(Long borrowerUserId, RentListCreateRequestDto request) {
+    public void createRentList(Long borrowerUserId, RentListCreateRequestDto request) {
         // User 엔티티 조회; 로그인하지 않은 사용자, 정지된 사용자 등
         User borrowerUser = userRepository.findById(borrowerUserId)
                 .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다. userId: " + borrowerUserId));
@@ -123,9 +121,5 @@ public class RentListService {
         rentList.setRent(rent);
 
         RentList savedRentList = rentListRepository.save(rentList);
-        String lenderNickname = userRepository.findById(rent.getLenderUserId())
-                .map(user -> user.getNickname())
-                .orElse("알 수 없음");
-        return RentListResponseDto.from(savedRentList, lenderNickname);
     }
 }

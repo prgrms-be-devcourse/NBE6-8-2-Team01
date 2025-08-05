@@ -49,4 +49,8 @@ public class RentController {
         Long userId = customOAuth2User.getUserId();
         rentService.editRentPage(id, dto, userId);
     }
+
+//    borrowerUserId : 대여 받은 사용자 ID
+//    rentID : 대여 게시글 ID
+
 }

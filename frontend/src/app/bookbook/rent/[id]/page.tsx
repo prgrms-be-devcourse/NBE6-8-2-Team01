@@ -1,6 +1,6 @@
 // src/app/bookbook/rent/[id]/page.tsx
 // 글 상세를 보여주는 페이지
-//08.02 현준 수정
+//08.04 현준 수정
 
 "use client";
 
@@ -268,14 +268,13 @@ export default function BookDetailPage({ params }: { params: Promise<{ id: strin
                             </button>
                         )}
 
-                        
                         {/* 로그인 했고, 글 작성자가 아닌경우에만 북북톡 */}
                         {user && !isAuthor && (
                             <button 
                                 onClick={handleChatClick}
                                 className="px-6 py-2 rounded-lg bg-blue-500 text-white font-semibold hover:bg-blue-600 shadow-md"
                             >
-                                북북톡1
+                                북북톡
                             </button>
                         )}
 
@@ -390,6 +389,8 @@ export default function BookDetailPage({ params }: { params: Promise<{ id: strin
                 onClose={() => setIsRentModalOpen(false)}
                 bookTitle={bookDetail.bookTitle}
                 lenderNickname={bookDetail.nickname}
+                rentId={bookDetail.id}
+                borrowerUserId={userId}
             />
         )}
             <UserProfileModal
