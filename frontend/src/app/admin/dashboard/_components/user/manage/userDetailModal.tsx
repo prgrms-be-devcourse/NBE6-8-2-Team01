@@ -50,7 +50,13 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
   };
 
   const doRequest = async (path: string, requestInit?: RequestInit) => {
-    const response = await fetch(path, {method: "PATCH", ...requestInit});
+    const response = await fetch(path, {
+      ...requestInit,
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json"
+      }
+    });
     return await response.json().catch(error => {
       console.error("API 요청 실패:", error);
       throw error;
