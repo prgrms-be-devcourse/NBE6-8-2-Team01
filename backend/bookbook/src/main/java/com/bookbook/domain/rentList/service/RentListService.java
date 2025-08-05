@@ -13,6 +13,7 @@ import com.bookbook.domain.rentList.entity.RentRequestStatus;
 import com.bookbook.domain.rentList.repository.RentListRepository;
 import com.bookbook.domain.user.entity.User;
 import com.bookbook.domain.user.repository.UserRepository;
+import com.bookbook.domain.review.repository.ReviewRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -36,6 +37,7 @@ public class RentListService {
     private final UserRepository userRepository;
     private final RentRepository rentRepository;
     private final NotificationService notificationService;
+    private final ReviewRepository reviewRepository;
     
     /**
      * 사용자가 대여한 도서 목록 조회
@@ -49,7 +51,10 @@ public class RentListService {
                     String lenderNickname = userRepository.findById(rentList.getRent().getLenderUserId())
                             .map(user -> user.getNickname())
                             .orElse("알 수 없음");
-                    return RentListResponseDto.from(rentList, lenderNickname);
+                    // 리뷰 작성 여부 확인 (대여받은 사람이 대여자에 대한 리뷰)
+                    boolean hasReview = reviewRepository.findByRentIdAndReviewerId(rentList.getRent().getId(), borrowerUserId)
+                            .isPresent();
+                    return RentListResponseDto.from(rentList, lenderNickname, hasReview);
                 })
                 .collect(Collectors.toList());
     }
@@ -70,7 +75,10 @@ public class RentListService {
                         String lenderNickname = userRepository.findById(rentList.getRent().getLenderUserId())
                                 .map(user -> user.getNickname())
                                 .orElse("알 수 없음");
-                        return RentListResponseDto.from(rentList, lenderNickname);
+                        // 리뷰 작성 여부 확인 (대여받은 사람이 대여자에 대한 리뷰)
+                    boolean hasReview = reviewRepository.findByRentIdAndReviewerId(rentList.getRent().getId(), borrowerUserId)
+                            .isPresent();
+                    return RentListResponseDto.from(rentList, lenderNickname, hasReview);
                     })
                     .collect(Collectors.toList());
         }
@@ -89,7 +97,10 @@ public class RentListService {
                     String lenderNickname = userRepository.findById(rentList.getRent().getLenderUserId())
                             .map(user -> user.getNickname())
                             .orElse("알 수 없음");
-                    return RentListResponseDto.from(rentList, lenderNickname);
+                    // 리뷰 작성 여부 확인 (대여받은 사람이 대여자에 대한 리뷰)
+                    boolean hasReview = reviewRepository.findByRentIdAndReviewerId(rentList.getRent().getId(), borrowerUserId)
+                            .isPresent();
+                    return RentListResponseDto.from(rentList, lenderNickname, hasReview);
                 })
                 .collect(Collectors.toList());
     }
