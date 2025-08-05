@@ -31,7 +31,7 @@ async function refreshAccessToken(): Promise<boolean> {
 export async function authFetch(
     path: string,
     options: RequestInit = {},
-    openLoginModal?: () => void // ✅ 추가된 인자
+    openLoginModal?: () => void
 ): Promise<Response> {
     const fullUrl = `${BACKEND_BASE_URL}${path}`;
     options.credentials = 'include';
@@ -54,7 +54,7 @@ export async function authFetch(
             } else {
                 console.error('[authFetch] 리프레시 토큰 갱신마저 실패. 재로그인 필요.');
                 // alert() 대신 모달 사용
-                if (openLoginModal) { // ✅ openLoginModal이 제공된 경우 모달 띄우기
+                if (openLoginModal) {
                     openLoginModal();
                 } else {
                     // 모달을 띄울 수 없는 환경(예: 서버 컴포넌트)이거나 openLoginModal이 전달되지 않은 경우 폴백
@@ -74,12 +74,8 @@ export async function authFetch(
     }
 }
 
-// checkAuthStatus는 여전히 authFetch를 사용하지만, openLoginModal을 직접 전달하지 않습니다.
-// checkAuthStatus를 호출하는 컴포넌트에서 authFetch를 직접 호출하고 openLoginModal을 전달하는 것이 더 일반적입니다.
 export async function checkAuthStatus(): Promise<boolean> {
     try {
-        // 이 checkAuthStatus는 주로 Header 컴포넌트에서 초기 로그인 상태를 확인할 때 사용됩니다.
-        // openLoginModal을 여기서 직접 전달하는 대신, Header 컴포넌트에서 authFetch를 호출할 때 전달하도록 변경합니다.
         const response = await fetch(`${BACKEND_BASE_URL}/api/v1/bookbook/users/isAuthenticated`, {
             method: 'GET',
             credentials: 'include',
