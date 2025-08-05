@@ -11,7 +11,7 @@ import java.util.Optional;
 @Repository
 public interface RentListRepository extends JpaRepository<RentList, Long> {
     
-    List<RentList> findByBorrowerUserId(Long borrowerUserId);
+    List<RentList> findByBorrowerUserIdOrderByCreatedDateDesc(Long borrowerUserId);
     
     List<RentList> findByBorrowerUserIdAndStatus(Long borrowerUserId, RentRequestStatus status);
 
