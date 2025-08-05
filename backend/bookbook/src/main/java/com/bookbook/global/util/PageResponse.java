@@ -1,4 +1,4 @@
-package com.bookbook.domain.user.dto.response;
+package com.bookbook.global.util;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;

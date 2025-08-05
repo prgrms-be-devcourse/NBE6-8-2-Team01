@@ -1,4 +1,4 @@
-package com.bookbook.domain.user.dto;
+package com.bookbook.domain.rent.dto.request;
 
 import com.bookbook.domain.rent.entity.RentStatus;
 import lombok.NonNull;
