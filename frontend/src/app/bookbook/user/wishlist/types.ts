@@ -1,16 +1,14 @@
 export interface WishListItem {
     id: number;
     rentId: number;
+    title: string;
     bookTitle: string;
-    bookAuthor: string;
-    bookPublisher: string;
+    author: string;
+    publisher: string;
     bookCondition: string;
     rentStatus: string;
-    lenderUserId: number;
-    lenderUserName: string;
-    lenderNickname?: string;
     bookImage: string;
+    address: string;
+    lenderNickname: string;
     createDate: string;
-    title?: string;
-    address?: string;
 }
