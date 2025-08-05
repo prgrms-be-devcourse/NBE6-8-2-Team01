@@ -46,7 +46,7 @@ public class RentListService {
      * @return 대여한 도서 목록
      */
     public List<RentListResponseDto> getRentListByUserId(Long borrowerUserId) {
-        return rentListRepository.findByBorrowerUserId(borrowerUserId).stream()
+        return rentListRepository.findByBorrowerUserIdOrderByCreatedDateDesc(borrowerUserId).stream()
                 .map(rentList -> {
                     String lenderNickname = userRepository.findById(rentList.getRent().getLenderUserId())
                             .map(user -> user.getNickname())
@@ -67,7 +67,7 @@ public class RentListService {
      * @return 검색된 대여한 도서 목록
      */
     public List<RentListResponseDto> searchRentListByUserId(Long borrowerUserId, String searchKeyword) {
-        List<RentList> rentLists = rentListRepository.findByBorrowerUserId(borrowerUserId);
+        List<RentList> rentLists = rentListRepository.findByBorrowerUserIdOrderByCreatedDateDesc(borrowerUserId);
         
         if (searchKeyword == null || searchKeyword.trim().isEmpty()) {
             return rentLists.stream()
