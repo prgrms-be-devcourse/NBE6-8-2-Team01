@@ -12,6 +12,9 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.util.List;
 
+/**
+ * 정지 관련 스케쥴러
+*/
 @Slf4j
 @Component
 @RequiredArgsConstructor
@@ -19,6 +22,14 @@ public class SuspendedUserScheduler {
 
     private final UserRepository userRepository;
 
+    /**
+     * 정지 자동 해제 스케쥴러
+     *
+     * <p>일정 주기마다 활동 재개 가능한 유저를 모두 조회하고,
+     * 정지를 자동으로 해제합니다.
+     *
+     * <p>[25.08.05] 한 시간마다 확인
+     */
     @Scheduled(cron = "0 0 */1 * * *")
     @Transactional
     public void executeScheduledResumingUsers() {
