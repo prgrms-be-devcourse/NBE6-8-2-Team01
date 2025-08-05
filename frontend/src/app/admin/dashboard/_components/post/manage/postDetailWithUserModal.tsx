@@ -3,7 +3,6 @@ import { PostDetailModal } from "./postDetailModal";
 import UserDetailModal from "../../user/manage/userDetailModal";
 import { RentPostDetailResponseDto } from "@/app/admin/dashboard/_types/rentPost";
 import { UserDetailResponseDto } from "@/app/admin/dashboard/_types/userResponseDto";
-import { authFetch } from "@/app/util/authFetch";
 
 interface PostDetailWithUserModalProps {
   post: RentPostDetailResponseDto;
@@ -23,21 +22,24 @@ const PostDetailWithUserModal: React.FC<PostDetailWithUserModalProps> = ({
       null as unknown as UserDetailResponseDto
   );
 
-  const handleUserDetailClick = async () => {
-    try {
-      const response = await authFetch(`/api/v1/admin/users/${post.lenderUserId}`)
-      await response.json().then((data) => {
+  const handleUserDetailClick = () => {
+    console.log("Fetching user detail for ID:", post.lenderUserId);
+
+    fetch(`/api/v1/admin/users/${post.lenderUserId}`)
+      .then((res) => res.json())
+      .then((data) => {
         console.log(data);
         setUserDetail(data.data as UserDetailResponseDto);
         setUserDetailOpen(true);
-      });
+    }).catch(error => {
+      let errorMessage = "원인을 알 수 없습니다.";
+      if (error instanceof Error) {
+        errorMessage = error.message;
+      }
 
-      console.log("Fetching user detail for ID:", post.lenderUserId);
-
-    } catch (error) {
-      console.error("사용자 정보 조회 실패:", error);
+      console.error("사용자 정보 조회 실패:", errorMessage);
       alert("사용자 정보를 불러오는데 실패했습니다.");
-    }
+    })
   };
 
   const handleUserDetailClose = () => {

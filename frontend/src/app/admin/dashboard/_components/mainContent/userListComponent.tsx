@@ -8,8 +8,6 @@ import UserDetailModal from "../user/manage/userDetailModal";
 import { ContentComponentProps } from "./baseContentComponentProps";
 import { UserFilterContainer, FilterState } from "../user/filter";
 import { useDashBoardContext } from "@/app/admin/dashboard/_hooks/useDashboard";
-import { authFetch } from "@/app/util/authFetch";
-import { dummyFunction } from "@/app/admin/dashboard/_components/common/dummyFunction";
 
 interface ManagementButtonProps {
   user: UserBaseResponseDto;
@@ -73,7 +71,11 @@ export function UserListComponent({ data }: ContentComponentProps) {
   const handleManageClick = async (user: UserBaseResponseDto) => {
     console.log(`관리 버튼 클릭: 멤버 ID - ${user.id}, 닉네임 - ${user.nickname}`);
 
-    authFetch(`/api/v1/admin/users/${user.id}`, {method: "GET"}, dummyFunction)
+    await fetch(`/api/v1/admin/users/${user.id}`, {
+      headers: {
+        "Content-Type": "application/json",
+      },
+    })
       .then((data=> data.json()))
       .then(data=> {
         console.log(data);

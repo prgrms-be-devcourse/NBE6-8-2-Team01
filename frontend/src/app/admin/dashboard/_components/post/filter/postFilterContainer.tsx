@@ -3,7 +3,7 @@
 import React from "react";
 import { PostStatusFilter } from "./postStatusFilter";
 import { SearchBox } from "../../common/filter/searchBox";
-import {rentStatus} from "@/app/admin/dashboard/_types/rentPost";
+import { rentStatus } from "@/app/admin/dashboard/_types/rentPost";
 
 interface FilterState {
   statuses: Set<rentStatus>;

@@ -32,7 +32,10 @@ const ReportDetailModal: React.FC<ReportDetailModalProps> = ({
   const handleAsProcessed = () => {
     fetch(`/api/v1/admin/reports/${report.id}/process`,
       {
-        method: "PATCH"
+        method: "PATCH",
+        headers : {
+          "Content-Type": "application/json",
+        }
       })
         .then((response) => response.json())
         .then(data => {

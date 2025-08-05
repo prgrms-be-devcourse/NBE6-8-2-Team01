@@ -255,12 +255,29 @@ public class RentService {
         return RentDetailResponseDto.from(rent);
     }
 
-    @Transactional
-    public void removeRentPage(Integer id) {
-        try {
-            rentRepository.deleteById(id);
-        } catch (RuntimeException e) {
-            throw new ServiceException("404-1", "해당 글은 존재하지 않습니다.");
+//    @Transactional
+//    public void removeRentPage(Integer id) {
+//        try {
+//            rentRepository.deleteById(id);
+//        } catch (RuntimeException e) {
+//            throw new ServiceException("404-1", "해당 글은 존재하지 않습니다.");
+//        }
+//    }
+
+    @Transactional(readOnly = true)
+    public RentDetailResponseDto getRentPostDetail(int id) {
+        Rent rent = rentRepository.findById(id)
+                .orElseThrow(() -> new ServiceException("404-2", "해당 대여글을 찾을 수 없습니다."));
+
+        return RentDetailResponseDto.from(rent);
+
+    }
+
+    private void checkRentPostDeleted(Rent rent) {
+        RentStatus status = rent.getRentStatus();
+
+        if (status.equals(RentStatus.DELETED)) {
+            throw new ServiceException("409-1", "해당 글은 이미 삭제되었습니다.");
         }
     }
 }

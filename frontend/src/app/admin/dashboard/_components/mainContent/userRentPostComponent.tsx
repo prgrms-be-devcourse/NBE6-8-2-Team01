@@ -2,15 +2,18 @@
 
 import React, { useCallback, useEffect, useState } from "react";
 import { DataTable, ColumnDefinition } from "../common/Table";
-import {getRentStatus, RentPostDetailResponseDto, RentPostSimpleResponseDto, rentStatus} from "../../_types/rentPost";
 import { ContentComponentProps } from "./baseContentComponentProps";
 import { FilterState, PostFilterContainer } from "@/app/admin/dashboard/_components/post/filter";
 import { useDashBoardContext } from "@/app/admin/dashboard/_hooks/useDashboard";
 import Link from "next/link";
 import { formatDate } from "@/app/admin/dashboard/_components/common/dateFormatter";
 import PostDetailWithUserModal from "../post/manage/postDetailWithUserModal";
-import { authFetch } from "@/app/util/authFetch";
-import { dummyFunction } from "@/app/admin/dashboard/_components/common/dummyFunction";
+import {
+    getRentStatus,
+    RentPostDetailResponseDto,
+    RentPostSimpleResponseDto,
+    rentStatus
+} from "../../_types/rentPost";
 
 interface ManagementButtonProps {
     rentPost: RentPostSimpleResponseDto;
@@ -35,6 +38,7 @@ export function UserRentPostComponent({ data, onRefresh }: ContentComponentProps
     );
     const [isModalOpen, setIsModalOpen] = useState(false);
     const { currentItem, fetchData } = useDashBoardContext();
+    const statusList : rentStatus[] = ["AVAILABLE", "LOANED", "FINISHED", "DELETED"];
 
     const getInitialFilters = (): FilterState => {
         try {
@@ -42,7 +46,7 @@ export function UserRentPostComponent({ data, onRefresh }: ContentComponentProps
             if (saved) {
                 const parsed = JSON.parse(saved);
                 return {
-                    statuses: new Set(parsed.statuses || ["AVAILABLE", "LOANED", "FINISHED"]),
+                    statuses: new Set(parsed.statuses || statusList),
                     searchTerm: parsed.searchTerm || "",
                 };
             }
@@ -51,7 +55,7 @@ export function UserRentPostComponent({ data, onRefresh }: ContentComponentProps
         }
 
         return {
-            statuses: new Set(["AVAILABLE", "LOANED", "FINISHED"]),
+            statuses: new Set(statusList),
             searchTerm: "",
         };
     };
@@ -73,12 +77,17 @@ export function UserRentPostComponent({ data, onRefresh }: ContentComponentProps
     const handleManageClick = async (post : RentPostSimpleResponseDto) => {
         console.log(`관리 버튼 클릭: 멤버 ID - ${post.id}`);
 
-        const response = await authFetch(`/bookbook/rent/${post.id}`, {method: "GET"}, dummyFunction)
-        const data = JSON.parse(await response.text());
+        const response = await fetch(`/api/v1/admin/rent/${post.id}`, {
+            method: "GET",
+            headers: {
+                "Content-Type": "application/json; charset=utf-8",
+            }
+        })
+        const data = await response.json()
 
         if (!data) return;
 
-        setSelectedRentPost(data as RentPostDetailResponseDto);
+        setSelectedRentPost(data.data as RentPostDetailResponseDto);
 
         setIsModalOpen(true);
     };
@@ -101,14 +110,14 @@ export function UserRentPostComponent({ data, onRefresh }: ContentComponentProps
         }
 
         if (newStatuses.size === 0) {
-            setFilters((prev) => ({ ...prev, statuses: new Set(["AVAILABLE", "LOANED", "FINISHED"])}));
+            setFilters((prev) => ({ ...prev, statuses: new Set(["AVAILABLE", "LOANED", "FINISHED", "DELETED"])}));
         } else {
             setFilters((prev) => ({ ...prev, statuses: newStatuses }));
         }
     };
 
     const handleSelectAll = () => {
-        const allStatuses: rentStatus[] = ["AVAILABLE", "LOANED", "FINISHED"];
+        const allStatuses: rentStatus[] = ["AVAILABLE", "LOANED", "FINISHED", "DELETED"];
         const isAllSelected = allStatuses.every((status) =>
             filters.statuses.has(status)
         );
@@ -126,7 +135,7 @@ export function UserRentPostComponent({ data, onRefresh }: ContentComponentProps
 
     const resetFilters = () => {
         const resetState: FilterState = {
-            statuses: new Set(["AVAILABLE", "LOANED", "FINISHED"]),
+            statuses: new Set(["AVAILABLE", "LOANED", "FINISHED", "DELETED"]),
             searchTerm: "",
         };
         setFilters(resetState);

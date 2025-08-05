@@ -1,4 +1,4 @@
-import {getUserRole, UserDetailResponseDto} from "../../../_types/userResponseDto";
+import { getUserRole, UserDetailResponseDto } from "../../../_types/userResponseDto";
 
 interface UserBasicInfoProps {
   user: UserDetailResponseDto;

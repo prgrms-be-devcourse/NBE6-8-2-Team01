@@ -1,7 +1,6 @@
-import { createContext, use, useEffect, useState } from "react";
+import { createContext, useContext, useEffect, useRef, useState } from "react";
 import { userRole } from "@/app/admin/dashboard/_types/userResponseDto";
-import { authFetch } from "@/app/util/authFetch";
-import {dummyFunction} from "@/app/admin/dashboard/_components/common/dummyFunction";
+import "@/app/util/fetchIntercepter";
 
 export interface UserLoginResponseDto {
     id: number;
@@ -20,53 +19,47 @@ export default function useAuth() {
     const [error, setError] = useState("");
     const isLogin = loginMember !== null;
     const isAdmin = isLogin && loginMember.role === "ADMIN";
+    const checked = useRef(false);
 
     useEffect(() => {
-        let mounted = true;
+        if (checked.current) {
+            return;
+        }
 
-        const fetchCurrentUser = async () => {
-            try {
-                setLoading(true);
-                setError("");
+        checked.current = true;
 
-                const response = await authFetch(
-                    '/api/v1/bookbook/users/me', {}, dummyFunction
-                );
+        setLoading(true);
+        setError("");
 
-                if (!response.ok) {
-                    if (response.status === 401) {
-                        // 인증되지 않은 사용자
-                        setLoginMember(null as unknown as UserLoginResponseDto);
-                        setError('해당 기능에 접근하기 위한 권한이 필요합니다.');
-                        return;
-                    }
-                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-                }
+        console.log('[useAuth] 사용자 정보 조회 시작...');
 
-                const data = await response.json();
-
-                if (mounted && data.data) {
-                    setLoginMember(data.data as UserLoginResponseDto);
-                }
-                
-            } catch (err) {
-                if (mounted) {
-                    console.error('사용자 정보 조회 실패:', err);
-                    setError(err instanceof Error ? err.message : '사용자 정보를 불러오는데 실패했습니다.');
-                    setLoginMember(null as unknown as UserLoginResponseDto);
-                }
-            } finally {
-                if (mounted) {
-                    setLoading(false);
-                }
+        fetch('/api/v1/bookbook/users/me', {
+            method: "GET",
+            headers: {
+                "Content-Type": "application/json",
             }
-        }
-        
-        fetchCurrentUser();
-
-        return () => {
-            mounted = false;
-        }
+        })
+        .then(response => {
+            console.log('[useAuth] 응답 상태:', response.status);
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.data) {
+                console.log('[useAuth] 사용자 정보 조회 성공:', data.data);
+                setLoginMember(data.data as UserLoginResponseDto);
+            }
+        })
+        .catch(err => {
+            console.error('[useAuth] 사용자 정보 조회 실패:', err);
+            setError(err instanceof Error ? err.message : '사용자 정보를 불러오는데 실패했습니다.');
+            setLoginMember(null as unknown as UserLoginResponseDto);
+        })
+        .finally(() => {
+            setLoading(false);
+        })
     }, []);
 
     const clearLoginMember = () => {
@@ -74,7 +67,7 @@ export default function useAuth() {
     };
 
     const logout = (onSuccess: () => void) => {
-        authFetch("/api/v1/admin/logout", { method: "DELETE" }, dummyFunction)
+        fetch("/api/v1/admin/logout", { method: "DELETE" })
             .catch((error) => {
                 console.error("Logout error:", error);
             })
@@ -109,7 +102,7 @@ export function AuthProvider(
 }
 
 export function useAuthContext() {
-    const authState = use(AuthContext);
+    const authState = useContext(AuthContext);
 
     if (authState === null) throw new Error("AuthContext is not found");
 

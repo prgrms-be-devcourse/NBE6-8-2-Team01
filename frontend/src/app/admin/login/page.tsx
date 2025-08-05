@@ -5,8 +5,6 @@ import { Lock, User, Eye, EyeOff, BookOpen, AlertTriangle } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useAuthContext } from "@/app/admin/global/hooks/useAuth";
 import { UnauthorizedModal } from "../adminGuard";
-import { authFetch } from "@/app/util/authFetch";
-import { dummyFunction } from "@/app/admin/dashboard/_components/common/dummyFunction";
 
 export default function AdminLoginPage() {
     const { setLoginMember } = useAuthContext();
@@ -49,10 +47,12 @@ export default function AdminLoginPage() {
 
         // TODO: 실제 로그인 API 연동
         try {
-            const response = await authFetch("/api/v1/admin/login", {
+            const response = await fetch("/api/v1/admin/login", {
                 method: "POST",
+                headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(reqBody),
-            }, dummyFunction)
+                credentials: "include",
+            })
 
             const data = await response.json().catch(error => {
                 const message = error.message as string;

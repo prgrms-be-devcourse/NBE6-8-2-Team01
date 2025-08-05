@@ -11,6 +11,8 @@ interface PostStatusInfoProps {
 }
 
 export function PostStatusInfo({ initialRentStatus, setRentStatusValue, post } : PostStatusInfoProps){
+  const isDeleted = initialRentStatus === "DELETED";
+
   const getStatusColor = (status: rentStatus) => {
     switch (status) {
       case "AVAILABLE":
@@ -33,16 +35,19 @@ export function PostStatusInfo({ initialRentStatus, setRentStatusValue, post } :
               대여 상태:
               <span className={`px-1 ${getStatusColor(initialRentStatus)}`}>{getRentStatus(initialRentStatus)}</span>
             </label>
-            <select
-                defaultValue=""
-                onChange={(e) => setRentStatusValue(e.target.value as rentStatus)}
-                className="p-3 border border-gray-300 rounded-md bg-white text-gray-900 appearance-none cursor-pointer"
-            >
-              <option value="" disabled>변경할 상태 선택</option>
-              <option value="AVAILABLE">대여 가능</option>
-              <option value="LOANED">대여 중</option>
-              <option value="FINISHED">대여 종료</option>
-            </select>
+            {!isDeleted && (
+                <select
+                    defaultValue=""
+                    onChange={(e) => setRentStatusValue(e.target.value as rentStatus)}
+                    className="p-3 border border-gray-300 rounded-md bg-white text-gray-900 appearance-none cursor-pointer"
+                    disabled={isDeleted}
+                >
+                  <option value="" disabled>변경할 상태 선택</option>
+                  <option value="AVAILABLE">대여 가능</option>
+                  <option value="LOANED">대여 중</option>
+                  <option value="FINISHED">대여 종료</option>
+                </select>
+            )}
           </div>
           <div>
             <label className="block font-medium text-gray-700 mb-1">도서 상태</label>

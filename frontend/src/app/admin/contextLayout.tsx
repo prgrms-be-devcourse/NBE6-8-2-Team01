@@ -3,7 +3,7 @@
 import { AuthProvider } from "./global/hooks/useAuth";
 import ClientLayout from "./clientLayout";
 import { useEffect, useState } from "react";
-import {LoadingScreen} from "@/app/admin/adminGuard";
+import { LoadingScreen } from "@/app/admin/adminGuard";
 
 export default function ContextLayout({
     children,
