@@ -11,18 +11,24 @@ interface WishListCardProps {
 
 export default function WishListCard({ item, onRemove }: WishListCardProps) {
     const router = useRouter();
+    
+    // 이미지 URL 처리
+    const backendBaseUrl = 'http://localhost:8080';
+    const defaultCoverImageUrl = 'https://i.postimg.cc/pLC9D2vW/noimg.gif';
+    const displayImageUrl = item.bookImage 
+        ? (item.bookImage.startsWith('http') ? item.bookImage : `${backendBaseUrl}${item.bookImage}`)
+        : defaultCoverImageUrl;
 
     const getStatusColor = (status: string) => {
         switch (status) {
-            case 'Available':
-            case '대여가능':
+            case 'AVAILABLE':
                 return 'bg-green-100 text-green-800';
-            case 'Loaned':
-            case '대출중':
+            case 'LOANED':
                 return 'bg-blue-100 text-blue-800';
-            case 'Finished':
-            case '대여불가':
+            case 'FINISHED':
                 return 'bg-gray-100 text-gray-800';
+            case 'DELETED':
+                return 'bg-red-100 text-red-800';
             default:
                 return 'bg-gray-100 text-gray-800';
         }
@@ -30,12 +36,14 @@ export default function WishListCard({ item, onRemove }: WishListCardProps) {
 
     const getStatusText = (status: string) => {
         switch (status) {
-            case 'Available':
+            case 'AVAILABLE':
                 return '대여가능';
-            case 'Loaned':
-                return '대출중';
-            case 'Finished':
-                return '대출불가';
+            case 'LOANED':
+                return '대여중';
+            case 'FINISHED':
+                return '대여불가';
+            case 'DELETED':
+                return '삭제됨';
             default:
                 return status;
         }
@@ -50,12 +58,12 @@ export default function WishListCard({ item, onRemove }: WishListCardProps) {
                 {/* 책 이미지 */}
                 <div className="flex-shrink-0">
                     <img
-                        src={item.bookImage || "/book-placeholder.png"}
+                        src={displayImageUrl}
                         alt={item.bookTitle}
                         className="w-20 h-28 object-cover rounded border border-gray-200"
                         onError={(e) => {
                             const target = e.target as HTMLImageElement;
-                            target.src = "/book-placeholder.png";
+                            target.src = defaultCoverImageUrl;
                         }}
                     />
                 </div>
@@ -71,8 +79,8 @@ export default function WishListCard({ item, onRemove }: WishListCardProps) {
                                 <p className="text-base font-medium text-gray-800">
                                     {item.bookTitle}
                                 </p>
-                                <p className="text-sm text-gray-600">저자: {item.bookAuthor}</p>
-                                <p className="text-sm text-gray-600">출판사: {item.bookPublisher}</p>
+                                <p className="text-sm text-gray-600">저자: {item.author}</p>
+                                <p className="text-sm text-gray-600">출판사: {item.publisher}</p>
                                 <p className="text-sm text-gray-600">상태: {item.bookCondition}</p>
                             </div>
                         </div>
@@ -82,7 +90,7 @@ export default function WishListCard({ item, onRemove }: WishListCardProps) {
                             <button
                                 onClick={(e) => {
                                     e.stopPropagation();
-                                    onRemove(item.id);
+                                    onRemove(item.rentId);
                                 }}
                                 className="text-red-500 hover:text-red-700 transition-colors"
                                 title="찜 해제"
