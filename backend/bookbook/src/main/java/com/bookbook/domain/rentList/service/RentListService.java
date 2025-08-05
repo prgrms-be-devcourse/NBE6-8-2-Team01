@@ -115,6 +115,27 @@ public class RentListService {
         Rent rent = rentRepository.findById(request.getRentId())
                 .orElseThrow(() -> new IllegalArgumentException("대여 게시글을 찾을 수 없습니다. rentId: " + request.getRentId()));
         
+        // 📋 중복 신청 방지 로직 - 이미 PENDING 상태의 신청이 있는지 확인
+        boolean alreadyRequested = rentListRepository
+                .existsByBorrowerUserIdAndRentIdAndStatus(borrowerUserId, request.getRentId(), RentRequestStatus.PENDING);
+        
+        if (alreadyRequested) {
+            log.warn("중복 대여 신청 차단 - 사용자: {}, Rent ID: {}", borrowerUserId, request.getRentId());
+            throw new IllegalArgumentException("이미 대여 신청을 하셨습니다. 승인 결과를 기다려주세요.");
+        }
+        
+        // 📋 자신의 책에 신청하는 것 방지
+        if (rent.getLenderUserId().equals(borrowerUserId)) {
+            log.warn("자신의 책 대여 신청 차단 - 사용자: {}, Rent ID: {}", borrowerUserId, request.getRentId());
+            throw new IllegalArgumentException("자신의 책은 대여 신청할 수 없습니다.");
+        }
+        
+        // 📋 이미 대여 중인 책인지 확인 (LOANED 상태)
+        if (rent.getRentStatus() == RentStatus.LOANED) {
+            log.warn("이미 대여 중인 책 신청 차단 - Rent ID: {}, 상태: {}", request.getRentId(), rent.getRentStatus());
+            throw new IllegalArgumentException("이미 대여 중인 책입니다.");
+        }
+        
         // 새로운 대여 기록 객체 생성
         RentList rentList = new RentList();
         

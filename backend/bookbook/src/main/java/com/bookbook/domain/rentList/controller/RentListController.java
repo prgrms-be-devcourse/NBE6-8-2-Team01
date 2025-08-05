@@ -66,11 +66,22 @@ public class RentListController {
     // /api/v1/user/{borrowerUserId}/rentlist/create
     @PostMapping("/create")
     @Operation(summary = "Rent_List 페이지 등록") // Swagger 에서 API 문서화에 사용되는 설명
-    public void createRentList(
+    public ResponseEntity<RsData<String>> createRentList(
             @PathVariable Long borrowerUserId,
             @RequestBody RentListCreateRequestDto request
     ) {
-        rentListService.createRentList(borrowerUserId, request);
+        try {
+            rentListService.createRentList(borrowerUserId, request);
+            return ResponseEntity.ok(RsData.of("200-1", "대여 신청이 완료되었습니다.", null));
+        } catch (IllegalArgumentException e) {
+            // 비즈니스 로직 에러 (중복 신청, 자신의 책 신청 등)
+            return ResponseEntity.badRequest()
+                    .body(RsData.of("400-1", e.getMessage(), null));
+        } catch (Exception e) {
+            // 예상치 못한 에러
+            return ResponseEntity.internalServerError()
+                    .body(RsData.of("500-1", "대여 신청 처리 중 오류가 발생했습니다: " + e.getMessage(), null));
+        }
     }
     
     /**

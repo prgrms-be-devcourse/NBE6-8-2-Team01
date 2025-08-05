@@ -228,20 +228,25 @@ public class NotificationController {
             @PathVariable Long id,
             @AuthenticationPrincipal CustomOAuth2User customOAuth2User
     ) {
+        log.info("===== 대여 신청 상세 정보 조회 API 호출 - 알림 ID: {} =====", id);
+        
         if (customOAuth2User == null || customOAuth2User.getUserId() == null) {
+            log.warn("인증되지 않은 사용자의 접근 시도");
             return new RsData<>("401-1", "로그인 후 사용해주세요.", null);
         }
 
         User user = userService.findById(customOAuth2User.getUserId());
         if (user == null) {
+            log.error("사용자 ID {}에 해당하는 사용자를 찾을 수 없습니다.", customOAuth2User.getUserId());
             return new RsData<>("404-1", "사용자 정보를 찾을 수 없습니다.", null);
         }
 
         try {
             Object detail = notificationService.getRentRequestDetail(id, user);
+            log.info("대여 신청 상세 정보 조회 성공 - 알림 ID: {}, 응답 데이터: {}", id, detail);
             return RsData.of("200-1", "대여 신청 상세 정보를 조회했습니다.", detail);
         } catch (RuntimeException e) {
-            log.error("대여 신청 상세 정보 조회 실패: {}", e.getMessage());
+            log.error("대여 신청 상세 정보 조회 실패 - 알림 ID: {}, 오류: {}", id, e.getMessage(), e);
             return RsData.of("400-1", e.getMessage(), null);
         }
     }

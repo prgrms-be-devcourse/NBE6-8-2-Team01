@@ -113,36 +113,47 @@ public class NotificationService {
             throw new RuntimeException("대여 신청 알림이 아닙니다.");
         }
 
-        // relatedId로 RentList 조회
+        // relatedId로 Rent 정보 조회 (relatedId는 rent.getId())
         Long rentId = notification.getRelatedId();
+        log.info("알림의 relatedId (rentId): {}", rentId);
+        
+        if (rentId == null) {
+            throw new RuntimeException("알림에 연결된 대여 게시글 ID가 없습니다.");
+        }
         
         // Rent 정보 조회
         Rent rent = rentRepository.findById(rentId.intValue())
-                .orElseThrow(() -> new RuntimeException("대여 게시글을 찾을 수 없습니다."));
+                .orElseThrow(() -> new RuntimeException("대여 게시글을 찾을 수 없습니다. ID: " + rentId));
 
         // 해당 Rent에 대한 PENDING 상태의 RentList 조회 (대여 신청자 정보 포함)
         List<RentList> pendingRentLists = rentListRepository.findByRentIdAndStatus(rentId.intValue(), RentRequestStatus.PENDING);
         
-        if (pendingRentLists.isEmpty()) {
-            throw new RuntimeException("대기 중인 대여 신청 정보를 찾을 수 없습니다.");
-        }
-
-        // 가장 최근 신청을 기준으로 (여러 신청이 있을 수 있음)
-        RentList latestRentList = pendingRentLists.get(pendingRentLists.size() - 1);
-
         Map<String, Object> detail = new HashMap<>();
-        detail.put("rentListId", latestRentList.getId());
-        detail.put("rentId", rent.getId()); // rent ID 추가
+        detail.put("rentId", rent.getId()); // 👈 rent ID를 맨 앞에 명시적으로 추가
         detail.put("bookTitle", rent.getBookTitle());
         detail.put("bookImage", rent.getBookImage());
-        detail.put("requesterNickname", latestRentList.getBorrowerUser().getNickname());
-        detail.put("requestDate", latestRentList.getCreatedDate());
-        detail.put("loanDate", latestRentList.getLoanDate());
-        detail.put("returnDate", latestRentList.getReturnDate());
         detail.put("rentStatus", rent.getRentStatus().getDescription());
         
-        log.info("대여 신청 상세 정보 조회 완료 - 알림 ID: {}, RentList ID: {}", 
-                notificationId, latestRentList.getId());
+        if (!pendingRentLists.isEmpty()) {
+            // 가장 최근 신청을 기준으로 (여러 신청이 있을 수 있음)
+            RentList latestRentList = pendingRentLists.get(pendingRentLists.size() - 1);
+            detail.put("rentListId", latestRentList.getId());
+            detail.put("requesterNickname", latestRentList.getBorrowerUser().getNickname());
+            detail.put("requestDate", latestRentList.getCreatedDate());
+            detail.put("loanDate", latestRentList.getLoanDate());
+            detail.put("returnDate", latestRentList.getReturnDate());
+        } else {
+            // PENDING 상태의 신청이 없더라도 rent 정보는 제공
+            log.warn("대기 중인 대여 신청이 없지만 기본 정보는 제공 - Rent ID: {}", rentId);
+            detail.put("rentListId", null);
+            detail.put("requesterNickname", "알 수 없음");
+            detail.put("requestDate", null);
+            detail.put("loanDate", null);
+            detail.put("returnDate", null);
+        }
+        
+        log.info("대여 신청 상세 정보 조회 완료 - 알림 ID: {}, Rent ID: {}, RentList 개수: {}", 
+                notificationId, rent.getId(), pendingRentLists.size());
 
         return detail;
     }

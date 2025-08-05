@@ -17,4 +17,7 @@ public interface RentListRepository extends JpaRepository<RentList, Long> {
     List<RentList> findByRentId(Integer rentId);
     
     List<RentList> findByRentIdAndStatus(Integer rentId, RentRequestStatus status);
+    
+    // 중복 신청 방지를 위한 메서드
+    boolean existsByBorrowerUserIdAndRentIdAndStatus(Long borrowerUserId, Integer rentId, RentRequestStatus status);
 }
