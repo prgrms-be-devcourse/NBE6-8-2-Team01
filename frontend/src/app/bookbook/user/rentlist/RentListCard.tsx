@@ -10,11 +10,11 @@ interface RentListCardProps {
   formatDate: (dateString: string) => string;
 }
 
-export default function RentListCard({ book, onReview, formatDate }: RentListCardProps) {
+export default function RentListCard({ book, onReview, onReturn, formatDate }: RentListCardProps) {
   // 이미지 URL 처리
   const backendBaseUrl = 'http://localhost:8080';
   const defaultCoverImageUrl = 'https://i.postimg.cc/pLC9D2vW/noimg.gif';
-  const displayImageUrl = book.bookImage
+  const displayImageUrl = book.bookImage 
     ? (book.bookImage.startsWith('http') ? book.bookImage : `${backendBaseUrl}${book.bookImage}`)
     : defaultCoverImageUrl;
 
@@ -36,7 +36,7 @@ export default function RentListCard({ book, onReview, onReturn, formatDate }: R
     // 그렇지 않으면 날짜 기준으로 판단
     const now = new Date();
     const returnDate = new Date(book.returnDate);
-
+    
     if (now <= returnDate) {
       return 'LOANED'; // 대여중
     } else {
