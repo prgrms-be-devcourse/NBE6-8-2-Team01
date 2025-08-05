@@ -1,3 +1,6 @@
+// 08.05 현준
+// 책 빌리기 기능을 위한 모달
+
 "use client";
 
 import React, { useState } from 'react';
@@ -7,23 +10,26 @@ interface RentModalProps {
     onClose: () => void;
     bookTitle: string;
     lenderNickname: string;
-    rentId: number;
-    borrowerUserId: number | null;
+    rentId: number; // 대여 게시글 ID
+    borrowerUserId: number | null; // 빌리는 사람의 ID
 }
 
 export default function RentModal({ isOpen, onClose, bookTitle, lenderNickname, rentId, borrowerUserId }: RentModalProps) {
+    // formData의 초기 상태를 props에서 가져와 설정합니다.
     const initialFormData = {
         recipient: lenderNickname,
         title: `[대여 신청] ${bookTitle}`,
+        message: ''
     };
 
     const [formData, setFormData] = useState(initialFormData);
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     const resetBookRentModal = () => {
-        setFormData(initialFormData);
+        setFormData(initialFormData); // formData를 초기화.
     };
 
+    // 모달 내용 변경 함수
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
         const { name, value } = e.target;
         setFormData(prev => ({
@@ -35,6 +41,7 @@ export default function RentModal({ isOpen, onClose, bookTitle, lenderNickname, 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
+        // borrowerUserId가 유효한지 확인.
         if (borrowerUserId === null || borrowerUserId === undefined) {
             alert('로그인이 필요합니다. 로그인 후 다시 시도해주세요.');
             return;
@@ -61,6 +68,7 @@ export default function RentModal({ isOpen, onClose, bookTitle, lenderNickname, 
             // fetchInterceptor가 자동으로 BASE_URL 처리와 인증 헤더를 추가해줍니다
             const response = await fetch(`/api/v1/user/${borrowerUserId}/rentlist/create`, {
                 method: 'POST',
+                credentials: "include",
                 headers: {
                     'Content-Type': 'application/json',
                 },
