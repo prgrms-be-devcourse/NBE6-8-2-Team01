@@ -7,28 +7,23 @@ interface RentModalProps {
     onClose: () => void;
     bookTitle: string;
     lenderNickname: string;
-    rentId: number; // 대여 게시글 ID를 props로 받습니다.
-    borrowerUserId: number | null; // 빌리는 사람의 ID를 props로 받습니다.
+    rentId: number;
+    borrowerUserId: number | null;
 }
 
 export default function RentModal({ isOpen, onClose, bookTitle, lenderNickname, rentId, borrowerUserId }: RentModalProps) {
-    // formData의 초기 상태를 props에서 가져와 설정합니다.
-    // message 필드가 완전히 제거되었습니다.
     const initialFormData = {
         recipient: lenderNickname,
         title: `[대여 신청] ${bookTitle}`,
     };
 
     const [formData, setFormData] = useState(initialFormData);
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
-    // 모달 내용 초기화 함수
     const resetBookRentModal = () => {
-        setFormData(initialFormData); // formData를 초기 상태로 되돌립니다.
+        setFormData(initialFormData);
     };
 
-    // message 필드가 제거되었으므로, handleInputChange는 더 이상 필요하지 않습니다.
-    // 하지만 recipient나 title 필드가 readOnly이므로, 현재 이 함수는 사용되지 않습니다.
-    // 혹시 나중에 다른 필드를 추가하거나 수정 가능하게 만들 경우를 대비하여 남겨두었습니다.
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
         const { name, value } = e.target;
         setFormData(prev => ({
@@ -40,61 +35,82 @@ export default function RentModal({ isOpen, onClose, bookTitle, lenderNickname, 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
-        // borrowerUserId가 유효한지 확인합니다.
         if (borrowerUserId === null || borrowerUserId === undefined) {
-            console.error('로그인한 사용자 ID를 찾을 수 없습니다. 대여 신청을 할 수 없습니다.');
-            // 사용자에게 알림을 표시하는 로직 (예: 토스트 메시지)을 여기에 추가할 수 있습니다.
+            alert('로그인이 필요합니다. 로그인 후 다시 시도해주세요.');
             return;
         }
 
-        // 현재 날짜를 'YYYY년MM월DD일' 형식으로 생성합니다.
-        const today = new Date();
-        const year = today.getFullYear();
-        const month = (today.getMonth() + 1).toString().padStart(2, '0'); // 월은 0부터 시작하므로 +1
-        const day = today.getDate().toString().padStart(2, '0');
-        // 백엔드 LocalDateTime 형식에 맞게 'YYYY-MM-DDTHH:MM:SS' 형태로 변환
-        const hours = today.getHours().toString().padStart(2, '0');
-        const minutes = today.getMinutes().toString().padStart(2, '0');
-        const seconds = today.getSeconds().toString().padStart(2, '0');
-        const loanDate = `${year}-${month}-${day}T${hours}:${minutes}:${seconds}`;
-
-
-        // 백엔드로 보낼 데이터 객체를 구성합니다.
-        // message 필드는 백엔드 DTO에 없으므로 완전히 제거합니다.
-        const requestData = {
-            loanDate: loanDate, // 현재 날짜 (LocalDateTime 형식)
-            rentId: rentId, // props로 받은 대여 게시글 ID
-            // borrowerUserId는 URL 경로에 포함되므로 request body에서는 제거합니다.
-            // 백엔드 DTO (RentListCreateRequestDto)에 borrowerUserId 필드가 없습니다.
-        };
+        setIsSubmitting(true);
 
         try {
-            // 대여 신청 API를 호출합니다.
-            // borrowerUserId는 URL 경로에 포함됩니다.
-            const response = await fetch(`http://localhost:8080/api/v1/user/${borrowerUserId}/rentlist/create`, {
+            // 현재 날짜를 LocalDateTime 형식으로 생성
+            const today = new Date();
+            const year = today.getFullYear();
+            const month = (today.getMonth() + 1).toString().padStart(2, '0');
+            const day = today.getDate().toString().padStart(2, '0');
+            const hours = today.getHours().toString().padStart(2, '0');
+            const minutes = today.getMinutes().toString().padStart(2, '0');
+            const seconds = today.getSeconds().toString().padStart(2, '0');
+            const loanDate = `${year}-${month}-${day}T${hours}:${minutes}:${seconds}`;
+
+            const requestData = {
+                loanDate: loanDate,
+                rentId: rentId,
+            };
+
+            // fetchInterceptor가 자동으로 BASE_URL 처리와 인증 헤더를 추가해줍니다
+            const response = await fetch(`/api/v1/user/${borrowerUserId}/rentlist/create`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    // 필요하다면 인증 헤더 (예: 'Authorization': `Bearer ${token}`)를 여기에 추가하세요.
                 },
                 body: JSON.stringify(requestData)
             });
 
+            console.log('🔔 대여 신청 응답 상태:', response.status);
+
             if (!response.ok) {
-                // HTTP 에러가 발생한 경우
-                const errorText = await response.text();
-                console.error('대여 신청 실패 응답:', response.status, errorText);
-                throw new Error(`대여 신청에 실패했습니다: ${errorText}`);
+                let errorMessage = '대여 신청에 실패했습니다.';
+                
+                try {
+                    const errorData = await response.json();
+                    console.log('🔍 에러 응답 데이터:', errorData);
+                    
+                    // 👆 백엔드 응답에서 msg 필드 추출
+                    if (errorData && errorData.msg) {
+                        errorMessage = errorData.msg;
+                    } else if (errorData && typeof errorData === 'object') {
+                        // RsData 형태가 아닌 경우를 위한 대안
+                        errorMessage = errorData.message || errorData.error || errorMessage;
+                    }
+                } catch (parseError) {
+                    console.error('에러 응답 파싱 실패:', parseError);
+                    const errorText = await response.text();
+                    console.log('원본 에러 텍스트:', errorText);
+                    errorMessage = errorText || errorMessage;
+                }
+                
+                throw new Error(errorMessage);
             }
 
-            // 성공 메시지를 콘솔에 출력하고 모달을 닫고 폼을 초기화합니다.
-            console.log('대여 신청이 완료되었습니다.');
+            // 성공 처리
+            alert('대여 신청이 완료되었습니다! 승인 결과는 알림 페이지에서 확인하실 수 있습니다.');
             onClose();
             resetBookRentModal();
+            
         } catch (error: any) {
-            // 에러 발생 시 콘솔에 출력하고 사용자에게 알립니다.
             console.error('대여 신청 실패:', error);
-            console.log(`대여 신청 중 오류가 발생했습니다. 다시 시도해주세요: ${error.message}`);
+            
+            // fetchInterceptor에서 이미 인증 에러는 처리하므로 다른 에러만 처리
+            if (error.message.includes('재로그인이 필요합니다')) {
+                // fetchInterceptor에서 이미 로그인 모달을 열었으므로 별도 처리 불필요
+                return;
+            } else {
+                // 👆 깔끔한 에러 메시지만 표시
+                alert(error.message || '알 수 없는 오류가 발생했습니다.');
+            }
+        } finally {
+            setIsSubmitting(false);
         }
     };
 
@@ -108,10 +124,11 @@ export default function RentModal({ isOpen, onClose, bookTitle, lenderNickname, 
                     <h2 className="text-xl font-bold text-gray-800">대여 신청</h2>
                     <button
                         onClick={() => {
-                            resetBookRentModal(); // 모달 닫기 전에 폼 초기화
+                            resetBookRentModal();
                             onClose();
                         }}
                         className="text-gray-400 hover:text-gray-600 text-2xl font-bold"
+                        disabled={isSubmitting}
                     >
                         ×
                     </button>
@@ -130,7 +147,7 @@ export default function RentModal({ isOpen, onClose, bookTitle, lenderNickname, 
                             name="recipient"
                             value={formData.recipient}
                             onChange={handleInputChange}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#D5BAA3] focus:border-transparent"
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#D5BAA3] focus:border-transparent bg-gray-50"
                             required
                             readOnly
                         />
@@ -147,31 +164,48 @@ export default function RentModal({ isOpen, onClose, bookTitle, lenderNickname, 
                             name="title"
                             value={formData.title}
                             onChange={handleInputChange}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#D5BAA3] focus:border-transparent"
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#D5BAA3] focus:border-transparent bg-gray-50"
                             required
                             readOnly
                         />
                     </div>
 
-                    {/* 대여 신청 메세지 필드가 완전히 제거되었습니다. */}
+                    {/* 안내 메시지 */}
+                    <div className="bg-blue-50 border border-blue-200 rounded-md p-3">
+                        <p className="text-sm text-blue-700">
+                            📘 대여 신청이 완료되면 책 소유자에게 알림이 전송됩니다.
+                        </p>
+                        <p className="text-xs text-blue-600 mt-1">
+                            승인 결과는 알림 페이지에서 확인하실 수 있습니다.
+                        </p>
+                    </div>
 
                     {/* 버튼 영역 */}
                     <div className="flex space-x-3 pt-4">
                         <button
                             type="button"
                             onClick={() => {
-                                resetBookRentModal(); // 취소 버튼 클릭 시 폼 초기화
+                                resetBookRentModal();
                                 onClose();
                             }}
-                            className="flex-1 px-4 py-2 text-gray-600 font-semibold rounded-lg border border-gray-300 hover:bg-gray-50"
+                            className="flex-1 px-4 py-2 text-gray-600 font-semibold rounded-lg border border-gray-300 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                            disabled={isSubmitting}
                         >
                             취소
                         </button>
                         <button
                             type="submit"
-                            className="flex-1 px-4 py-2 bg-[#D5BAA3] text-white font-semibold rounded-lg hover:bg-[#C2A794]"
+                            className="flex-1 px-4 py-2 bg-[#D5BAA3] text-white font-semibold rounded-lg hover:bg-[#C2A794] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+                            disabled={isSubmitting}
                         >
-                            신청하기
+                            {isSubmitting ? (
+                                <>
+                                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                                    신청 중...
+                                </>
+                            ) : (
+                                '신청하기'
+                            )}
                         </button>
                     </div>
                 </form>
