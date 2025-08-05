@@ -60,8 +60,13 @@ export default function RentListCard({ book, onReview, onReturn, formatDate }: R
     }
   };
 
+  const handleCardClick = () => {
+    // 상세페이지로 이동
+    window.location.href = `/bookbook/rent/${book.rentId}`;
+  };
+
   return (
-    <div className="bg-white rounded-lg shadow-md border border-gray-200 p-6 hover:shadow-lg transition-shadow">
+    <div className="bg-white rounded-lg shadow-md border border-gray-200 p-6 hover:shadow-lg transition-shadow cursor-pointer" onClick={handleCardClick}>
       <div className="flex gap-4">
         {/* 책 이미지 */}
         <div className="flex-shrink-0">
@@ -133,7 +138,10 @@ export default function RentListCard({ book, onReview, onReturn, formatDate }: R
             {/* 반납하기 버튼 - 대여중일 때만 표시 */}
             {actualStatus === 'LOANED' && onReturn && (
               <button 
-                onClick={() => onReturn(book.rentId)}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onReturn(book.rentId);
+                }}
                 className="px-3 py-1 text-xs bg-green-500 text-white rounded hover:bg-green-600 transition-colors"
               >
                 반납하기
@@ -148,7 +156,10 @@ export default function RentListCard({ book, onReview, onReturn, formatDate }: R
                 </span>
               ) : onReview ? (
                 <button 
-                  onClick={() => onReview(book.rentId)}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onReview(book.rentId);
+                  }}
                   className="px-3 py-1 text-xs bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
                 >
                   리뷰쓰기
