@@ -170,6 +170,9 @@ export default function NotificationPage() {
   const [rentRequestDetail, setRentRequestDetail] = useState<RentRequestDetail | null>(null);
   const [isProcessingDecision, setIsProcessingDecision] = useState(false);
   const [imageLoadStates, setImageLoadStates] = useState<{[key: number]: 'loading' | 'loaded' | 'error'}>({});
+  
+  // 👆 새로 추가: 처리된 알림들을 추적하는 상태
+  const [processedNotifications, setProcessedNotifications] = useState<Set<number>>(new Set());
 
   const loadNotifications = useCallback(async () => {
     try {
@@ -261,6 +264,13 @@ export default function NotificationPage() {
         setSelectedId(null);
         setRentRequestDetail(null);
       }
+      
+      // 👆 처리된 알림 목록에서도 제거
+      setProcessedNotifications(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(notificationId);
+        return newSet;
+      });
     } catch (error) {
       console.error('알림 삭제 실패:', error);
       alert('알림 삭제에 실패했습니다. 다시 시도해주세요.');
@@ -276,7 +286,16 @@ export default function NotificationPage() {
       
       alert(approved ? '대여 신청을 수락했습니다!' : '대여 신청을 거절했습니다.');
       
+      // 👆 현재 선택된 알림을 처리됨으로 표시
+      const currentNotificationId = selectedId;
+      if (currentNotificationId) {
+        setProcessedNotifications(prev => new Set([...prev, currentNotificationId]));
+      }
+      
+      // 알림 목록 새로고침 (새로운 알림이 있을 수 있음)
       await loadNotifications();
+      
+      // 상세 정보 초기화
       setSelectedId(null);
       setRentRequestDetail(null);
       
@@ -286,6 +305,11 @@ export default function NotificationPage() {
     } finally {
       setIsProcessingDecision(false);
     }
+  };
+
+  // 알림이 처리 가능한 상태인지 확인하는 함수
+  const isNotificationProcessable = (notificationId: number): boolean => {
+    return !processedNotifications.has(notificationId);
   };
 
   // 이미지 URL 유효성 검사 함수 (선택사항)
@@ -378,6 +402,7 @@ export default function NotificationPage() {
       [notificationId]: 'loaded'
     }));
   };
+  
   const handleBookImageClick = (event: React.MouseEvent, notification: Notification) => {
     event.stopPropagation(); // 알림 클릭 이벤트 방지
     
@@ -644,7 +669,8 @@ export default function NotificationPage() {
                             <span className="font-semibold text-gray-700 min-w-[60px]">디버그:</span>
                             <span className="text-gray-500 ml-2 text-xs">
                               알림ID: {item.id}, RentID: {item.rentId || 'null'}, 
-                              DetailRentID: {rentRequestDetail?.rentId || 'null'}
+                              DetailRentID: {rentRequestDetail?.rentId || 'null'},
+                              처리됨: {processedNotifications.has(item.id) ? 'Yes' : 'No'}
                             </span>
                           </div>
                         )}
@@ -653,44 +679,60 @@ export default function NotificationPage() {
                       {/* 대여 신청인 경우 수락/거절 버튼 표시 */}
                       {item.type === 'RENT_REQUEST' && rentRequestDetail && (
                         <div className="pt-4 border-t border-gray-100">
-                          <div className="flex space-x-3">
-                            <button
-                              onClick={() => handleRentDecision(true)}
-                              disabled={isProcessingDecision}
-                              className="flex-1 px-4 py-2 bg-green-500 text-white font-semibold rounded-lg hover:bg-green-600 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
-                            >
-                              {isProcessingDecision ? (
-                                <>
-                                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                                  처리 중...
-                                </>
-                              ) : (
-                                '✅ 수락하기'
-                              )}
-                            </button>
-                            <button
-                              onClick={() => {
-                                const reason = prompt('거절 사유를 입력해주세요 (선택사항):');
-                                if (reason !== null) {
-                                  handleRentDecision(false, reason);
-                                }
-                              }}
-                              disabled={isProcessingDecision}
-                              className="flex-1 px-4 py-2 bg-red-500 text-white font-semibold rounded-lg hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
-                            >
-                              {isProcessingDecision ? (
-                                <>
-                                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                                  처리 중...
-                                </>
-                              ) : (
-                                '❌ 거절하기'
-                              )}
-                            </button>
-                          </div>
-                          <p className="text-xs text-gray-500 mt-2 text-center">
-                            💡 처리 후에는 신청자에게 결과 알림이 자동으로 발송됩니다.
-                          </p>
+                          {isNotificationProcessable(item.id) ? (
+                            // 👆 처리 가능한 상태 - 버튼 표시
+                            <>
+                              <div className="flex space-x-3">
+                                <button
+                                  onClick={() => handleRentDecision(true)}
+                                  disabled={isProcessingDecision}
+                                  className="flex-1 px-4 py-2 bg-green-500 text-white font-semibold rounded-lg hover:bg-green-600 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+                                >
+                                  {isProcessingDecision ? (
+                                    <>
+                                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                                      처리 중...
+                                    </>
+                                  ) : (
+                                    '✅ 수락하기'
+                                  )}
+                                </button>
+                                <button
+                                  onClick={() => {
+                                    const reason = prompt('거절 사유를 입력해주세요 (선택사항):');
+                                    if (reason !== null) {
+                                      handleRentDecision(false, reason);
+                                    }
+                                  }}
+                                  disabled={isProcessingDecision}
+                                  className="flex-1 px-4 py-2 bg-red-500 text-white font-semibold rounded-lg hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+                                >
+                                  {isProcessingDecision ? (
+                                    <>
+                                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                                      처리 중...
+                                    </>
+                                  ) : (
+                                    '❌ 거절하기'
+                                  )}
+                                </button>
+                              </div>
+                              <p className="text-xs text-gray-500 mt-2 text-center">
+                                💡 처리 후에는 신청자에게 결과 알림이 자동으로 발송됩니다.
+                              </p>
+                            </>
+                          ) : (
+                            // 👆 이미 처리된 상태 - 상태 표시
+                            <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 text-center">
+                              <div className="flex items-center justify-center space-x-2 mb-2">
+                                <div className="w-3 h-3 bg-gray-400 rounded-full"></div>
+                                <span className="text-gray-600 font-medium">처리 완료</span>
+                              </div>
+                              <p className="text-xs text-gray-500">
+                                이 대여 신청은 이미 처리되었습니다.
+                              </p>
+                            </div>
+                          )}
                         </div>
                       )}
                       

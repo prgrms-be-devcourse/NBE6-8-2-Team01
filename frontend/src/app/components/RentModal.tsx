@@ -67,10 +67,30 @@ export default function RentModal({ isOpen, onClose, bookTitle, lenderNickname, 
                 body: JSON.stringify(requestData)
             });
 
+            console.log('🔔 대여 신청 응답 상태:', response.status);
+
             if (!response.ok) {
-                const errorText = await response.text();
-                console.error('대여 신청 실패 응답:', response.status, errorText);
-                throw new Error(`대여 신청에 실패했습니다: ${errorText}`);
+                let errorMessage = '대여 신청에 실패했습니다.';
+                
+                try {
+                    const errorData = await response.json();
+                    console.log('🔍 에러 응답 데이터:', errorData);
+                    
+                    // 👆 백엔드 응답에서 msg 필드 추출
+                    if (errorData && errorData.msg) {
+                        errorMessage = errorData.msg;
+                    } else if (errorData && typeof errorData === 'object') {
+                        // RsData 형태가 아닌 경우를 위한 대안
+                        errorMessage = errorData.message || errorData.error || errorMessage;
+                    }
+                } catch (parseError) {
+                    console.error('에러 응답 파싱 실패:', parseError);
+                    const errorText = await response.text();
+                    console.log('원본 에러 텍스트:', errorText);
+                    errorMessage = errorText || errorMessage;
+                }
+                
+                throw new Error(errorMessage);
             }
 
             // 성공 처리
@@ -86,7 +106,8 @@ export default function RentModal({ isOpen, onClose, bookTitle, lenderNickname, 
                 // fetchInterceptor에서 이미 로그인 모달을 열었으므로 별도 처리 불필요
                 return;
             } else {
-                alert(`대여 신청 중 오류가 발생했습니다: ${error.message}`);
+                // 👆 깔끔한 에러 메시지만 표시
+                alert(error.message || '알 수 없는 오류가 발생했습니다.');
             }
         } finally {
             setIsSubmitting(false);
