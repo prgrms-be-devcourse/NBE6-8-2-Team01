@@ -2,6 +2,8 @@ export interface FetchRequestInit extends RequestInit {
     _retry?: boolean;
 }
 
+const BASE_BACKEND_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000';
+
 let globalOpenLoginModal: (() => void) | null = null;
 export const setFetchInterceptorOpenLoginModal = (func: () => void) => {
     globalOpenLoginModal = func;
@@ -16,6 +18,14 @@ if (typeof window !== 'undefined') {
             credentials: 'include',
         };
 
+        input = input.toString();
+
+        if (input.startsWith('/api') || input.startsWith('/bookbook')) {
+            input = BASE_BACKEND_URL + input;
+        } else if (input.startsWith('bookbook') || input.startsWith('api')) {
+            input = BASE_BACKEND_URL + "/" + input;
+        }
+
         const response = await originalFetch(input, newInit);
 
         // 401 Unauthorized 에러 발생 시 토큰 갱신 시도
@@ -25,8 +35,11 @@ if (typeof window !== 'undefined') {
 
             try {
                 const refreshResponse = await originalFetch(
-                    `http://localhost:8080/api/v1/bookbook/auth/refresh-token`,
-                    newInit
+                    `${BASE_BACKEND_URL}/api/v1/bookbook/auth/refresh-token`,
+                    {
+                        ...newInit,
+                        method: 'POST',
+                    }
                 );
 
                 if (refreshResponse.ok) {
