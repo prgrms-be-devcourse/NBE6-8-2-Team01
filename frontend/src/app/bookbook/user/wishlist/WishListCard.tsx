@@ -90,7 +90,7 @@ export default function WishListCard({ item, onRemove }: WishListCardProps) {
                             <button
                                 onClick={(e) => {
                                     e.stopPropagation();
-                                    onRemove(item.id);
+                                    onRemove(item.rentId);
                                 }}
                                 className="text-red-500 hover:text-red-700 transition-colors"
                                 title="찜 해제"
