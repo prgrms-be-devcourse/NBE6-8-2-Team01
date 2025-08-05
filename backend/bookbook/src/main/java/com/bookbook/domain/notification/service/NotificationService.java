@@ -125,26 +125,43 @@ public class NotificationService {
         Rent rent = rentRepository.findById(rentId.intValue())
                 .orElseThrow(() -> new RuntimeException("대여 게시글을 찾을 수 없습니다. ID: " + rentId));
 
-        // 해당 Rent에 대한 PENDING 상태의 RentList 조회 (대여 신청자 정보 포함)
-        List<RentList> pendingRentLists = rentListRepository.findByRentIdAndStatus(rentId.intValue(), RentRequestStatus.PENDING);
+        // 📝 수정된 부분: 특정 알림의 발송자(신청자)와 일치하는 RentList 조회
+        User requester = notification.getSender(); // 알림을 발생시킨 사용자 (신청자)
         
         Map<String, Object> detail = new HashMap<>();
-        detail.put("rentId", rent.getId()); // 👈 rent ID를 맨 앞에 명시적으로 추가
+        detail.put("rentId", rent.getId());
         detail.put("bookTitle", rent.getBookTitle());
         detail.put("bookImage", rent.getBookImage());
         detail.put("rentStatus", rent.getRentStatus().getDescription());
         
-        if (!pendingRentLists.isEmpty()) {
-            // 가장 최근 신청을 기준으로 (여러 신청이 있을 수 있음)
-            RentList latestRentList = pendingRentLists.get(pendingRentLists.size() - 1);
-            detail.put("rentListId", latestRentList.getId());
-            detail.put("requesterNickname", latestRentList.getBorrowerUser().getNickname());
-            detail.put("requestDate", latestRentList.getCreatedDate());
-            detail.put("loanDate", latestRentList.getLoanDate());
-            detail.put("returnDate", latestRentList.getReturnDate());
+        if (requester != null) {
+            // 해당 신청자의 PENDING 상태 RentList 조회
+            List<RentList> requesterRentLists = rentListRepository
+                    .findByRentIdAndBorrowerUserIdAndStatus(rentId.intValue(), requester.getId(), RentRequestStatus.PENDING);
+            
+            if (!requesterRentLists.isEmpty()) {
+                // 해당 신청자의 신청 정보 사용 (보통 하나일 것이지만, 혹시나 여러 개면 최신 것)
+                RentList targetRentList = requesterRentLists.get(requesterRentLists.size() - 1);
+                detail.put("rentListId", targetRentList.getId());
+                detail.put("requesterNickname", requester.getNickname());
+                detail.put("requestDate", targetRentList.getCreatedDate());
+                detail.put("loanDate", targetRentList.getLoanDate());
+                detail.put("returnDate", targetRentList.getReturnDate());
+                
+                log.info("특정 신청자의 대여 신청 정보 조회 완료 - 신청자: {}, RentList ID: {}", 
+                        requester.getNickname(), targetRentList.getId());
+            } else {
+                // 해당 신청자의 PENDING 신청이 없는 경우 (이미 처리됨)
+                log.warn("신청자 {}의 PENDING 상태 신청이 없음 - Rent ID: {}", requester.getNickname(), rentId);
+                detail.put("rentListId", null);
+                detail.put("requesterNickname", requester.getNickname());
+                detail.put("requestDate", null);
+                detail.put("loanDate", null);
+                detail.put("returnDate", null);
+            }
         } else {
-            // PENDING 상태의 신청이 없더라도 rent 정보는 제공
-            log.warn("대기 중인 대여 신청이 없지만 기본 정보는 제공 - Rent ID: {}", rentId);
+            // 시스템 알림 등으로 sender가 없는 경우
+            log.warn("알림에 발송자 정보가 없음 - 알림 ID: {}", notificationId);
             detail.put("rentListId", null);
             detail.put("requesterNickname", "알 수 없음");
             detail.put("requestDate", null);
@@ -152,8 +169,8 @@ public class NotificationService {
             detail.put("returnDate", null);
         }
         
-        log.info("대여 신청 상세 정보 조회 완료 - 알림 ID: {}, Rent ID: {}, RentList 개수: {}", 
-                notificationId, rent.getId(), pendingRentLists.size());
+        log.info("대여 신청 상세 정보 조회 완료 - 알림 ID: {}, Rent ID: {}, 신청자: {}", 
+                notificationId, rent.getId(), requester != null ? requester.getNickname() : "없음");
 
         return detail;
     }
