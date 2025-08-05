@@ -6,10 +6,11 @@ import { RentedBook } from './types';
 interface RentListCardProps {
   book: RentedBook;
   onReview?: (rentId: number) => void;
+  onReturn?: (rentId: number) => void;
   formatDate: (dateString: string) => string;
 }
 
-export default function RentListCard({ book, onReview, formatDate }: RentListCardProps) {
+export default function RentListCard({ book, onReview, onReturn, formatDate }: RentListCardProps) {
   // 이미지 URL 처리
   const backendBaseUrl = 'http://localhost:8080';
   const defaultCoverImageUrl = 'https://i.postimg.cc/pLC9D2vW/noimg.gif';
@@ -17,8 +18,14 @@ export default function RentListCard({ book, onReview, formatDate }: RentListCar
     ? (book.bookImage.startsWith('http') ? book.bookImage : `${backendBaseUrl}${book.bookImage}`)
     : defaultCoverImageUrl;
 
-  // 날짜 기준으로 실제 대여 상태 계산
+  // 실제 대여 상태 계산 (백엔드 상태와 날짜 모두 고려)
   const calculateRentStatus = () => {
+    // 백엔드에서 이미 FINISHED 상태면 그대로 사용
+    if (book.rentStatus === 'FINISHED') {
+      return 'FINISHED';
+    }
+    
+    // 그렇지 않으면 날짜 기준으로 판단
     const now = new Date();
     const returnDate = new Date(book.returnDate);
     
@@ -123,6 +130,17 @@ export default function RentListCard({ book, onReview, formatDate }: RentListCar
             <span className={`px-3 py-1 text-xs font-medium rounded-full ${getStatusColor(actualStatus)}`}>
               {getStatusText(actualStatus)}
             </span>
+            {/* 반납하기 버튼 - 대여중일 때만 표시 */}
+            {actualStatus === 'LOANED' && onReturn && (
+              <button 
+                onClick={() => onReturn(book.rentId)}
+                className="px-3 py-1 text-xs bg-green-500 text-white rounded hover:bg-green-600 transition-colors"
+              >
+                반납하기
+              </button>
+            )}
+            
+            {/* 리뷰 버튼 - 대여완료일 때만 표시 */}
             {actualStatus === 'FINISHED' && (
               book.hasReview ? (
                 <span className="px-3 py-1 text-xs bg-gray-400 text-white rounded">
