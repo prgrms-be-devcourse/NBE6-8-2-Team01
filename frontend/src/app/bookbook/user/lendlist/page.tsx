@@ -155,6 +155,17 @@ export default function LendListPage() {
     }
   };
 
+  // 리뷰 대상자 정보 생성 (대여자가 대여받은 사람을 평가)
+  const getReviewTarget = (book: MyBook) => {
+    return {
+      userId: 0, // 실제로는 borrowerUserId를 받아와야 함
+      nickname: book.borrowerNickname || '대여받은 사용자',
+      rating: undefined, // 실제로는 borrower의 평점을 받아와야 함
+      reviewType: 'LENDER_TO_BORROWER' as const,
+      description: '이 사용자를 평가해주세요'
+    };
+  };
+
   const submitReview = async (rentId: number, rating: number) => {
     try {
       const response = await fetch(
@@ -327,6 +338,7 @@ export default function LendListPage() {
               setSelectedBook(null);
             }}
             book={selectedBook}
+            target={getReviewTarget(selectedBook)}
             onSubmit={submitReview}
           />
         )}
