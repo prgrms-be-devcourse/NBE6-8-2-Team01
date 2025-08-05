@@ -51,7 +51,6 @@ export default function RentListCard({ book, onReview, onReturn, formatDate }: R
       case 'AVAILABLE':
         return 'bg-green-100 text-green-800';
       case 'LOANED':
-      case 'LOANED':
         return 'bg-blue-100 text-blue-800';
       case 'FINISHED':
         return 'bg-gray-100 text-gray-800';
@@ -64,7 +63,6 @@ export default function RentListCard({ book, onReview, onReturn, formatDate }: R
     switch (status) {
       case 'AVAILABLE':
         return '대여가능';
-      case 'LOANED':
       case 'LOANED':
         return '대여중';
       case 'FINISHED':
