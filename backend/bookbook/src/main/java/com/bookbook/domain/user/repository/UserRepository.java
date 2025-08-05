@@ -21,13 +21,13 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
     @Query("""
         SELECT u FROM User u WHERE
-        (:status IS NULL OR u.userStatus in :status) AND 
+        (:status IS NULL OR u.userStatus in :status) AND
         (:userId IS NULL OR u.id = :userId)
         ORDER BY u.createAt DESC
     """)
     Page<User> findFilteredUsers(
             Pageable pageable,
-            @Param("status") List<String> status,
+            @Param("status") List<UserStatus> status,
             @Param("userId") Long userId
     );
 
