@@ -16,7 +16,7 @@ interface NotificationApiResponse {
     imageUrl: string;
     requester: string;
     type: string;
-    rentId?: number; // 백엔드에서 제공하는 rent ID
+    rentId?: number;
   }> | null;
   statusCode: number;
   success: boolean;
@@ -24,7 +24,7 @@ interface NotificationApiResponse {
 
 interface RentRequestDetail {
   rentListId: number;
-  rentId: number; // rent ID 추가
+  rentId: number;
   bookTitle: string;
   bookImage: string;
   requesterNickname: string;
@@ -36,8 +36,6 @@ interface RentRequestDetail {
 
 const fetchNotifications = async (): Promise<NotificationApiResponse> => {
   try {
-    console.log('🔔 알림 API 호출 시작...');
-    
     const response = await fetch('/api/v1/bookbook/user/notifications', {
       method: 'GET',
       headers: {
@@ -46,19 +44,13 @@ const fetchNotifications = async (): Promise<NotificationApiResponse> => {
       },
     });
 
-    console.log('알림 API 응답 상태:', response.status);
-
     if (!response.ok) {
-      console.error('HTTP 에러:', response.status, response.statusText);
       throw new Error(`HTTP ${response.status}: ${response.statusText}`);
     }
 
     const parsed = await response.json();
-    console.log('파싱된 JSON:', parsed);
-    
     return parsed;
   } catch (error) {
-    console.error('fetchNotifications 상세 에러:', error);
     throw error;
   }
 };
@@ -77,7 +69,6 @@ const markNotificationAsRead = async (notificationId: number): Promise<void> => 
       throw new Error(`HTTP ${response.status}: ${response.statusText}`);
     }
   } catch (error) {
-    console.error('알림 읽음 처리 에러:', error);
     throw error;
   }
 };
@@ -96,7 +87,6 @@ const deleteNotification = async (notificationId: number): Promise<void> => {
       throw new Error(`HTTP ${response.status}: ${response.statusText}`);
     }
   } catch (error) {
-    console.error('알림 삭제 에러:', error);
     throw error;
   }
 };
@@ -118,12 +108,10 @@ const fetchRentRequestDetail = async (notificationId: number): Promise<RentReque
     const result = await response.json();
     return result.data;
   } catch (error) {
-    console.error('대여 신청 상세 정보 조회 에러:', error);
     throw error;
   }
 };
 
-// 수정된 수락/거절 API - 올바른 URL 사용
 const decideRentRequest = async (rentListId: number, approved: boolean, rejectionReason?: string): Promise<void> => {
   try {
     const response = await fetch(`/api/v1/user/1/rentlist/${rentListId}/decision`, {
@@ -142,7 +130,6 @@ const decideRentRequest = async (rentListId: number, approved: boolean, rejectio
       throw new Error(errorData.msg || '요청 처리에 실패했습니다.');
     }
   } catch (error) {
-    console.error('대여 신청 수락/거절 에러:', error);
     throw error;
   }
 };
@@ -157,7 +144,7 @@ type Notification = {
   imageUrl: string;
   requester: string;
   type: string;
-  rentId?: number; // rent ID 추가
+  rentId?: number;
 };
 
 export default function NotificationPage() {
@@ -170,8 +157,6 @@ export default function NotificationPage() {
   const [rentRequestDetail, setRentRequestDetail] = useState<RentRequestDetail | null>(null);
   const [isProcessingDecision, setIsProcessingDecision] = useState(false);
   const [imageLoadStates, setImageLoadStates] = useState<{[key: number]: 'loading' | 'loaded' | 'error'}>({});
-  
-  // 👆 새로 추가: 처리된 알림들을 추적하는 상태
   const [processedNotifications, setProcessedNotifications] = useState<Set<number>>(new Set());
 
   const loadNotifications = useCallback(async () => {
@@ -228,7 +213,6 @@ export default function NotificationPage() {
         const detail = await fetchRentRequestDetail(notificationId);
         setRentRequestDetail(detail);
       } catch (error) {
-        console.error('대여 신청 상세 정보 로드 실패:', error);
         setRentRequestDetail(null);
       }
     } else {
@@ -244,7 +228,7 @@ export default function NotificationPage() {
           )
         );
       } catch (error) {
-        console.error('알림 읽음 처리 실패:', error);
+        // 에러 발생 시 무시
       }
     }
   };
@@ -265,14 +249,12 @@ export default function NotificationPage() {
         setRentRequestDetail(null);
       }
       
-      // 👆 처리된 알림 목록에서도 제거
       setProcessedNotifications(prev => {
         const newSet = new Set(prev);
         newSet.delete(notificationId);
         return newSet;
       });
     } catch (error) {
-      console.error('알림 삭제 실패:', error);
       alert('알림 삭제에 실패했습니다. 다시 시도해주세요.');
     }
   };
@@ -286,117 +268,61 @@ export default function NotificationPage() {
       
       alert(approved ? '대여 신청을 수락했습니다!' : '대여 신청을 거절했습니다.');
       
-      // 👆 현재 선택된 알림을 처리됨으로 표시
       const currentNotificationId = selectedId;
       if (currentNotificationId) {
         setProcessedNotifications(prev => new Set([...prev, currentNotificationId]));
       }
       
-      // 알림 목록 새로고침 (새로운 알림이 있을 수 있음)
       await loadNotifications();
       
-      // 상세 정보 초기화
       setSelectedId(null);
       setRentRequestDetail(null);
       
     } catch (error) {
-      console.error('대여 신청 처리 실패:', error);
       alert(`처리에 실패했습니다: ${error instanceof Error ? error.message : '알 수 없는 오류'}`);
     } finally {
       setIsProcessingDecision(false);
     }
   };
 
-  // 알림이 처리 가능한 상태인지 확인하는 함수
   const isNotificationProcessable = (notificationId: number): boolean => {
     return !processedNotifications.has(notificationId);
   };
 
-  // 이미지 URL 유효성 검사 함수 (선택사항)
-  const checkImageExists = async (url: string): Promise<boolean> => {
-    try {
-      const response = await fetch(url, { method: 'HEAD' });
-      const exists = response.ok;
-      console.log(`🔍 이미지 존재 확인 - ${url}: ${exists ? '✅ 존재' : '❌ 없음'}`);
-      return exists;
-    } catch (error) {
-      console.log(`🔍 이미지 존재 확인 실패 - ${url}:`, error);
-      return false;
-    }
-  };
-
-  // 이미지 URL 생성 함수
   const getImageUrl = (imageUrl: string | undefined | null): string => {
-    console.log('🖼️ getImageUrl 호출 - 원본 URL:', imageUrl);
-    
     if (!imageUrl || imageUrl.trim() === '') {
-      console.log('❌ 이미지 URL이 없음 - placeholder 사용');
       return '/book-placeholder.png';
     }
     
     const trimmedUrl = imageUrl.trim();
-    let result: string;
     
-    // 이미 완전한 URL인 경우
     if (trimmedUrl.startsWith('http://') || trimmedUrl.startsWith('https://')) {
-      result = trimmedUrl;
-      console.log('✅ 완전한 URL - 그대로 사용:', result);
+      return trimmedUrl;
+    } else if (trimmedUrl.startsWith('/')) {
+      return `http://localhost:8080${trimmedUrl}`;
+    } else if (trimmedUrl.startsWith('uploads/')) {
+      return `http://localhost:8080/${trimmedUrl}`;
+    } else {
+      return `http://localhost:8080/uploads/${trimmedUrl}`;
     }
-    // 상대 경로 처리
-    else if (trimmedUrl.startsWith('/')) {
-      result = `http://localhost:8080${trimmedUrl}`;
-      console.log('🔧 절대경로 변환:', result);
-    }
-    // uploads로 시작하는 경우
-    else if (trimmedUrl.startsWith('uploads/')) {
-      result = `http://localhost:8080/${trimmedUrl}`;
-      console.log('🔧 uploads 경로 변환:', result);
-    }
-    // 파일명만 있는 경우
-    else {
-      result = `http://localhost:8080/uploads/${trimmedUrl}`;
-      console.log('🔧 파일명만 있음 - uploads 폴더에서 찾기:', result);
-    }
-    
-    return result;
   };
 
-  // 이미지 로드 에러 처리
   const handleImageError = (e: React.SyntheticEvent<HTMLImageElement>, notification: Notification) => {
     const img = e.currentTarget;
-    const originalSrc = img.src;
     
-    console.log('🖼️ 이미지 로드 실패:', {
-      originalSrc,
-      notificationId: notification.id,
-      imageUrl: notification.imageUrl,
-      bookTitle: notification.bookTitle,
-      rentRequestDetailImage: rentRequestDetail?.bookImage
-    });
-    
-    // 상태 업데이트
     setImageLoadStates(prev => ({
       ...prev,
       [notification.id]: 'error'
     }));
     
-    // 이미 placeholder인 경우 더 이상 변경하지 않음
     if (img.src.includes('book-placeholder.png')) {
-      console.log('⚠️ 이미 placeholder 이미지입니다.');
       return;
     }
     
-    console.log('🔄 placeholder로 교체합니다...');
-    // placeholder로 대체
     img.src = '/book-placeholder.png';
   };
 
-  // 이미지 로드 성공 처리
   const handleImageLoad = (e: React.SyntheticEvent<HTMLImageElement>, notificationId: number) => {
-    const img = e.currentTarget;
-    console.log('✅ 이미지 로드 성공:', img.src);
-    
-    // 상태 업데이트
     setImageLoadStates(prev => ({
       ...prev,
       [notificationId]: 'loaded'
@@ -404,31 +330,15 @@ export default function NotificationPage() {
   };
   
   const handleBookImageClick = (event: React.MouseEvent, notification: Notification) => {
-    event.stopPropagation(); // 알림 클릭 이벤트 방지
+    event.stopPropagation();
     
-    console.log('📖 책 이미지 클릭 - 알림 정보:', {
-      notificationId: notification.id,
-      rentId: notification.rentId,
-      rentRequestDetail: rentRequestDetail,
-      bookTitle: notification.bookTitle
-    });
-    
-    // 1. 우선순위: rentRequestDetail에서 rentId 사용
     let rentId = rentRequestDetail?.rentId;
     
-    // 2. 차선책: notification에서 직접 rentId 사용 (백엔드에서 제공)
     if (!rentId && notification.rentId) {
       rentId = notification.rentId;
-      console.log('✅ notification에서 rent ID 사용:', rentId);
     }
     
-    // 3. 최후 수단: 메시지에서 ID 추출 시도
     if (!rentId) {
-      console.log('⚠️ rentId를 찾을 수 없어 메시지에서 추출을 시도합니다.');
-      console.log('알림 메시지:', notification.message);
-      console.log('상세 메시지:', notification.detailMessage);
-      
-      // 다양한 패턴으로 ID 추출 시도
       const patterns = [
         /rentId[:\s]*(\d+)/i,
         /rent\s*id[:\s]*(\d+)/i,
@@ -444,25 +354,30 @@ export default function NotificationPage() {
         const match = notification.message.match(pattern) || notification.detailMessage.match(pattern);
         if (match) {
           rentId = parseInt(match[1]);
-          console.log(`✅ 패턴 "${pattern}" 으로 ID 추출 성공:`, rentId);
           break;
         }
       }
     }
     
     if (rentId && rentId > 0) {
-      console.log('🚀 rent 상세페이지로 이동:', `/bookbook/rent/${rentId}`);
       router.push(`/bookbook/rent/${rentId}`);
     } else {
-      console.error('❌ rent ID를 찾을 수 없습니다:', {
-        notificationId: notification.id,
-        rentId: notification.rentId,
-        rentRequestDetailRentId: rentRequestDetail?.rentId,
-        message: notification.message,
-        detailMessage: notification.detailMessage
-      });
-      
       alert('해당 글의 상세 정보를 찾을 수 없습니다. 백엔드에서 rent ID를 확인해주세요.');
+    }
+  };
+
+  const formatRequestDate = (dateString: string): string => {
+    try {
+      const date = new Date(dateString);
+      return date.toLocaleDateString('ko-KR', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+    } catch (error) {
+      return dateString;
     }
   };
 
@@ -598,7 +513,6 @@ export default function NotificationPage() {
                 <div className="mt-2 mb-4 p-6 border rounded-lg shadow-md bg-white animate-fade-in">
                   <div className="flex gap-6">
                     <div className="flex-shrink-0">
-                      {/* 개선된 이미지 로딩 처리 */}
                       <div className="relative">
                         <img
                           src={getImageUrl(rentRequestDetail?.bookImage || item.imageUrl)}
@@ -614,13 +528,11 @@ export default function NotificationPage() {
                           title="클릭하여 상세 페이지로 이동"
                           loading="lazy"
                         />
-                        {/* 로딩 상태 표시 */}
                         {imageLoadStates[item.id] === 'loading' && (
                           <div className="absolute inset-0 bg-gray-200 rounded-lg flex items-center justify-center">
                             <div className="text-gray-500 text-xs">로딩 중...</div>
                           </div>
                         )}
-                        {/* 에러 상태 표시 */}
                         {imageLoadStates[item.id] === 'error' && (
                           <div className="absolute bottom-1 right-1 bg-red-500 text-white text-xs px-1 py-0.5 rounded">
                             ❌
@@ -643,86 +555,65 @@ export default function NotificationPage() {
                           </span>
                         </div>
                         {rentRequestDetail && (
-                          <>
-                            <div className="flex items-start">
-                              <span className="font-semibold text-gray-700 min-w-[60px]">신청일:</span>
-                              <span className="text-gray-800 ml-2">{rentRequestDetail.requestDate}</span>
-                            </div>
-                            <div className="flex items-start">
-                              <span className="font-semibold text-gray-700 min-w-[60px]">대여일:</span>
-                              <span className="text-gray-800 ml-2">{rentRequestDetail.loanDate}</span>
-                            </div>
-                            <div className="flex items-start">
-                              <span className="font-semibold text-gray-700 min-w-[60px]">반납일:</span>
-                              <span className="text-gray-800 ml-2">{rentRequestDetail.returnDate}</span>
-                            </div>
-                          </>
+                          <div className="flex items-start">
+                            <span className="font-semibold text-gray-700 min-w-[60px]">신청일:</span>
+                            <span className="text-gray-800 ml-2">
+                              {formatRequestDate(rentRequestDetail.requestDate)}
+                            </span>
+                          </div>
                         )}
                         <div className="flex items-start">
                           <span className="font-semibold text-gray-700 min-w-[60px]">메시지:</span>
                           <span className="text-gray-800 ml-2 leading-relaxed">{item.detailMessage}</span>
                         </div>
-                        
-                        {/* 디버깅을 위한 ID 정보 표시 (개발 환경에서만) */}
-                        {process.env.NODE_ENV === 'development' && (
-                          <div className="flex items-start">
-                            <span className="font-semibold text-gray-700 min-w-[60px]">디버그:</span>
-                            <span className="text-gray-500 ml-2 text-xs">
-                              알림ID: {item.id}, RentID: {item.rentId || 'null'}, 
-                              DetailRentID: {rentRequestDetail?.rentId || 'null'},
-                              처리됨: {processedNotifications.has(item.id) ? 'Yes' : 'No'}
-                            </span>
-                          </div>
-                        )}
                       </div>
                       
-                      {/* 대여 신청인 경우 수락/거절 버튼 표시 */}
                       {item.type === 'RENT_REQUEST' && rentRequestDetail && (
                         <div className="pt-4 border-t border-gray-100">
                           {isNotificationProcessable(item.id) ? (
-                            // 👆 처리 가능한 상태 - 버튼 표시
                             <>
-                              <div className="flex space-x-3">
-                                <button
-                                  onClick={() => handleRentDecision(true)}
-                                  disabled={isProcessingDecision}
-                                  className="flex-1 px-4 py-2 bg-green-500 text-white font-semibold rounded-lg hover:bg-green-600 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
-                                >
-                                  {isProcessingDecision ? (
-                                    <>
-                                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                                      처리 중...
-                                    </>
-                                  ) : (
-                                    '✅ 수락하기'
-                                  )}
-                                </button>
-                                <button
-                                  onClick={() => {
-                                    const reason = prompt('거절 사유를 입력해주세요 (선택사항):');
-                                    if (reason !== null) {
-                                      handleRentDecision(false, reason);
-                                    }
-                                  }}
-                                  disabled={isProcessingDecision}
-                                  className="flex-1 px-4 py-2 bg-red-500 text-white font-semibold rounded-lg hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
-                                >
-                                  {isProcessingDecision ? (
-                                    <>
-                                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                                      처리 중...
-                                    </>
-                                  ) : (
-                                    '❌ 거절하기'
-                                  )}
-                                </button>
+                              <div className="max-w-sm">
+                                <div className="flex space-x-2">
+                                  <button
+                                    onClick={() => handleRentDecision(true)}
+                                    disabled={isProcessingDecision}
+                                    className="flex-1 px-3 py-1.5 bg-green-500 text-white text-sm font-medium rounded-md hover:bg-green-600 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+                                  >
+                                    {isProcessingDecision ? (
+                                      <>
+                                        <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white mr-1"></div>
+                                        처리 중...
+                                      </>
+                                    ) : (
+                                      '수락'
+                                    )}
+                                  </button>
+                                  <button
+                                    onClick={() => {
+                                      const reason = prompt('거절 사유를 입력해주세요 (선택사항):');
+                                      if (reason !== null) {
+                                        handleRentDecision(false, reason);
+                                      }
+                                    }}
+                                    disabled={isProcessingDecision}
+                                    className="flex-1 px-3 py-1.5 bg-red-500 text-white text-sm font-medium rounded-md hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+                                  >
+                                    {isProcessingDecision ? (
+                                      <>
+                                        <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white mr-1"></div>
+                                        처리 중...
+                                      </>
+                                    ) : (
+                                      '거절'
+                                    )}
+                                  </button>
+                                </div>
+                                <p className="text-xs text-gray-500 mt-2 text-center">
+                                  💡 처리 후에는 신청자에게 결과 알림이 자동으로 발송됩니다.
+                                </p>
                               </div>
-                              <p className="text-xs text-gray-500 mt-2 text-center">
-                                💡 처리 후에는 신청자에게 결과 알림이 자동으로 발송됩니다.
-                              </p>
                             </>
                           ) : (
-                            // 👆 이미 처리된 상태 - 상태 표시
                             <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 text-center">
                               <div className="flex items-center justify-center space-x-2 mb-2">
                                 <div className="w-3 h-3 bg-gray-400 rounded-full"></div>
