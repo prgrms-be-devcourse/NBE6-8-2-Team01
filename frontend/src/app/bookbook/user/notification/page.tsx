@@ -1,9 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
-import LoginModal from '@/app/components/LoginModal'; // ✅ alias 경로 사용
-import { authFetch, logoutUser } from '@/app/util/authFetch'; // logoutUser 추가
-import { useLoginModal } from '@/app/context/LoginModalContext'; // 로그인 모달 컨텍스트 추가
+import { useRouter } from 'next/navigation';
 
 interface NotificationApiResponse {
   resultCode: string;
@@ -17,52 +15,35 @@ interface NotificationApiResponse {
     detailMessage: string;
     imageUrl: string;
     requester: string;
+    type: string;
   }> | null;
   statusCode: number;
-  success: boolean; // RsData에서 제공하는 success 필드 추가
+  success: boolean;
 }
 
-// 테스트용 API 호출
-const testConnection = async (): Promise<void> => {
-  try {
-    console.log('🔧 백엔드 연결 테스트 시작...');
-    
-    const response = await fetch('http://localhost:8080/api/v1/bookbook/user/notifications/test', {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-      },
-      mode: 'cors',
-      credentials: 'include',
-    });
+interface RentRequestDetail {
+  rentListId: number;
+  rentId: number; // rent ID 추가
+  bookTitle: string;
+  bookImage: string;
+  requesterNickname: string;
+  requestDate: string;
+  loanDate: string;
+  returnDate: string;
+  rentStatus: string;
+}
 
-    console.log('테스트 응답 상태:', response.status);
-    console.log('테스트 응답 헤더:', Object.fromEntries(response.headers.entries()));
-
-    const text = await response.text();
-    console.log('테스트 응답 텍스트:', text);
-    
-    if (text) {
-      const json = JSON.parse(text);
-      console.log('테스트 응답 JSON:', json);
-    }
-  } catch (error) {
-    console.error('연결 테스트 실패:', error);
-  }
-};
-
-const fetchNotifications = async (openLoginModal: () => void): Promise<NotificationApiResponse> => {
+const fetchNotifications = async (): Promise<NotificationApiResponse> => {
   try {
     console.log('🔔 알림 API 호출 시작...');
     
-    const response = await authFetch('/api/v1/bookbook/user/notifications', {
+    const response = await fetch('/api/v1/bookbook/user/notifications', {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
       },
-    }, openLoginModal);
+    });
 
     console.log('알림 API 응답 상태:', response.status);
 
@@ -81,16 +62,15 @@ const fetchNotifications = async (openLoginModal: () => void): Promise<Notificat
   }
 };
 
-// 알림 읽음 처리 API
-const markNotificationAsRead = async (notificationId: number, openLoginModal: () => void): Promise<void> => {
+const markNotificationAsRead = async (notificationId: number): Promise<void> => {
   try {
-    const response = await authFetch(`/api/v1/bookbook/user/notifications/${notificationId}/read`, {
+    const response = await fetch(`/api/v1/bookbook/user/notifications/${notificationId}/read`, {
       method: 'PATCH',
       headers: {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
       },
-    }, openLoginModal);
+    });
 
     if (!response.ok) {
       throw new Error(`HTTP ${response.status}: ${response.statusText}`);
@@ -101,22 +81,67 @@ const markNotificationAsRead = async (notificationId: number, openLoginModal: ()
   }
 };
 
-// 알림 삭제 API
-const deleteNotification = async (notificationId: number, openLoginModal: () => void): Promise<void> => {
+const deleteNotification = async (notificationId: number): Promise<void> => {
   try {
-    const response = await authFetch(`/api/v1/bookbook/user/notifications/${notificationId}`, {
+    const response = await fetch(`/api/v1/bookbook/user/notifications/${notificationId}`, {
       method: 'DELETE',
       headers: {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
       },
-    }, openLoginModal);
+    });
 
     if (!response.ok) {
       throw new Error(`HTTP ${response.status}: ${response.statusText}`);
     }
   } catch (error) {
     console.error('알림 삭제 에러:', error);
+    throw error;
+  }
+};
+
+const fetchRentRequestDetail = async (notificationId: number): Promise<RentRequestDetail> => {
+  try {
+    const response = await fetch(`/api/v1/bookbook/user/notifications/${notificationId}/rent-request-detail`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    }
+
+    const result = await response.json();
+    return result.data;
+  } catch (error) {
+    console.error('대여 신청 상세 정보 조회 에러:', error);
+    throw error;
+  }
+};
+
+// 수정된 수락/거절 API - 올바른 URL 사용
+const decideRentRequest = async (rentListId: number, approved: boolean, rejectionReason?: string): Promise<void> => {
+  try {
+    const response = await fetch(`/api/v1/user/1/rentlist/${rentListId}/decision`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        approved: approved,
+        rejectionReason: rejectionReason || ''
+      })
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.msg || '요청 처리에 실패했습니다.');
+    }
+  } catch (error) {
+    console.error('대여 신청 수락/거절 에러:', error);
     throw error;
   }
 };
@@ -130,53 +155,18 @@ type Notification = {
   detailMessage: string;
   imageUrl: string;
   requester: string;
+  type: string;
 };
 
 export default function NotificationPage() {
+  const router = useRouter();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [needLogin, setNeedLogin] = useState(false);
-  const [showLoginModal, setShowLoginModal] = useState(false);
-  const [isLoggedIn, setIsLoggedIn] = useState(true); // 로그인 상태 추가
-  const { openLoginModal } = useLoginModal(); // 로그인 모달 컨텍스트 사용
-  // 인증 에러 처리 공통 함수
-  const handleAuthError = useCallback(async (error: Error) => {
-    const errorMessage = error.message;
-    console.log('인증 에러 감지:', errorMessage);
-    
-    if (errorMessage.includes('리프레시 토큰') || 
-        errorMessage.includes('401') || 
-        errorMessage.includes('인증') ||
-        errorMessage.includes('Unauthorized')) {
-      
-      console.log('리프레시 토큰 만료 - 자동 로그아웃 처리');
-      
-      // 자동 로그아웃 처리
-      try {
-        await logoutUser();
-      } catch (logoutError) {
-        console.warn('로그아웃 처리 중 오류:', logoutError);
-      }
-      
-      // 쿠키 및 스토리지 정리 (추가 보장)
-      document.cookie.split(";").forEach(function(c) { 
-        document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/"); 
-      });
-      localStorage.clear();
-      sessionStorage.clear();
-      
-      // 상태 업데이트
-      setNeedLogin(true);
-      setIsLoggedIn(false);
-      setError('인증이 만료되어 자동으로 로그아웃되었습니다. 다시 로그인해주세요.');
-      setNotifications([]); // 알림 데이터 초기화
-      
-      return true;
-    }
-    return false;
-  }, []);
+  const [rentRequestDetail, setRentRequestDetail] = useState<RentRequestDetail | null>(null);
+  const [isProcessingDecision, setIsProcessingDecision] = useState(false);
 
   const loadNotifications = useCallback(async () => {
     try {
@@ -184,7 +174,7 @@ export default function NotificationPage() {
       setError(null);
       setNeedLogin(false);
 
-      const response = await fetchNotifications(openLoginModal);
+      const response = await fetchNotifications();
 
       if (response.resultCode === '401-1') {
         setNeedLogin(true);
@@ -192,7 +182,6 @@ export default function NotificationPage() {
         return;
       }
 
-      // RsData의 success 필드 또는 resultCode로 성공 여부 판단
       if (response.success || response.resultCode.startsWith('200')) {
         setNotifications(response.data || []);
       } else {
@@ -200,23 +189,23 @@ export default function NotificationPage() {
       }
     } catch (err) {
       const error = err instanceof Error ? err : new Error(String(err));
-      const isAuthError = await handleAuthError(error);
+      const msg = error.message;
       
-      if (!isAuthError) {
-        // 인증 에러가 아닌 경우에만 다른 에러 처리
-        const msg = error.message;
-        if (msg.includes('Failed to fetch') || msg.includes('NetworkError')) {
-          setError('서버에 연결할 수 없습니다. 백엔드가 실행 중인지 확인해주세요.');
-        } else if (msg.includes('JSON') || msg.includes('Unexpected end')) {
-          setError('서버에서 잘못된 응답을 받았습니다. 잠시 후 다시 시도해주세요.');
-        } else {
-          setError('알 수 없는 오류가 발생했습니다: ' + msg);
-        }
+      if (msg.includes('재로그인이 필요합니다')) {
+        setNeedLogin(true);
+        setError('로그인이 만료되었습니다. 다시 로그인해주세요.');
+        setNotifications([]);
+      } else if (msg.includes('Failed to fetch') || msg.includes('NetworkError')) {
+        setError('서버에 연결할 수 없습니다. 백엔드가 실행 중인지 확인해주세요.');
+      } else if (msg.includes('JSON') || msg.includes('Unexpected end')) {
+        setError('서버에서 잘못된 응답을 받았습니다. 잠시 후 다시 시도해주세요.');
+      } else {
+        setError('알 수 없는 오류가 발생했습니다: ' + msg);
       }
     } finally {
       setLoading(false);
     }
-  }, [openLoginModal]);
+  }, []);
 
   useEffect(() => {
     loadNotifications();
@@ -224,16 +213,25 @@ export default function NotificationPage() {
 
   const handleNotificationClick = async (notificationId: number) => {
     const isCurrentlySelected = selectedId === notificationId;
+    const notification = notifications.find(n => n.id === notificationId);
     
-    // 토글
     setSelectedId(isCurrentlySelected ? null : notificationId);
     
-    // 읽지 않은 알림인 경우 읽음 처리
-    const notification = notifications.find(n => n.id === notificationId);
+    if (!isCurrentlySelected && notification?.type === 'RENT_REQUEST') {
+      try {
+        const detail = await fetchRentRequestDetail(notificationId);
+        setRentRequestDetail(detail);
+      } catch (error) {
+        console.error('대여 신청 상세 정보 로드 실패:', error);
+        setRentRequestDetail(null);
+      }
+    } else {
+      setRentRequestDetail(null);
+    }
+    
     if (notification && !notification.read && !isCurrentlySelected) {
       try {
-        await markNotificationAsRead(notificationId, openLoginModal);
-        // 로컬 상태 업데이트
+        await markNotificationAsRead(notificationId);
         setNotifications(prev => 
           prev.map(n => 
             n.id === notificationId ? { ...n, read: true } : n
@@ -241,42 +239,61 @@ export default function NotificationPage() {
         );
       } catch (error) {
         console.error('알림 읽음 처리 실패:', error);
-        
-        // 인증 에러 처리
-        const authError = error instanceof Error ? error : new Error(String(error));
-        await handleAuthError(authError);
-        // handleAuthError에서 이미 상태를 업데이트하므로 추가 처리 불필요
       }
     }
   };
 
   const handleDeleteNotification = async (notificationId: number, event: React.MouseEvent) => {
-    event.stopPropagation(); // 클릭 이벤트 전파 방지
+    event.stopPropagation();
     
     if (!confirm('이 알림을 삭제하시겠습니까?')) {
       return;
     }
 
     try {
-      await deleteNotification(notificationId, openLoginModal);
-      
-      // 로컬 상태에서 제거
+      await deleteNotification(notificationId);
       setNotifications(prev => prev.filter(n => n.id !== notificationId));
       
-      // 선택된 알림이 삭제된 경우 선택 해제
       if (selectedId === notificationId) {
         setSelectedId(null);
+        setRentRequestDetail(null);
       }
     } catch (error) {
       console.error('알림 삭제 실패:', error);
+      alert('알림 삭제에 실패했습니다. 다시 시도해주세요.');
+    }
+  };
+
+  const handleRentDecision = async (approved: boolean, rejectionReason?: string) => {
+    if (!rentRequestDetail) return;
+
+    setIsProcessingDecision(true);
+    try {
+      await decideRentRequest(rentRequestDetail.rentListId, approved, rejectionReason);
       
-      // 인증 에러 처리
-      const authError = error instanceof Error ? error : new Error(String(error));
-      const isAuthError = await handleAuthError(authError);
+      alert(approved ? '대여 신청을 수락했습니다!' : '대여 신청을 거절했습니다.');
       
-      if (!isAuthError) {
-        alert('알림 삭제에 실패했습니다. 다시 시도해주세요.');
-      }
+      await loadNotifications();
+      setSelectedId(null);
+      setRentRequestDetail(null);
+      
+    } catch (error) {
+      console.error('대여 신청 처리 실패:', error);
+      alert(`처리에 실패했습니다: ${error instanceof Error ? error.message : '알 수 없는 오류'}`);
+    } finally {
+      setIsProcessingDecision(false);
+    }
+  };
+
+  // 책 상세페이지로 이동하는 함수 (수정됨)
+  const handleBookImageClick = (event: React.MouseEvent) => {
+    event.stopPropagation(); // 알림 클릭 이벤트 방지
+    
+    if (rentRequestDetail?.rentId) {
+      // 실제 rent 상세페이지로 이동
+      router.push(`/rent/${rentRequestDetail.rentId}`);
+    } else {
+      console.log('Rent ID를 찾을 수 없습니다.');
     }
   };
 
@@ -307,26 +324,11 @@ export default function NotificationPage() {
           {error || '알림을 확인하려면 먼저 로그인이 필요합니다.'}
         </div>
         <button
-          onClick={() => {
-            setShowLoginModal(true);
-            setError(null); // 에러 메시지 초기화
-          }}
+          onClick={() => window.location.reload()}
           className="px-6 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
         >
-          로그인 하러 가기
+          새로고침
         </button>
-
-        {showLoginModal && (
-          <LoginModal 
-            onClose={() => {
-              setShowLoginModal(false);
-              // 로그인 모달을 닫은 후 페이지 새로고침하여 인증 상태 확인
-              setTimeout(() => {
-                window.location.reload();
-              }, 500);
-            }} 
-          />
-        )}
       </div>
     );
   }
@@ -355,7 +357,6 @@ export default function NotificationPage() {
     );
   }
 
-  // 읽지 않은 알림 개수 계산
   const unreadCount = notifications.filter(n => !n.read).length;
 
   return (
@@ -428,34 +429,101 @@ export default function NotificationPage() {
                 <div className="mt-2 mb-4 p-6 border rounded-lg shadow-md bg-white animate-fade-in">
                   <div className="flex gap-6">
                     <div className="flex-shrink-0">
+                      {/* 이미지 URL 검증과 fallback 개선 */}
                       <img
-                        src={item.imageUrl}
+                        src={rentRequestDetail?.bookImage || item.imageUrl || '/book-placeholder.png'}
                         alt="책 이미지"
                         width={120}
                         height={180}
-                        className="rounded-lg object-cover shadow-sm"
+                        className="rounded-lg object-cover shadow-sm cursor-pointer hover:opacity-80 transition-opacity border-2 border-transparent hover:border-blue-300"
                         onError={(e) => {
+                          console.log('이미지 로드 실패, placeholder 사용');
                           e.currentTarget.src = '/book-placeholder.png';
                         }}
+                        onClick={handleBookImageClick}
+                        title="클릭하여 상세 페이지로 이동"
                       />
                     </div>
                     <div className="space-y-4 flex-1">
                       <div>
-                        <h2 className="text-xl font-bold text-gray-800 mb-2">{item.bookTitle}</h2>
-                        {item.bookTitle && (
-                          <div className="w-12 h-0.5 bg-blue-500 rounded"></div>
-                        )}
+                        <h2 className="text-xl font-bold text-gray-800 mb-2">
+                          {rentRequestDetail?.bookTitle || item.bookTitle}
+                        </h2>
+                        <div className="w-12 h-0.5 bg-blue-500 rounded"></div>
                       </div>
                       <div className="space-y-3">
                         <div className="flex items-start">
                           <span className="font-semibold text-gray-700 min-w-[60px]">신청자:</span>
-                          <span className="text-gray-800 ml-2">{item.requester}</span>
+                          <span className="text-gray-800 ml-2">
+                            {rentRequestDetail?.requesterNickname || item.requester}
+                          </span>
                         </div>
+                        {rentRequestDetail && (
+                          <>
+                            <div className="flex items-start">
+                              <span className="font-semibold text-gray-700 min-w-[60px]">신청일:</span>
+                              <span className="text-gray-800 ml-2">{rentRequestDetail.requestDate}</span>
+                            </div>
+                            <div className="flex items-start">
+                              <span className="font-semibold text-gray-700 min-w-[60px]">대여일:</span>
+                              <span className="text-gray-800 ml-2">{rentRequestDetail.loanDate}</span>
+                            </div>
+                            <div className="flex items-start">
+                              <span className="font-semibold text-gray-700 min-w-[60px]">반납일:</span>
+                              <span className="text-gray-800 ml-2">{rentRequestDetail.returnDate}</span>
+                            </div>
+                          </>
+                        )}
                         <div className="flex items-start">
                           <span className="font-semibold text-gray-700 min-w-[60px]">메시지:</span>
                           <span className="text-gray-800 ml-2 leading-relaxed">{item.detailMessage}</span>
                         </div>
                       </div>
+                      
+                      {/* 대여 신청인 경우 수락/거절 버튼 표시 */}
+                      {item.type === 'RENT_REQUEST' && rentRequestDetail && (
+                        <div className="pt-4 border-t border-gray-100">
+                          <div className="flex space-x-3">
+                            <button
+                              onClick={() => handleRentDecision(true)}
+                              disabled={isProcessingDecision}
+                              className="flex-1 px-4 py-2 bg-green-500 text-white font-semibold rounded-lg hover:bg-green-600 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+                            >
+                              {isProcessingDecision ? (
+                                <>
+                                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                                  처리 중...
+                                </>
+                              ) : (
+                                '✅ 수락하기'
+                              )}
+                            </button>
+                            <button
+                              onClick={() => {
+                                const reason = prompt('거절 사유를 입력해주세요 (선택사항):');
+                                if (reason !== null) {
+                                  handleRentDecision(false, reason);
+                                }
+                              }}
+                              disabled={isProcessingDecision}
+                              className="flex-1 px-4 py-2 bg-red-500 text-white font-semibold rounded-lg hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+                            >
+                              {isProcessingDecision ? (
+                                <>
+                                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                                  처리 중...
+                                </>
+                              ) : (
+                                '❌ 거절하기'
+                              )}
+                            </button>
+                          </div>
+                          <p className="text-xs text-gray-500 mt-2 text-center">
+                            💡 처리 후에는 신청자에게 결과 알림이 자동으로 발송됩니다.
+                          </p>
+                        </div>
+                      )}
+                      
                       {!item.read && (
                         <div className="pt-4 border-t border-gray-100">
                           <div className="flex items-center space-x-2">
@@ -470,21 +538,6 @@ export default function NotificationPage() {
               )}
             </div>
           ))}
-        </div>
-      )}
-
-      {process.env.NODE_ENV === 'development' && notifications.length > 0 && (
-        <div className="mt-8 p-4 bg-gray-100 rounded-md">
-          <details className="cursor-pointer">
-            <summary className="font-bold mb-2">🔧 디버깅 정보 (개발용)</summary>
-            <div className="mt-2 space-y-2">
-              <p className="text-sm"><strong>총 알림 개수:</strong> {notifications.length}</p>
-              <p className="text-sm"><strong>읽지 않은 알림:</strong> {unreadCount}</p>
-              <pre className="text-xs text-gray-700 overflow-auto bg-white p-2 rounded border max-h-40">
-                {JSON.stringify(notifications, null, 2)}
-              </pre>
-            </div>
-          </details>
         </div>
       )}
 
