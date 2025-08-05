@@ -32,7 +32,7 @@ export default function RentListCard({ book, onReview, onReturn, formatDate }: R
     if (book.rentStatus === 'FINISHED') {
       return 'FINISHED';
     }
-
+    
     // 그렇지 않으면 날짜 기준으로 판단
     const now = new Date();
     const returnDate = new Date(book.returnDate);
@@ -159,7 +159,7 @@ export default function RentListCard({ book, onReview, onReturn, formatDate }: R
                 반납하기
               </button>
             )}
-
+            
             {/* 리뷰 버튼 - 대여완료일 때만 표시 */}
             {actualStatus === 'FINISHED' && (
               book.hasReview ? (
