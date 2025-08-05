@@ -29,7 +29,10 @@ public record RentResponseDto(
         // 글쓴이 조회를 위해 필드 추가
         String nickname, // 글쓴이 닉네임
         Float rating, // 글쓴이 평점
-        int lenderPostCount // 글쓴이 대여글 작성 수
+        int lenderPostCount, // 글쓴이 대여글 작성 수
+        
+        // 찜 상태 확인을 위한 필드 추가
+        boolean isWishlisted // 현재 사용자의 찜 상태
 
 ) {
 }
