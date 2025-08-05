@@ -2,14 +2,19 @@ package com.bookbook.domain.rentList.controller;
 
 import com.bookbook.domain.rentList.dto.RentListCreateRequestDto;
 import com.bookbook.domain.rentList.dto.RentListResponseDto;
+import com.bookbook.domain.rentList.dto.RentRequestDecisionDto;
 import com.bookbook.domain.rentList.service.RentListService;
 import com.bookbook.domain.review.dto.ReviewCreateRequestDto;
 import com.bookbook.domain.review.dto.ReviewResponseDto;
 import com.bookbook.domain.review.service.ReviewService;
+import com.bookbook.domain.user.entity.User;
+import com.bookbook.domain.user.service.UserService;
 import com.bookbook.global.rsdata.RsData;
+import com.bookbook.global.security.CustomOAuth2User;
 import io.swagger.v3.oas.annotations.Operation;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -26,6 +31,7 @@ public class RentListController {
     
     private final RentListService rentListService;
     private final ReviewService reviewService;
+    private final UserService userService;
     
     /**
      * 내가 빌린 도서 목록 조회 (검색 기능 포함)
@@ -60,11 +66,22 @@ public class RentListController {
     // /api/v1/user/{borrowerUserId}/rentlist/create
     @PostMapping("/create")
     @Operation(summary = "Rent_List 페이지 등록") // Swagger 에서 API 문서화에 사용되는 설명
-    public void createRentList(
+    public ResponseEntity<RsData<String>> createRentList(
             @PathVariable Long borrowerUserId,
             @RequestBody RentListCreateRequestDto request
     ) {
-        rentListService.createRentList(borrowerUserId, request);
+        try {
+            rentListService.createRentList(borrowerUserId, request);
+            return ResponseEntity.ok(RsData.of("200-1", "대여 신청이 완료되었습니다.", null));
+        } catch (IllegalArgumentException e) {
+            // 비즈니스 로직 에러 (중복 신청, 자신의 책 신청 등)
+            return ResponseEntity.badRequest()
+                    .body(RsData.of("400-1", e.getMessage(), null));
+        } catch (Exception e) {
+            // 예상치 못한 에러
+            return ResponseEntity.internalServerError()
+                    .body(RsData.of("500-1", "대여 신청 처리 중 오류가 발생했습니다: " + e.getMessage(), null));
+        }
     }
     
     /**
@@ -93,5 +110,45 @@ public class RentListController {
         
         // 생성된 리뷰 정보와 함께 성공 응답 반환
         return ResponseEntity.ok(RsData.of("200", "리뷰를 작성했습니다.", review));
+    }
+    
+    /**
+     * 대여 신청 수락/거절 처리
+     * 
+     * 책 소유자가 들어온 대여 신청에 대해 수락 또는 거절을 결정합니다.
+     * 수락 시: 책 상태를 '대여 중'으로 변경하고 신청자에게 수락 알림 발송
+     * 거절 시: 신청자에게 거절 알림 발송
+     * 
+     * @param rentListId 대여 신청 ID
+     * @param decision 수락/거절 결정 정보
+     * @param customOAuth2User 현재 로그인한 사용자 (책 소유자)
+     * @return 처리 결과
+     */
+    @PatchMapping("/{rentListId}/decision")
+    @Operation(summary = "대여 신청 수락/거절", description = "책 소유자가 대여 신청에 대해 수락 또는 거절을 결정합니다.")
+    public ResponseEntity<RsData<String>> decideRentRequest(
+            @PathVariable Long rentListId,
+            @RequestBody RentRequestDecisionDto decision,
+            @AuthenticationPrincipal CustomOAuth2User customOAuth2User
+    ) {
+        // 로그인 검증
+        if (customOAuth2User == null || customOAuth2User.getUserId() == null) {
+            return ResponseEntity.status(401)
+                    .body(RsData.of("401-1", "로그인 후 사용해주세요.", null));
+        }
+
+        User currentUser = userService.findById(customOAuth2User.getUserId());
+        if (currentUser == null) {
+            return ResponseEntity.status(404)
+                    .body(RsData.of("404-1", "사용자 정보를 찾을 수 없습니다.", null));
+        }
+
+        try {
+            String result = rentListService.decideRentRequest(rentListId, decision, currentUser);
+            return ResponseEntity.ok(RsData.of("200-1", result, null));
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest()
+                    .body(RsData.of("400-1", e.getMessage(), null));
+        }
     }
 }

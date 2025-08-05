@@ -36,6 +36,12 @@ public class NotificationResponseDto {
     
     @JsonProperty("requester")
     private String requester;
+    
+    @JsonProperty("type")
+    private String type;
+    
+    @JsonProperty("rentId")
+    private Long rentId; // rent ID 추가
 
     public static NotificationResponseDto from(Notification notification) {
         NotificationResponseDto dto = new NotificationResponseDto();
@@ -47,31 +53,45 @@ public class NotificationResponseDto {
         dto.setDetailMessage(notification.getMessage() != null ? notification.getMessage() : ""); // 상세 메시지
         dto.setImageUrl(formatImageUrl(notification.getBookImageUrl())); // 이미지 URL 포맷팅
         dto.setRequester(notification.getSender() != null ? notification.getSender().getNickname() : "시스템");
+        dto.setType(notification.getType().name()); // 알림 타입 추가
+        dto.setRentId(notification.getRelatedId()); // rent ID 추가 👈 새로 추가된 부분
         return dto;
     }
 
-    // 이미지 URL 포맷팅 (홈 페이지와 동일한 방식)
+    // 이미지 URL 포맷팅 - 디버깅 로그 추가
     private static String formatImageUrl(String imageUrl) {
+        System.out.println("🖼️ formatImageUrl 호출 - 원본 URL: " + imageUrl);
+        
         if (imageUrl == null || imageUrl.trim().isEmpty()) {
-            return "";
+            System.out.println("❌ 이미지 URL이 null 또는 빈 문자열");
+            return ""; // 빈 문자열로 반환 - 프론트엔드에서 placeholder 처리
         }
+        
+        String trimmedUrl = imageUrl.trim();
+        String result;
         
         // 이미 완전한 URL인 경우 그대로 반환
-        if (imageUrl.startsWith("http://") || imageUrl.startsWith("https://")) {
-            return imageUrl;
+        if (trimmedUrl.startsWith("http://") || trimmedUrl.startsWith("https://")) {
+            result = trimmedUrl;
+            System.out.println("✅ 완전한 URL - 그대로 사용: " + result);
+        }
+        // 절대 경로 처리
+        else if (trimmedUrl.startsWith("/")) {
+            result = "http://localhost:8080" + trimmedUrl;
+            System.out.println("🔧 절대경로 변환: " + result);
+        }
+        // 상대 경로 처리 - uploads 폴더 확인
+        else if (trimmedUrl.startsWith("uploads/")) {
+            result = "http://localhost:8080/" + trimmedUrl;
+            System.out.println("🔧 uploads 경로 변환: " + result);
+        }
+        // 파일명만 있는 경우 uploads 폴더에서 찾기
+        else {
+            result = "http://localhost:8080/uploads/" + trimmedUrl;
+            System.out.println("🔧 파일명만 있음 - uploads 폴더에서 찾기: " + result);
         }
         
-        // 상대 경로인 경우 절대 경로로 변환
-        if (imageUrl.startsWith("/uploads/")) {
-            return "http://localhost:8080" + imageUrl;
-        }
-        
-        // uploads/ 경로가 없는 경우 추가
-        if (!imageUrl.startsWith("/")) {
-            return "http://localhost:8080/uploads/" + imageUrl;
-        }
-        
-        return "http://localhost:8080" + imageUrl;
+        return result;
     }
 
     // 시간 포맷팅 (3시간 전, 1일 전 등)

@@ -1,14 +1,20 @@
 package com.bookbook.domain.rentList.service;
 
+import com.bookbook.domain.notification.enums.NotificationType;
+import com.bookbook.domain.notification.service.NotificationService;
 import com.bookbook.domain.rent.entity.Rent;
+import com.bookbook.domain.rent.entity.RentStatus;
 import com.bookbook.domain.rent.repository.RentRepository;
 import com.bookbook.domain.rentList.dto.RentListCreateRequestDto;
 import com.bookbook.domain.rentList.dto.RentListResponseDto;
+import com.bookbook.domain.rentList.dto.RentRequestDecisionDto;
 import com.bookbook.domain.rentList.entity.RentList;
+import com.bookbook.domain.rentList.entity.RentRequestStatus;
 import com.bookbook.domain.rentList.repository.RentListRepository;
 import com.bookbook.domain.user.entity.User;
 import com.bookbook.domain.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -23,11 +29,13 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
+@Slf4j
 public class RentListService {
     
     private final RentListRepository rentListRepository;
     private final UserRepository userRepository;
     private final RentRepository rentRepository;
+    private final NotificationService notificationService;
     
     /**
      * 사용자가 대여한 도서 목록 조회
@@ -107,6 +115,27 @@ public class RentListService {
         Rent rent = rentRepository.findById(request.getRentId())
                 .orElseThrow(() -> new IllegalArgumentException("대여 게시글을 찾을 수 없습니다. rentId: " + request.getRentId()));
         
+        // 📋 중복 신청 방지 로직 - 이미 PENDING 상태의 신청이 있는지 확인
+        boolean alreadyRequested = rentListRepository
+                .existsByBorrowerUserIdAndRentIdAndStatus(borrowerUserId, request.getRentId(), RentRequestStatus.PENDING);
+        
+        if (alreadyRequested) {
+            log.warn("중복 대여 신청 차단 - 사용자: {}, Rent ID: {}", borrowerUserId, request.getRentId());
+            throw new IllegalArgumentException("이미 대여 신청을 하셨습니다. 승인 결과를 기다려주세요.");
+        }
+        
+        // 📋 자신의 책에 신청하는 것 방지
+        if (rent.getLenderUserId().equals(borrowerUserId)) {
+            log.warn("자신의 책 대여 신청 차단 - 사용자: {}, Rent ID: {}", borrowerUserId, request.getRentId());
+            throw new IllegalArgumentException("자신의 책은 대여 신청할 수 없습니다.");
+        }
+        
+        // 📋 이미 대여 중인 책인지 확인 (LOANED 상태)
+        if (rent.getRentStatus() == RentStatus.LOANED) {
+            log.warn("이미 대여 중인 책 신청 차단 - Rent ID: {}, 상태: {}", request.getRentId(), rent.getRentStatus());
+            throw new IllegalArgumentException("이미 대여 중인 책입니다.");
+        }
+        
         // 새로운 대여 기록 객체 생성
         RentList rentList = new RentList();
         
@@ -121,5 +150,104 @@ public class RentListService {
         rentList.setRent(rent);
 
         RentList savedRentList = rentListRepository.save(rentList);
+        
+        // 책 소유자에게 대여 신청 알림 발송
+        User lender = userRepository.findById(rent.getLenderUserId())
+                .orElseThrow(() -> new IllegalArgumentException("책 소유자를 찾을 수 없습니다."));
+        
+        String requestMessage = String.format("'%s'에 대여 요청이 도착했어요!", rent.getBookTitle());
+        notificationService.createNotification(
+                lender,
+                borrowerUser,
+                NotificationType.RENT_REQUEST,
+                requestMessage,
+                rent.getBookTitle(),
+                rent.getBookImage(),
+                (long) rent.getId()
+        );
+        
+        log.info("대여 신청 완료 및 알림 발송 - 책: {}, 신청자: {}, 소유자: {}", 
+                rent.getBookTitle(), borrowerUser.getNickname(), lender.getNickname());
+    }
+    
+    /**
+     * 대여 신청 수락/거절 처리
+     * 
+     * @param rentListId 대여 신청 ID
+     * @param decision 수락/거절 결정 정보
+     * @param currentUser 현재 로그인한 사용자 (책 소유자)
+     * @return 처리 결과 메시지
+     */
+    @Transactional
+    public String decideRentRequest(Long rentListId, RentRequestDecisionDto decision, User currentUser) {
+        // 대여 신청 조회
+        RentList rentList = rentListRepository.findById(rentListId)
+                .orElseThrow(() -> new RuntimeException("대여 신청을 찾을 수 없습니다."));
+        
+        Rent rent = rentList.getRent();
+        
+        // 권한 확인: 현재 사용자가 책 소유자인지 확인
+        if (!rent.getLenderUserId().equals(currentUser.getId())) {
+            throw new RuntimeException("해당 대여 신청을 처리할 권한이 없습니다.");
+        }
+        
+        // 이미 처리된 신청인지 확인
+        if (rentList.getStatus() != RentRequestStatus.PENDING) {
+            throw new RuntimeException("이미 처리된 대여 신청입니다.");
+        }
+        
+        User borrower = rentList.getBorrowerUser();
+        
+        if (decision.isApproved()) {
+            // 수락 처리
+            rentList.setStatus(RentRequestStatus.APPROVED);
+            rent.setRentStatus(RentStatus.LOANED);
+            
+            rentListRepository.save(rentList);
+            rentRepository.save(rent);
+            
+            // 신청자에게 수락 알림 발송
+            String approveMessage = String.format("'%s' 대여 요청이 수락되었습니다!", rent.getBookTitle());
+            notificationService.createNotification(
+                    borrower,
+                    null,
+                    NotificationType.RENT_APPROVED,
+                    approveMessage,
+                    rent.getBookTitle(),
+                    rent.getBookImage(),
+                    (long) rent.getId()
+            );
+            
+            log.info("대여 신청 수락 완료 - 책: {}, 대여자: {}, 신청자: {}", 
+                    rent.getBookTitle(), currentUser.getNickname(), borrower.getNickname());
+            
+            return "대여 신청을 수락했습니다.";
+            
+        } else {
+            // 거절 처리
+            rentList.setStatus(RentRequestStatus.REJECTED);
+            rentListRepository.save(rentList);
+            
+            // 신청자에게 거절 알림 발송
+            String rejectMessage = String.format("'%s' 대여 요청이 거절되었습니다.", rent.getBookTitle());
+            String detailMessage = decision.getRejectionReason() != null && !decision.getRejectionReason().trim().isEmpty()
+                    ? decision.getRejectionReason()
+                    : "죄송합니다. 대여 요청을 수락할 수 없습니다.";
+            
+            notificationService.createNotification(
+                    borrower,
+                    null,
+                    NotificationType.RENT_REJECTED,
+                    rejectMessage,
+                    rent.getBookTitle(),
+                    rent.getBookImage(),
+                    (long) rent.getId()
+            );
+            
+            log.info("대여 신청 거절 완료 - 책: {}, 대여자: {}, 신청자: {}, 사유: {}", 
+                    rent.getBookTitle(), currentUser.getNickname(), borrower.getNickname(), detailMessage);
+            
+            return "대여 신청을 거절했습니다.";
+        }
     }
 }
