@@ -20,7 +20,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/v1/admin")
+@RequestMapping("/api/v1/admin/rent")
 @RequiredArgsConstructor
 @Tag(name = "RentAdminController", description = "어드민 전용 대여 게시글 컨트롤러")
 public class RentAdminController {
@@ -40,7 +40,7 @@ public class RentAdminController {
      * @param userId 대여 게시글 작성자 ID
      * @return 생성된 대여 게시글 페이지 정보
      */
-    @GetMapping("/posts")
+    @GetMapping
     @Operation(summary = "대여 게시글 목록 조회")
     public ResponseEntity<RsData<PageResponse<RentSimpleResponseDto>>> getPosts(
             @RequestParam(defaultValue = "1") Integer page,
@@ -67,7 +67,7 @@ public class RentAdminController {
      * @param id 대여 게시글 ID
      * @return 단일 대여 게시글 상세 정보
      */
-    @GetMapping("/rent/{id}") // /rent/{id} 경로로 get 요청을 처리
+    @GetMapping("/{id}")
     @Operation(summary = "단일 대여 게시글 상세 조회")
     public ResponseEntity<RsData<RentDetailResponseDto>> getRentDetail(
             @PathVariable int id
@@ -85,7 +85,7 @@ public class RentAdminController {
      * @param id 대여 게시글 ID
      * @return 단일 대여 게시글 수정 후 상세 정보
      */
-    @PatchMapping("/rent/{id}")
+    @PatchMapping("/{id}")
     @Operation(summary = "대여 게시글 상태 수정")
     public ResponseEntity<RsData<RentDetailResponseDto>> changeRentStatus(
             @PathVariable int id,
@@ -99,20 +99,35 @@ public class RentAdminController {
     }
 
     /**
-     * 대여 게시글 하나를 영구적으로 삭제합니다.
-     * 사용을 권장하지 않습니다.
+     * 대여 게시글 하나를 SOFT DELETE합니다.
      *
      * @param id 대여 게시글 ID
-     * @deprecated HARD DELETE로 인한 사용 경고
      * @return 없음
      */
-    @Deprecated
-    @DeleteMapping("/rent/{id}") // /rent/{id} 경로로 DELETE 요청을 처리
+    @DeleteMapping("/{id}")
     @Operation(summary = "대여 게시글 영구 삭제")
     public ResponseEntity<RsData<Void>> deleteRentPage(@PathVariable int id){ // 경로 변수로 전달된 id를 사용
         rentService.removeRentPage(id);
+        return ResponseEntity.ok(RsData.of("200-1", "%d 번 글 삭제 완료".formatted(id)));
+    }
+
+    /**
+     * SOFT DELETE된 대여 게시글 하나를 복구합니다.
+     *
+     * @param id 대여 게시글 ID
+     * @return 복구 완료된 게시글의 정보
+     */
+    @PatchMapping("/{id}/restore")
+    @Operation(summary = "대여 게시글 복구")
+    public ResponseEntity<RsData<RentDetailResponseDto>> restoreRentPage(@PathVariable int id){ // 경로 변수로 전달된 id를 사용
+        RentDetailResponseDto responseDto = rentService.restoreRentPage(id);
+
         return ResponseEntity.ok(
-                RsData.of("200-1", "%d 번 글 삭제 완료".formatted(id))
+                RsData.of(
+                        "200-1",
+                        "%d 번 글 복구 완료".formatted(id),
+                        responseDto
+                )
         );
     }
 }

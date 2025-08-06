@@ -53,43 +53,61 @@ export function PostDetailModal({
     setShowConfirmModal(true);
   }
 
-  const handleRestoreRequest = async () => {
-    const body = {
-      "status" : "AVAILABLE"
-    }
-
-    await handleRequest(body);
-    toast.success("글이 복원되었습니다!");
-  }
-
   const handlePostChangeStatus = async () => {
     const body = {
       "status" : rentStatusValue
     }
 
-    await handleRequest(body);
+    await handlePatchRequest("", body);
     toast.success("글의 상태가 변경되었습니다.");
   }
 
   const handlePostDelete = async () => {
-    const body = {
-      "status" : "DELETED"
-    };
-
-    await handleRequest(body);
-    toast.success("글이 삭제되었습니다!");
-  }
-
-  const handleRequest = async (body : unknown) => {
     const response = await fetch(`/api/v1/admin/rent/${currentPost.id}`,
       {
-        method: "PATCH",
+        method: "DELETE",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(body),
       }
     )
+
+    const data = await response.json().catch(error => {
+      throw error;
+    });
+
+    if ([403, 404, 409, 422].includes(data.statusCode)) {
+      throw data.msg;
+    }
+
+    toast.success("글이 삭제되었습니다!");
+    onClose();
+  }
+
+  const handleRestoreRequest = async () => {
+    await handlePatchRequest("/restore");
+    toast.success("글이 복원되었습니다!");
+  }
+
+  const handlePatchRequest = async (path?: string, body? : unknown) => {
+    let requestUrlBase = `/api/v1/admin/rent/${currentPost.id}`;
+    const requestBody : RequestInit = {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+      }
+    }
+
+    if (path) {
+      requestUrlBase += path;
+    }
+
+    if (body) {
+      requestBody["body"] = JSON.stringify(body);
+    }
+
+    const response = await fetch(requestUrlBase, requestBody)
+
     const data = await response.json().catch(error => {
        throw error;
      });
@@ -118,7 +136,6 @@ export function PostDetailModal({
 
     } catch (error) {
       const errorMessage = error as string;
-
       toast.error(errorMessage);
     } finally {
       handleCancelAction();

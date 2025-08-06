@@ -279,14 +279,9 @@ public class RentService {
         Rent rent = rentRepository.findById(rentId)
                 .orElseThrow(()-> new ServiceException("404-2", "해당 대여글을 찾을 수 없습니다."));
 
-        boolean isSameStatus = rent.getRentStatus() == requestDto.status();
-        boolean alreadyDeleted = isSameStatus && rent.getRentStatus() == RentStatus.DELETED;
+        checkRentPostIsDeleted(rent);
 
-        if (alreadyDeleted) {
-            throw new ServiceException("409-1", "이미 해당 글은 삭제되었습니다.");
-        }
-
-        if (isSameStatus) {
+        if (rent.getRentStatus() == requestDto.status()) {
             throw new ServiceException("409-1", "현재 상태와 동일합니다.");
         }
 
@@ -295,20 +290,40 @@ public class RentService {
     }
 
     /**
-     * 대여 게시글을 HARD DELETE 합니다.
+     * 대여 게시글을 SOFT DELETE 합니다.
      *
      * @param rentId 대여 게시글의 ID
      * @throws ServiceException (404) 해당 대여 게시글이 존재하지 않을 때
-     * @deprecated 사용되지 않습니다
      */
-    @Deprecated
     @Transactional
     public void removeRentPage(int rentId) {
-        try {
-            rentRepository.deleteById(rentId);
-        } catch (RuntimeException e) {
-            throw new ServiceException("404-2", "해당 대여글을 찾을 수 없습니다.");
+        Rent rent = rentRepository.findById(rentId)
+                .orElseThrow(()-> new ServiceException("404-2", "해당 대여글은 찾을 수 없습니다."));
+
+        checkRentPostIsDeleted(rent);
+
+        rent.setRentStatus(RentStatus.DELETED);
+    }
+
+    /**
+     * SOFT DELETE된 게시글을 복구합니다.
+     * AVAILABLE 상태로 되돌아갑니다
+     *
+     * @param rentId 대여 게시글의 ID
+     * @return 열람 가능 후 수정된 글의 상세 정보
+     * @throws ServiceException (404) 해당 대여 게시글이 존재하지 않을 때
+     */
+    @Transactional
+    public RentDetailResponseDto restoreRentPage(int rentId) {
+        Rent rent = rentRepository.findById(rentId)
+                .orElseThrow(()-> new ServiceException("404-2", "해당 대여글은 찾을 수 없습니다."));
+
+        if (rent.getRentStatus() != RentStatus.DELETED) {
+            throw new ServiceException("409-1", "해당 글은 삭제된 상태가 아닙니다");
         }
+
+        rent.setRentStatus(RentStatus.AVAILABLE);
+        return RentDetailResponseDto.from(rent);
     }
 
     /**
@@ -324,5 +339,17 @@ public class RentService {
                 .orElseThrow(() -> new ServiceException("404-2", "해당 대여글을 찾을 수 없습니다."));
 
         return RentDetailResponseDto.from(rent);
+    }
+
+    /**
+     * 대여 게시글에 대한 상세 정보를 가져옵니다.
+     *
+     * @param rent 대여 게시글의 객체
+     * @throws ServiceException (404) 해당 대여 게시글이 존재하지 않을 때
+     */
+    private void checkRentPostIsDeleted(Rent rent) {
+        if (rent.getRentStatus() == RentStatus.DELETED) {
+            throw new ServiceException("404-1", "이미 해당 글은 삭제되었습니다.");
+        }
     }
 }
