@@ -159,7 +159,7 @@ public class LendListService {
         }
         
         // Soft Delete 실행 - 상태를 DELETED로 변경
-//        rent.setRentStatus(RentStatus.DELETED);
+        rent.setRentStatus(RentStatus.DELETED);
         rentRepository.save(rent);
     }
 }
