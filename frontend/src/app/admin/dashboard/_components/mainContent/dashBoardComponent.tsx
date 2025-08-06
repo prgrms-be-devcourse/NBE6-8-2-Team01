@@ -3,6 +3,9 @@
 import React from "react";
 import { ContentComponentProps } from "./baseContentComponentProps";
 
+/*
+* 대시보드 컴포넌트
+*/
 export function DashBoardComponent({ }: ContentComponentProps) {
   return (
     <>

@@ -1,6 +1,9 @@
 import { useDashBoardContext } from "@/app/admin/dashboard/_hooks/useDashboard";
 import { ListComponentContainer } from "@/app/admin/dashboard/_components/mainContent/listComponentContainer";
 
+/*
+* 메인 컨텐츠 영역
+*/
 export function MainContent() {
   const { currentItem, loading } = useDashBoardContext();
 

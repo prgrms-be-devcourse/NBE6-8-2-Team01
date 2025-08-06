@@ -1,6 +1,6 @@
 import {
   UserDetailResponseDto,
-  getStatus,
+  getUserStatus,
   userStatus,
 } from "../../../_types/userResponseDto";
 import { formatDate } from "../../common/dateFormatter";
@@ -42,7 +42,7 @@ const UserStatusInfo: React.FC<UserStatusInfoProps> = ({ user }) => {
               user.baseResponseDto.userStatus
             )}`}
           >
-            {getStatus(user.baseResponseDto.userStatus)}
+            {getUserStatus(user.baseResponseDto.userStatus)}
           </span>
         </div>
         <div>

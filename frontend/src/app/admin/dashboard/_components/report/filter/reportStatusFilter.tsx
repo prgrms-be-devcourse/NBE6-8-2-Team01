@@ -41,6 +41,28 @@ export function ReportStatusFilter({
     selectedStatuses.has(status)
   );
 
+  const fontStyle = (status : ReportStatus) => {
+    const base = "ml-2 text-sm text-";
+    let color: string;
+
+    switch (status) {
+      case "PENDING":
+        color = "green"
+        break;
+      case "REVIEWED":
+        color = "blue"
+        break;
+      case "PROCESSED":
+        color = "gray"
+        break;
+      default:
+        color = "gray";
+        break;
+    }
+
+    return base + color + "-700 font-medium";
+  }
+
   return (
     <div>
       <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -54,26 +76,15 @@ export function ReportStatusFilter({
           value="전체"
         />
 
-        <ReportStatusFilterItem
-            checked={selectedStatuses.has("PENDING")}
-            onChange={() => onStatusToggle("PENDING")}
-            fontStyle="ml-2 text-sm text-green-700"
-            value={getReportStatus("PENDING")}
-        />
-
-        <ReportStatusFilterItem
-            checked={selectedStatuses.has("REVIEWED")}
-            onChange={() => onStatusToggle("REVIEWED")}
-            fontStyle="ml-2 text-sm text-red-700"
-            value={getReportStatus("REVIEWED")}
-        />
-
-        <ReportStatusFilterItem
-            checked={selectedStatuses.has("PROCESSED")}
-            onChange={() => onStatusToggle("PROCESSED")}
-            fontStyle="ml-2 text-sm text-gray-700"
-            value={getReportStatus("PROCESSED")}
-        />
+        {allStatuses.map(status => (
+          <ReportStatusFilterItem
+            key={status}
+            checked={selectedStatuses.has(status)}
+            onChange={() => onStatusToggle(status)}
+            fontStyle={fontStyle(status)}
+            value={getReportStatus(status)}
+          />
+        ))}
       </div>
     </div>
   );

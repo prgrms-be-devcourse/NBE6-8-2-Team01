@@ -1,6 +1,6 @@
 "use client";
 
-import "../../bookbook/globals.css";
+import "@/app/globals.css";
 import { DashboardProvider } from "@/app/admin/dashboard/_hooks/useDashboard";
 import { LoginModalProvider, useLoginModal } from "@/app/context/LoginModalContext";
 import React, { useEffect } from "react";

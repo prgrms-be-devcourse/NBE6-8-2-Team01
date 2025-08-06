@@ -3,6 +3,7 @@
 import { useRouter, usePathname } from "next/navigation";
 import { useAuthContext } from "./global/hooks/useAuth";
 import { useEffect } from "react";
+import LoadingScreen from "@/app/components/Loading";
 
 interface AdminGuardProps {
     children: React.ReactNode;
@@ -50,18 +51,6 @@ export default function AdminGuard({ children }: AdminGuardProps) {
     return <>{children}</>;
 }
 
-// 로딩 화면 컴포넌트
-export function LoadingScreen({ message }: { message: string }) {
-    return (
-        <div className="flex items-center justify-center min-h-screen bg-gray-50">
-            <div className="text-center">
-                <div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-600 border-t-transparent mx-auto mb-4"></div>
-                <p className="text-gray-600 text-lg">{message}</p>
-            </div>
-        </div>
-    );
-}
-
 // 권한 없음 모달 컴포넌트
 export function UnauthorizedModal() {
     const router = useRouter();
@@ -71,7 +60,7 @@ export function UnauthorizedModal() {
     };
 
     const handleRetry = () => {
-        router.replace('/admin/login');
+        router.refresh();
     };
 
     return (

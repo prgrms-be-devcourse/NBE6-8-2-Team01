@@ -1,3 +1,5 @@
+import { LucideProps } from "lucide-react";
+
 /**
  * 메뉴 항목 인터페이스
  * @interface MenuItem
@@ -10,7 +12,7 @@
 export interface MenuItem {
   id: string;
   label: string;
-  icon?: React.ComponentType<any>;
+  icon?: React.ForwardRefExoticComponent<Omit<LucideProps, "ref"> & React.RefAttributes<SVGSVGElement>>;
   children?: MenuItem[];
   apiPath?: string;
 }

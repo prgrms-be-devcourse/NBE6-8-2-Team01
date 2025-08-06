@@ -5,7 +5,7 @@
 export type userStatus = 'ACTIVE' | 'SUSPENDED' | 'INACTIVE';
 export type userRole = 'ADMIN' | 'USER';
 
-export const getStatus = (status: userStatus): string => {
+export const getUserStatus = (status: userStatus): string => {
   const map: Record<userStatus, string> = {
     ACTIVE: "정상",
     SUSPENDED: "활동 정지",
