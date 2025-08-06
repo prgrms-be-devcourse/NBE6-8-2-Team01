@@ -18,6 +18,11 @@ const componentMap: {
     "reports": ReportHistoryComponent,
 };
 
+/*
+* 리스트를 사용하는 모든 컴포넌트를 위한 컨테이너 컴포넌트
+*
+* 사이드바의 activeItem에 따라 컴포넌트를 선택하여 사용됨
+*/
 export function ListComponentContainer() {
     const {
         activeItem,
