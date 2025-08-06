@@ -195,9 +195,13 @@ export default function RentListPage() {
       // 성공 후 목록 새로고침
       fetchRentedBooks(currentPage);
       alert('도서가 성공적으로 반납되었습니다.');
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('반납 실패:', error);
-      alert(error.message || '반납에 실패했습니다. 다시 시도해주세요.');
+      if (error instanceof Error) {
+        alert(error.message);
+      } else {
+        alert('반납에 실패했습니다. 다시 시도해주세요.');
+      }
     }
   };
 
