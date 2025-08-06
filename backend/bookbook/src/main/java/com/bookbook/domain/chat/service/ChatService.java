@@ -214,6 +214,29 @@ public class ChatService {
     }
     
     @Transactional
+    public void deleteChatRoom(String roomId, Integer userId) {
+        log.info("채팅방 삭제 시작 - roomId: {}, userId: {}", roomId, userId);
+        
+        // 채팅방 존재 여부 및 권한 확인
+        ChatRoom chatRoom = chatRoomRepository.findByRoomIdAndUserId(roomId, userId)
+                .orElseThrow(() -> new ServiceException("채팅방에 접근할 권한이 없습니다."));
+        
+        try {
+            // 1. 채팅방의 모든 메시지 삭제
+            int deletedMessageCount = chatMessageRepository.deleteByRoomId(roomId);
+            log.info("채팅 메시지 삭제 완료 - 삭제된 메시지 수: {}", deletedMessageCount);
+            
+            // 2. 채팅방 삭제
+            chatRoomRepository.delete(chatRoom);
+            log.info("채팅방 삭제 완료 - roomId: {}", roomId);
+            
+        } catch (Exception e) {
+            log.error("채팅방 삭제 중 오류 발생 - roomId: {}, userId: {}", roomId, userId, e);
+            throw new ServiceException("채팅방 삭제 중 오류가 발생했습니다.");
+        }
+    }
+    
+    @Transactional
     public void createSystemMessage(String roomId, String content) {
         ChatMessage systemMessage = ChatMessage.builder()
                 .roomId(roomId)

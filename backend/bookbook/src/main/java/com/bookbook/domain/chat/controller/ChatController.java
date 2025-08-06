@@ -187,4 +187,31 @@ public class ChatController {
                     .body(RsData.of("500", "읽지 않은 메시지 개수 조회에 실패했습니다.", null));
         }
     }
+    
+    /**
+     * 채팅방 삭제
+     */
+    @DeleteMapping("/rooms/{roomId}")
+    public ResponseEntity<RsData<Void>> deleteChatRoom(
+            @PathVariable String roomId,
+            @AuthenticationPrincipal CustomOAuth2User user) {
+        
+        log.info("채팅방 삭제 요청 - roomId: {}, userId: {}", roomId, user.getUserId());
+        
+        try {
+            chatService.deleteChatRoom(roomId, user.getUserId().intValue());
+            return ResponseEntity.ok(RsData.of("200", "채팅방이 삭제되었습니다.", null));
+        } catch (Exception e) {
+            log.error("채팅방 삭제 실패", e);
+            if (e.getMessage().contains("권한이 없습니다")) {
+                return ResponseEntity.status(403)
+                        .body(RsData.of("403", e.getMessage(), null));
+            } else if (e.getMessage().contains("존재하지 않습니다")) {
+                return ResponseEntity.status(404)
+                        .body(RsData.of("404", e.getMessage(), null));
+            }
+            return ResponseEntity.internalServerError()
+                    .body(RsData.of("500", "채팅방 삭제에 실패했습니다.", null));
+        }
+    }
 }
