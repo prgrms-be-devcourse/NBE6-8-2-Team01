@@ -41,7 +41,7 @@ public class RentListResponseDto {
                 rentList.getRent().getPublisher(),
                 rentList.getRent().getBookCondition(),
                 rentList.getRent().getBookImage(),
-                rentList.getRent().getRentStatus().name(),
+                rentList.getStatus().name(),
                 rentList.getRent().getAddress(),
                 lenderNickname,
                 rentList.getCreatedDate(),
