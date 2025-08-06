@@ -14,14 +14,6 @@ export default function RentListCard({ book, onReview, onReturn, formatDate }: R
   // 이미지 URL 처리
   const backendBaseUrl = 'http://localhost:8080';
   const defaultCoverImageUrl = 'https://i.postimg.cc/pLC9D2vW/noimg.gif';
-  const displayImageUrl = book.bookImage 
-    ? (book.bookImage.startsWith('http') ? book.bookImage : `${backendBaseUrl}${book.bookImage}`)
-    : defaultCoverImageUrl;
-
-export default function RentListCard({ book, onReview, onReturn, formatDate }: RentListCardProps) {
-  // 이미지 URL 처리
-  const backendBaseUrl = 'http://localhost:8080';
-  const defaultCoverImageUrl = 'https://i.postimg.cc/pLC9D2vW/noimg.gif';
   const displayImageUrl = book.bookImage
     ? (book.bookImage.startsWith('http') ? book.bookImage : `${backendBaseUrl}${book.bookImage}`)
     : defaultCoverImageUrl;
