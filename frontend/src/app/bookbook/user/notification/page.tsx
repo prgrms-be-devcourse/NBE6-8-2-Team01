@@ -32,6 +32,8 @@ interface RentRequestDetail {
   loanDate: string;
   returnDate: string;
   rentStatus: string;
+  isProcessable: boolean;
+  processStatus: string;
 }
 
 const fetchNotifications = async (): Promise<NotificationApiResponse> => {
@@ -112,25 +114,92 @@ const fetchRentRequestDetail = async (notificationId: number): Promise<RentReque
   }
 };
 
+// 🔧 수정된 부분: 기존 정상 경로 사용 (borrowerUserId는 임시로 1 사용)
 const decideRentRequest = async (rentListId: number, approved: boolean, rejectionReason?: string): Promise<void> => {
   try {
+    console.log('🚀 대여 신청 처리 시작:', { rentListId, approved, rejectionReason });
+    
+    // 기존 RentListController 경로 사용 (borrowerUserId는 임시값)
     const response = await fetch(`/api/v1/user/1/rentlist/${rentListId}/decision`, {
       method: 'PATCH',
       headers: {
         'Content-Type': 'application/json',
       },
+      credentials: 'include', // 쿠키 포함
       body: JSON.stringify({
         approved: approved,
         rejectionReason: rejectionReason || ''
       })
     });
 
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.msg || '요청 처리에 실패했습니다.');
+    console.log('📡 응답 상태:', response.status);
+    console.log('📡 응답 헤더:', response.headers.get('Content-Type'));
+    
+    // 응답이 HTML인지 먼저 확인
+    const contentType = response.headers.get('Content-Type');
+    if (contentType && contentType.includes('text/html')) {
+      const htmlContent = await response.text();
+      console.error('❌ HTML 응답 받음:', htmlContent.substring(0, 200));
+      
+      if (response.status === 401) {
+        throw new Error('로그인이 만료되었습니다. 페이지를 새로고침하여 다시 로그인해주세요.');
+      } else {
+        throw new Error(`서버에서 HTML 응답을 받았습니다 (${response.status}). 서버 오류일 수 있습니다.`);
+      }
     }
+    
+    // JSON 응답 처리
+    let responseData;
+    try {
+      responseData = await response.json();
+    } catch (jsonError) {
+      console.error('❌ JSON 파싱 실패:', jsonError);
+      throw new Error(`서버 오류 (${response.status}): 유효하지 않은 응답 형식입니다.`);
+    }
+    
+    console.log('📄 응답 데이터:', responseData);
+    
+    if (!response.ok) {
+      console.error('❌ 에러 응답:', responseData);
+      
+      if (response.status === 401) {
+        throw new Error('로그인이 필요합니다. 페이지를 새로고침해주세요.');
+      } else if (response.status === 403) {
+        throw new Error('권한이 없습니다. 본인의 대여 요청만 처리할 수 있습니다.');
+      } else if (response.status === 404) {
+        throw new Error('요청을 찾을 수 없습니다.');
+      } else {
+        throw new Error(responseData.msg || `서버 오류 (${response.status})`);
+      }
+    }
+    
+    console.log('✅ 처리 성공:', responseData);
+    
   } catch (error) {
+    console.error('🔥 decideRentRequest 에러:', error);
     throw error;
+  }
+};
+
+// 🆕 추가된 디버깅 함수들
+const testServerConnection = async (): Promise<boolean> => {
+  try {
+    const response = await fetch('/api/v1/rentlist/ping');
+    return response.ok;
+  } catch (error) {
+    return false;
+  }
+};
+
+const debugTokenStatus = async (): Promise<any> => {
+  try {
+    const response = await fetch('/api/v1/public/rentlist/debug-token');
+    if (response.ok) {
+      return await response.json();
+    }
+    return null;
+  } catch (error) {
+    return null;
   }
 };
 
@@ -158,6 +227,9 @@ export default function NotificationPage() {
   const [isProcessingDecision, setIsProcessingDecision] = useState(false);
   const [imageLoadStates, setImageLoadStates] = useState<{[key: number]: 'loading' | 'loaded' | 'error'}>({});
   const [processedNotifications, setProcessedNotifications] = useState<Set<number>>(new Set());
+  // 🆕 디버깅 상태 추가
+  const [debugInfo, setDebugInfo] = useState<any>(null);
+  const [showDebug, setShowDebug] = useState(false);
 
   const loadNotifications = useCallback(async () => {
     try {
@@ -201,6 +273,18 @@ export default function NotificationPage() {
   useEffect(() => {
     loadNotifications();
   }, [loadNotifications]);
+
+  // 🆕 디버깅 정보 로드
+  const loadDebugInfo = async () => {
+    const serverOnline = await testServerConnection();
+    const tokenInfo = await debugTokenStatus();
+    
+    setDebugInfo({
+      serverOnline,
+      tokenInfo,
+      timestamp: new Date().toISOString()
+    });
+  };
 
   const handleNotificationClick = async (notificationId: number) => {
     const isCurrentlySelected = selectedId === notificationId;
@@ -259,33 +343,60 @@ export default function NotificationPage() {
     }
   };
 
+  // 🔧 수정된 부분: 에러 처리 개선 및 전체 알림 새로고침
   const handleRentDecision = async (approved: boolean, rejectionReason?: string) => {
     if (!rentRequestDetail) return;
 
     setIsProcessingDecision(true);
     try {
+      console.log('🎯 대여 신청 처리 시작:', { 
+        rentListId: rentRequestDetail.rentListId, 
+        approved, 
+        rejectionReason,
+        bookTitle: rentRequestDetail.bookTitle 
+      });
+
       await decideRentRequest(rentRequestDetail.rentListId, approved, rejectionReason);
       
-      alert(approved ? '대여 신청을 수락했습니다!' : '대여 신청을 거절했습니다.');
+      const actionText = approved ? '수락' : '거절';
+      alert(`대여 신청을 ${actionText}했습니다!`);
       
-      const currentNotificationId = selectedId;
-      if (currentNotificationId) {
-        setProcessedNotifications(prev => new Set([...prev, currentNotificationId]));
-      }
+      console.log('✅ 대여 신청 처리 완료 - 전체 알림 새로고침 시작');
       
+      // 🆕 전체 알림 목록 새로고침 (다른 신청들의 상태 변경 반영)
       await loadNotifications();
       
+      // 상세 정보 패널 닫기
       setSelectedId(null);
       setRentRequestDetail(null);
       
+      console.log('🔄 알림 목록 새로고침 완료');
+      
     } catch (error) {
-      alert(`처리에 실패했습니다: ${error instanceof Error ? error.message : '알 수 없는 오류'}`);
+      console.error('🔥 handleRentDecision 에러:', error);
+      
+      const errorMessage = error instanceof Error ? error.message : '알 수 없는 오류';
+      
+      // 로그인 관련 에러면 디버깅 정보도 함께 표시
+      if (errorMessage.includes('로그인')) {
+        await loadDebugInfo();
+        setShowDebug(true);
+        alert(`처리에 실패했습니다: ${errorMessage}\n\n아래 디버깅 정보를 확인해보세요.`);
+      } else {
+        alert(`처리에 실패했습니다: ${errorMessage}`);
+      }
     } finally {
       setIsProcessingDecision(false);
     }
   };
 
   const isNotificationProcessable = (notificationId: number): boolean => {
+    // 🆕 백엔드에서 받은 상태 우선 확인
+    if (rentRequestDetail && selectedId === notificationId) {
+      return rentRequestDetail.isProcessable;
+    }
+    
+    // 로컬 상태도 확인 (fallback)
     return !processedNotifications.has(notificationId);
   };
 
@@ -436,6 +547,13 @@ export default function NotificationPage() {
           >
             다시 시도
           </button>
+          {/* 🆕 디버깅 버튼 추가 */}
+          <button
+            onClick={loadDebugInfo}
+            className="px-4 py-2 bg-yellow-500 text-white rounded hover:bg-yellow-600 transition-colors"
+          >
+            디버그 정보
+          </button>
         </div>
       </div>
     );
@@ -447,12 +565,40 @@ export default function NotificationPage() {
     <div>
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold">🔔 알림 메시지</h1>
-        {unreadCount > 0 && (
-          <div className="bg-red-500 text-white text-xs px-2 py-1 rounded-full">
-            {unreadCount}개의 새 알림
-          </div>
-        )}
+        <div className="flex items-center space-x-3">
+          {unreadCount > 0 && (
+            <div className="bg-red-500 text-white text-xs px-2 py-1 rounded-full">
+              {unreadCount}개의 새 알림
+            </div>
+          )}
+          {/* 🆕 디버깅 토글 버튼 */}
+          <button
+            onClick={() => {
+              setShowDebug(!showDebug);
+              if (!showDebug) loadDebugInfo();
+            }}
+            className="text-xs px-2 py-1 bg-gray-200 text-gray-600 rounded hover:bg-gray-300"
+          >
+            🔧 디버그
+          </button>
+        </div>
       </div>
+
+      {/* 🆕 디버깅 정보 패널 */}
+      {showDebug && debugInfo && (
+        <div className="mb-6 p-4 bg-gray-100 rounded-lg border">
+          <h3 className="font-bold mb-2">🔧 디버깅 정보</h3>
+          <div className="text-xs space-y-1">
+            <div>서버 연결: {debugInfo.serverOnline ? '✅ 정상' : '❌ 실패'}</div>
+            <div>JWT 토큰: {debugInfo.tokenInfo?.jwtTokenFound ? '✅ 발견' : '❌ 없음'}</div>
+            <div>토큰 유효성: {debugInfo.tokenInfo?.jwtTokenValid ? '✅ 유효' : '❌ 무효'}</div>
+            {debugInfo.tokenInfo?.userId && (
+              <div>사용자 ID: {debugInfo.tokenInfo.userId}</div>
+            )}
+            <div>확인 시간: {new Date(debugInfo.timestamp).toLocaleString()}</div>
+          </div>
+        </div>
+      )}
 
       {notifications.length === 0 ? (
         <div className="text-center py-12 text-gray-500">
@@ -617,10 +763,17 @@ export default function NotificationPage() {
                             <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 text-center">
                               <div className="flex items-center justify-center space-x-2 mb-2">
                                 <div className="w-3 h-3 bg-gray-400 rounded-full"></div>
-                                <span className="text-gray-600 font-medium">처리 완료</span>
+                                <span className="text-gray-600 font-medium">
+                                  {rentRequestDetail.processStatus === 'APPROVED' ? '수락 완료' :
+                                   rentRequestDetail.processStatus === 'REJECTED' ? '거절 완료' : 
+                                   rentRequestDetail.processStatus === 'BOOK_ALREADY_LOANED' ? '이미 대여됨' : '처리 완료'}
+                                </span>
                               </div>
                               <p className="text-xs text-gray-500">
-                                이 대여 신청은 이미 처리되었습니다.
+                                {rentRequestDetail.processStatus === 'APPROVED' ? '이 대여 신청을 수락했습니다.' :
+                                 rentRequestDetail.processStatus === 'REJECTED' ? '이 대여 신청을 거절했습니다.' :
+                                 rentRequestDetail.processStatus === 'BOOK_ALREADY_LOANED' ? '이 책은 다른 사용자에게 대여되었습니다.' :
+                                 '이 대여 신청은 이미 처리되었습니다.'}
                               </p>
                             </div>
                           )}
