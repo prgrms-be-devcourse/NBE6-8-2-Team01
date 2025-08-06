@@ -208,6 +208,7 @@ public class RentListService {
         }
         
         User borrower = rentList.getBorrowerUser();
+
         
         if (decision.isApproved()) {
             // 수락 처리
@@ -248,7 +249,7 @@ public class RentListService {
             String approveMessage = String.format("'%s' 대여 요청이 수락되었습니다!", rent.getBookTitle());
             notificationService.createNotification(
                     borrower,
-                    null,
+                    currentUser, // 08.06 현준
                     NotificationType.RENT_APPROVED,
                     approveMessage,
                     rent.getBookTitle(),
@@ -275,7 +276,7 @@ public class RentListService {
             
             notificationService.createNotification(
                     borrower,
-                    null,
+                    currentUser, // 08.06 현준
                     NotificationType.RENT_REJECTED,
                     rejectMessage,
                     rent.getBookTitle(),

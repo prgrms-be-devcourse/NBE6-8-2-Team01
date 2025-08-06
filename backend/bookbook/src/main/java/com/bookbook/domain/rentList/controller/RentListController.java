@@ -65,7 +65,7 @@ public class RentListController {
      */
     // /api/v1/user/{borrowerUserId}/rentlist/create
     @PostMapping("/create")
-    @Operation(summary = "Rent_List 페이지 등록") // Swagger 에서 API 문서화에 사용되는 설명
+    @Operation(summary = "Rent_List 등록") // Swagger 에서 API 문서화에 사용되는 설명
     public ResponseEntity<RsData<String>> createRentList(
             @PathVariable Long borrowerUserId,
             @RequestBody RentListCreateRequestDto request
@@ -163,6 +163,7 @@ public class RentListController {
                     .body(RsData.of("404-1", "사용자 정보를 찾을 수 없습니다.", null));
         }
 
+        // 대여 신청 처리
         try {
             String result = rentListService.decideRentRequest(rentListId, decision, currentUser);
             return ResponseEntity.ok(RsData.of("200-1", result, null));
