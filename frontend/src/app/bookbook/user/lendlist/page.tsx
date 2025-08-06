@@ -205,7 +205,8 @@ export default function LendListPage() {
       const shouldReregister = confirm('책을 다시 등록하시겠습니까?');
       if (shouldReregister) {
         // 도서 수정페이지로 이동
-        window.location.href = `/bookbook/lendlist/${rentId}/edit`;
+        window.location.href = `/bookbook/rent/edit/${rentId}`;
+
       }
     } catch (error) {
       console.error('리뷰 등록 실패:', error);
