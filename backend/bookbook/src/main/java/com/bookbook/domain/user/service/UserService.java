@@ -3,6 +3,7 @@ package com.bookbook.domain.user.service;
 import com.bookbook.domain.review.repository.ReviewRepository;
 import com.bookbook.domain.user.dto.UserProfileResponseDto;
 import com.bookbook.domain.user.dto.UserResponseDto;
+import com.bookbook.domain.user.dto.UserStatusResponseDto;
 import com.bookbook.domain.user.entity.User;
 import com.bookbook.domain.user.enums.Role;
 import com.bookbook.domain.user.enums.UserStatus;
@@ -160,6 +161,16 @@ public class UserService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ServiceException("404-USER-NOT-FOUND", "해당 ID의 사용자를 찾을 수 없습니다."));
         return new UserResponseDto(user);
+    }
+
+    public UserStatusResponseDto getUserStatus(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ServiceException("404-USER-NOT-FOUND", "해당 ID의 사용자를 찾을 수 없습니다."));
+
+        return UserStatusResponseDto.builder()
+                .id(user.getId())
+                .userStatus(user.getUserStatus())
+                .build();
     }
 
     @Transactional

@@ -1,4 +1,4 @@
-// 25.07.31 현준
+// 25.08.06 현준
 // src/app/bookbook/rent/create/page.tsx
 // 글 작성을 위한 페이지
 
@@ -18,6 +18,12 @@ interface BookSearchResult {
     coverImageUrl: string;
     category: string;
     bookDescription: string;
+}
+
+// 새로운 타입 정의 : 현재 유저 정보
+interface CurrentUserDto {
+    userId: number;
+    userStatus: 'ACTIVE' | 'INACTIVE' | 'SUSPENDED';
 }
 
 export default function BookRentPage() {
@@ -77,6 +83,47 @@ export default function BookRentPage() {
     const conditions = ['최상 (깨끗함)', '상 (사용감 적음)', '중 (사용감 있음)', '하 (손상 있음)'];
 
     const router = useRouter();
+
+    // 추가된 로직 : 페이지 로드 시, 유저 상태 확인
+    useEffect(() => {
+        const checkUserStatus = async () => {
+            try {
+                // 현재 로그인된 유저 정보를 가져오는 API 엔드포인트 호출
+                const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/bookbook/users/status`, {
+                    method: "GET",
+                    credentials: "include",
+                });
+                
+                if (res.ok) {
+                    // 서버 응답이 `RsData`로 감싸져 있으므로, `data` 필드를 추출해야 합니다.
+                    const responseData = await res.json();
+                    const currentUser: CurrentUserDto = responseData.data;
+                    
+                    // 만약 유저 상태가 'SUSPENDED'라면
+                    if (currentUser.userStatus === 'SUSPENDED') {
+                        // 경고창을 띄우고
+                        alert('정지된 회원입니다.');
+                        // 홈 페이지로 리다이렉트
+                        router.push(`/bookbook`);
+                    }
+                } else {
+                    // 유저 정보 가져오기 실패 시 로그인 페이지 등으로 리다이렉트
+                    // 예를 들어, 인증 실패 시
+                    if (res.status === 401) {
+                         alert('로그인이 필요합니다.');
+                         router.push('/login');
+                    }
+                }
+            } catch (error) {
+                console.error("유저 상태 확인 중 오류 발생:", error);
+                // 네트워크 오류 발생 시에도 홈으로 보내거나 에러 메시지 표시
+                alert('유저 정보를 가져오는 중 오류가 발생했습니다.');
+                router.push('/');
+            }
+        };
+
+        checkUserStatus();
+    }, [router]); // router 객체를 의존성 배열에 추가
 
     const resetForm = () => {
         setTitle('');

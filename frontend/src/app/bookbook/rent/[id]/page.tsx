@@ -1,6 +1,6 @@
 // src/app/bookbook/rent/[id]/page.tsx
 // 글 상세를 보여주는 페이지
-//08.04 현준 수정
+//08.06 현준 수정
 
 "use client";
 
@@ -56,6 +56,12 @@ interface BookDetailPageProps {
     params: Promise<{ id: string }>;
 }
 
+// 새로운 타입 정의 : 현재 유저 정보
+interface CurrentUserDto {
+    userId: number;
+    userStatus: 'ACTIVE' | 'INACTIVE' | 'SUSPENDED';
+}
+
 export default function BookDetailPage({ params }: BookDetailPageProps): React.JSX.Element {
     // Next.js 동적 라우팅으로 URL에서 'id' 값을 가져옴
     const { id } = React.use(params);
@@ -77,8 +83,40 @@ export default function BookDetailPage({ params }: BookDetailPageProps): React.J
     // 현재 로그인한 사용자 정보를 가져옵니다 (자동 로그인 없음)
     const { user, loading: userLoading, userId, isAuthenticated } = useAuthCheck();
 
+    
+
     // 컴포넌트가 마운트되거나 ID가 변경될 때 책 상세 정보를 불러옵니다.
     useEffect(() => {
+        
+        // userStatus를 확인하는 별도의 비동기 함수
+        const checkUserStatus = async () => {
+            try {
+            const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/bookbook/users/status`, {
+                method: "GET",
+                credentials: "include",
+            });
+    
+            if (res.ok) {
+                const responseData = await res.json();
+                const currentUser: CurrentUserDto = responseData.data;
+    
+                if (currentUser.userStatus === 'SUSPENDED') {
+                alert('정지된 회원입니다.');
+                router.push(`/bookbook`);
+                }
+            } else if (res.status === 401) {
+                alert('로그인이 필요합니다.');
+                router.push('/login');
+            }
+            } catch (error) {
+            console.error("유저 상태 확인 중 오류 발생:", error);
+            alert('유저 정보를 가져오는 중 오류가 발생했습니다.');
+            router.push('/');
+            }
+        };
+  
+        checkUserStatus();
+
         const fetchBookDetail = async (): Promise<void> => {
             if (!id) return; // ID가 없으면 API 호출하지 않음
 
@@ -110,7 +148,7 @@ export default function BookDetailPage({ params }: BookDetailPageProps): React.J
         };
 
         fetchBookDetail();
-    }, [id]); // id가 변경될 때마다 useEffect 재실행
+    }, [id, router]); // id가 변경될 때마다 useEffect 재실행
 
     const handleOpenProfileModal = (): void => {
         if (bookDetail?.lenderUserId) {
