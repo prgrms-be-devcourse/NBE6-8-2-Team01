@@ -21,7 +21,7 @@ export const menuItems: MenuItem[] = [
     id: "post-management",
     label: "게시글 관리",
     icon: NotebookText,
-    apiPath: "/api/v1/admin/posts"
+    apiPath: "/api/v1/admin/rent"
   },
   {
     id: "reports",

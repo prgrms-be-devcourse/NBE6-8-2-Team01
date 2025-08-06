@@ -20,7 +20,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/v1/admin")
+@RequestMapping("/api/v1/admin/rent")
 @RequiredArgsConstructor
 @Tag(name = "RentAdminController", description = "어드민 전용 대여 게시글 컨트롤러")
 public class RentAdminController {
@@ -40,7 +40,7 @@ public class RentAdminController {
      * @param userId 대여 게시글 작성자 ID
      * @return 생성된 대여 게시글 페이지 정보
      */
-    @GetMapping("/posts")
+    @GetMapping
     @Operation(summary = "대여 게시글 목록 조회")
     public ResponseEntity<RsData<PageResponse<RentSimpleResponseDto>>> getPosts(
             @RequestParam(defaultValue = "1") Integer page,
@@ -67,7 +67,7 @@ public class RentAdminController {
      * @param id 대여 게시글 ID
      * @return 단일 대여 게시글 상세 정보
      */
-    @GetMapping("/rent/{id}")
+    @GetMapping("/{id}")
     @Operation(summary = "단일 대여 게시글 상세 조회")
     public ResponseEntity<RsData<RentDetailResponseDto>> getRentDetail(
             @PathVariable int id
@@ -85,7 +85,7 @@ public class RentAdminController {
      * @param id 대여 게시글 ID
      * @return 단일 대여 게시글 수정 후 상세 정보
      */
-    @PatchMapping("/rent/{id}")
+    @PatchMapping("/{id}")
     @Operation(summary = "대여 게시글 상태 수정")
     public ResponseEntity<RsData<RentDetailResponseDto>> changeRentStatus(
             @PathVariable int id,
@@ -104,7 +104,7 @@ public class RentAdminController {
      * @param id 대여 게시글 ID
      * @return 없음
      */
-    @DeleteMapping("/rent/{id}")
+    @DeleteMapping("/{id}")
     @Operation(summary = "대여 게시글 영구 삭제")
     public ResponseEntity<RsData<Void>> deleteRentPage(@PathVariable int id){ // 경로 변수로 전달된 id를 사용
         rentService.removeRentPage(id);
@@ -117,7 +117,7 @@ public class RentAdminController {
      * @param id 대여 게시글 ID
      * @return 복구 완료된 게시글의 정보
      */
-    @PatchMapping("/rent/{id}/restore")
+    @PatchMapping("/{id}/restore")
     @Operation(summary = "대여 게시글 복구")
     public ResponseEntity<RsData<RentDetailResponseDto>> restoreRentPage(@PathVariable int id){ // 경로 변수로 전달된 id를 사용
         RentDetailResponseDto responseDto = rentService.restoreRentPage(id);
