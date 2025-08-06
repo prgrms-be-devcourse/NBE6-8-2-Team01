@@ -49,4 +49,9 @@ public interface ChatMessageRepository extends JpaRepository<ChatMessage, Intege
            "ORDER BY cm.createdDate DESC " +
            "LIMIT 1")
     ChatMessage findLastMessageByRoomId(@Param("roomId") String roomId);
+    
+    // 특정 채팅방의 모든 메시지 삭제
+    @Modifying
+    @Query("DELETE FROM ChatMessage cm WHERE cm.roomId = :roomId")
+    int deleteByRoomId(@Param("roomId") String roomId);
 }
