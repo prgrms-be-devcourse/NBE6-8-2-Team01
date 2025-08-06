@@ -126,33 +126,22 @@ const fetchRentRequestDetail = async (notificationId: number): Promise<RentReque
   }
 };
 
-// 🔧 수정된 부분: 기존 정상 경로 사용 (borrowerUserId는 임시로 1 사용)
 const decideRentRequest = async (rentListId: number, approved: boolean, rejectionReason?: string): Promise<void> => {
   try {
-    console.log('🚀 대여 신청 처리 시작:', { rentListId, approved, rejectionReason });
-    
-    // 기존 RentListController 경로 사용 (borrowerUserId는 임시값)
     const response = await fetch(`/api/v1/user/1/rentlist/${rentListId}/decision`, {
       method: 'PATCH',
       headers: {
         'Content-Type': 'application/json',
       },
-      credentials: 'include', // 쿠키 포함
+      credentials: 'include',
       body: JSON.stringify({
         approved: approved,
         rejectionReason: rejectionReason || ''
       })
     });
 
-    console.log('📡 응답 상태:', response.status);
-    console.log('📡 응답 헤더:', response.headers.get('Content-Type'));
-    
-    // 응답이 HTML인지 먼저 확인
     const contentType = response.headers.get('Content-Type');
     if (contentType && contentType.includes('text/html')) {
-      const htmlContent = await response.text();
-      console.error('❌ HTML 응답 받음:', htmlContent.substring(0, 200));
-      
       if (response.status === 401) {
         throw new Error('로그인이 만료되었습니다. 페이지를 새로고침하여 다시 로그인해주세요.');
       } else {
@@ -160,20 +149,14 @@ const decideRentRequest = async (rentListId: number, approved: boolean, rejectio
       }
     }
     
-    // JSON 응답 처리
     let responseData;
     try {
       responseData = await response.json();
     } catch (jsonError) {
-      console.error('❌ JSON 파싱 실패:', jsonError);
       throw new Error(`서버 오류 (${response.status}): 유효하지 않은 응답 형식입니다.`);
     }
     
-    console.log('📄 응답 데이터:', responseData);
-    
     if (!response.ok) {
-      console.error('❌ 에러 응답:', responseData);
-      
       if (response.status === 401) {
         throw new Error('로그인이 필요합니다. 페이지를 새로고침해주세요.');
       } else if (response.status === 403) {
@@ -185,36 +168,11 @@ const decideRentRequest = async (rentListId: number, approved: boolean, rejectio
       }
     }
     
-    console.log('✅ 처리 성공:', responseData);
-    
   } catch (error) {
-    console.error('🔥 decideRentRequest 에러:', error);
     throw error;
   }
 };
 
-// 🆕 추가된 디버깅 함수들
-const testServerConnection = async (): Promise<boolean> => {
-  try {
-    const response = await fetch('/api/v1/rentlist/ping');
-    return response.ok;
-  } catch (error) {
-    return false;
-  }
-};
-
-const debugTokenStatus = async (): Promise<TokenInfo | null> => {
-  try {
-    const response = await fetch('/api/v1/public/rentlist/debug-token');
-    if (response.ok) {
-      // ✅ as TokenInfo를 사용하여 타입을 명확히 알려줍니다.
-      return await response.json() as TokenInfo;
-    }
-    return null;
-  } catch (error) {
-    return null;
-  }
-};
 
 type Notification = {
   id: number;
@@ -240,9 +198,7 @@ export default function NotificationPage() {
   const [isProcessingDecision, setIsProcessingDecision] = useState(false);
   const [imageLoadStates, setImageLoadStates] = useState<{[key: number]: 'loading' | 'loaded' | 'error'}>({});
   const [processedNotifications, setProcessedNotifications] = useState<Set<number>>(new Set());
-  // 🆕 디버깅 상태 추가
-  const [debugInfo, setDebugInfo] = useState<DebugInfo | null>(null);
-  const [showDebug, setShowDebug] = useState(false);
+
 
   const loadNotifications = useCallback(async () => {
     try {
@@ -286,18 +242,6 @@ export default function NotificationPage() {
   useEffect(() => {
     loadNotifications();
   }, [loadNotifications]);
-
-  // 🆕 디버깅 정보 로드
-  const loadDebugInfo = async () => {
-    const serverOnline = await testServerConnection();
-    const tokenInfo = await debugTokenStatus();
-    
-    setDebugInfo({
-      serverOnline,
-      tokenInfo,
-      timestamp: new Date().toISOString()
-    });
-  };
 
   const handleNotificationClick = async (notificationId: number) => {
     const isCurrentlySelected = selectedId === notificationId;
@@ -356,60 +300,34 @@ export default function NotificationPage() {
     }
   };
 
-  // 🔧 수정된 부분: 에러 처리 개선 및 전체 알림 새로고침
   const handleRentDecision = async (approved: boolean, rejectionReason?: string) => {
     if (!rentRequestDetail) return;
 
     setIsProcessingDecision(true);
     try {
-      console.log('🎯 대여 신청 처리 시작:', { 
-        rentListId: rentRequestDetail.rentListId, 
-        approved, 
-        rejectionReason,
-        bookTitle: rentRequestDetail.bookTitle 
-      });
-
       await decideRentRequest(rentRequestDetail.rentListId, approved, rejectionReason);
       
       const actionText = approved ? '수락' : '거절';
       alert(`대여 신청을 ${actionText}했습니다!`);
       
-      console.log('✅ 대여 신청 처리 완료 - 전체 알림 새로고침 시작');
-      
-      // 🆕 전체 알림 목록 새로고침 (다른 신청들의 상태 변경 반영)
       await loadNotifications();
       
-      // 상세 정보 패널 닫기
       setSelectedId(null);
       setRentRequestDetail(null);
       
-      console.log('🔄 알림 목록 새로고침 완료');
-      
     } catch (error) {
-      console.error('🔥 handleRentDecision 에러:', error);
-      
       const errorMessage = error instanceof Error ? error.message : '알 수 없는 오류';
-      
-      // 로그인 관련 에러면 디버깅 정보도 함께 표시
-      if (errorMessage.includes('로그인')) {
-        await loadDebugInfo();
-        setShowDebug(true);
-        alert(`처리에 실패했습니다: ${errorMessage}\n\n아래 디버깅 정보를 확인해보세요.`);
-      } else {
-        alert(`처리에 실패했습니다: ${errorMessage}`);
-      }
+      alert(`처리에 실패했습니다: ${errorMessage}`);
     } finally {
       setIsProcessingDecision(false);
     }
   };
 
   const isNotificationProcessable = (notificationId: number): boolean => {
-    // 🆕 백엔드에서 받은 상태 우선 확인
     if (rentRequestDetail && selectedId === notificationId) {
       return rentRequestDetail.isProcessable;
     }
     
-    // 로컬 상태도 확인 (fallback)
     return !processedNotifications.has(notificationId);
   };
 
@@ -421,19 +339,18 @@ export default function NotificationPage() {
     const trimmedUrl = imageUrl.trim();
     
     if (trimmedUrl.startsWith('http://') || trimmedUrl.startsWith('https://')) {
-  return trimmedUrl;
-}
+      return trimmedUrl;
+    }
 
-// 환경 변수가 설정되어 있지 않으면 로컬호스트를 기본값으로 사용합니다.
-const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8080';
+    const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8080';
 
-if (trimmedUrl.startsWith('/')) {
-  return `${baseUrl}${trimmedUrl}`;
-} else if (trimmedUrl.startsWith('uploads/')) {
-  return `${baseUrl}/${trimmedUrl}`;
-} else {
-  return `${baseUrl}/uploads/${trimmedUrl}`;
-}
+    if (trimmedUrl.startsWith('/')) {
+      return `${baseUrl}${trimmedUrl}`;
+    } else if (trimmedUrl.startsWith('uploads/')) {
+      return `${baseUrl}/${trimmedUrl}`;
+    } else {
+      return `${baseUrl}/uploads/${trimmedUrl}`;
+    }
   };
 
   const handleImageError = (e: React.SyntheticEvent<HTMLImageElement>, notification: Notification) => {
@@ -565,13 +482,6 @@ if (trimmedUrl.startsWith('/')) {
           >
             다시 시도
           </button>
-          {/* 🆕 디버깅 버튼 추가 */}
-          <button
-            onClick={loadDebugInfo}
-            className="px-4 py-2 bg-yellow-500 text-white rounded hover:bg-yellow-600 transition-colors"
-          >
-            디버그 정보
-          </button>
         </div>
       </div>
     );
@@ -589,34 +499,8 @@ if (trimmedUrl.startsWith('/')) {
               {unreadCount}개의 새 알림
             </div>
           )}
-          {/* 🆕 디버깅 토글 버튼 */}
-          <button
-            onClick={() => {
-              setShowDebug(!showDebug);
-              if (!showDebug) loadDebugInfo();
-            }}
-            className="text-xs px-2 py-1 bg-gray-200 text-gray-600 rounded hover:bg-gray-300"
-          >
-            🔧 디버그
-          </button>
         </div>
       </div>
-
-      {/* 🆕 디버깅 정보 패널 */}
-      {showDebug && debugInfo && (
-        <div className="mb-6 p-4 bg-gray-100 rounded-lg border">
-          <h3 className="font-bold mb-2">🔧 디버깅 정보</h3>
-          <div className="text-xs space-y-1">
-            <div>서버 연결: {debugInfo.serverOnline ? '✅ 정상' : '❌ 실패'}</div>
-            <div>JWT 토큰: {debugInfo.tokenInfo?.jwtTokenFound ? '✅ 발견' : '❌ 없음'}</div>
-            <div>토큰 유효성: {debugInfo.tokenInfo?.jwtTokenValid ? '✅ 유효' : '❌ 무효'}</div>
-            {debugInfo.tokenInfo?.userId && (
-              <div>사용자 ID: {debugInfo.tokenInfo.userId}</div>
-            )}
-            <div>확인 시간: {new Date(debugInfo.timestamp).toLocaleString()}</div>
-          </div>
-        </div>
-      )}
 
       {notifications.length === 0 ? (
         <div className="text-center py-12 text-gray-500">

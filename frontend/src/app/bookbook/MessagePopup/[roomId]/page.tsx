@@ -5,7 +5,16 @@ import React, { Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import ChatWindow from '../components/ChatWindow';
 
-function ChatPageContent({ params }: { params: Promise<{ roomId: string }> }) {
+// Props 타입 정의
+interface ChatPageContentProps {
+  params: Promise<{ roomId: string }>;
+}
+
+interface ChatPageProps {
+  params: Promise<{ roomId: string }>;
+}
+
+function ChatPageContent({ params }: ChatPageContentProps): React.JSX.Element {
   const { roomId } = React.use(params);
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -14,14 +23,14 @@ function ChatPageContent({ params }: { params: Promise<{ roomId: string }> }) {
   const bookTitle = searchParams.get('bookTitle');
   const otherUserNickname = searchParams.get('otherUserNickname');
 
-  const handleBack = () => {
+  const handleBack = (): void => {
     // 이전 페이지로 돌아가기
     router.back();
   };
 
   return (
-    <div className="h-screen bg-gray-100 font-inter flex justify-center"> {/* flex justify-center 추가 */}
-      <div className="w-full max-w-sm bg-white"> {/* 최대 너비 제한 */}
+    <div className="h-screen bg-gray-100 font-inter flex justify-center">
+      <div className="w-full max-w-sm bg-white">
         <ChatWindow
           roomId={roomId}
           bookTitle={bookTitle || undefined}
@@ -34,7 +43,7 @@ function ChatPageContent({ params }: { params: Promise<{ roomId: string }> }) {
 }
 
 // 로딩 컴포넌트
-function LoadingComponent() {
+function LoadingComponent(): React.JSX.Element {
   return (
     <div className="h-screen flex items-center justify-center bg-gray-100 font-inter">
       <div className="text-center">
@@ -47,7 +56,7 @@ function LoadingComponent() {
 }
 
 // 메인 페이지 컴포넌트
-export default function ChatPage({ params }: { params: Promise<{ roomId: string }> }) {
+export default function ChatPage({ params }: ChatPageProps): React.JSX.Element {
   return (
     <Suspense fallback={<LoadingComponent />}>
       <ChatPageContent params={params} />
