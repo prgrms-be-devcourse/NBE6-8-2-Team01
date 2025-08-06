@@ -3,14 +3,14 @@ package com.bookbook.domain.rent.service;
 import com.bookbook.domain.notification.enums.NotificationType;
 import com.bookbook.domain.notification.service.NotificationService;
 import com.bookbook.domain.rent.dto.RentAvailableResponseDto;
-import com.bookbook.domain.rent.dto.RentDetailResponseDto;
+import com.bookbook.domain.rent.dto.response.RentDetailResponseDto;
 import com.bookbook.domain.rent.dto.RentRequestDto;
 import com.bookbook.domain.rent.dto.RentResponseDto;
 import com.bookbook.domain.rent.entity.Rent;
 import com.bookbook.domain.rent.entity.RentStatus;
 import com.bookbook.domain.rent.repository.RentRepository;
-import com.bookbook.domain.user.dto.ChangeRentStatusRequestDto;
-import com.bookbook.domain.user.dto.RentSimpleResponseDto;
+import com.bookbook.domain.rent.dto.request.ChangeRentStatusRequestDto;
+import com.bookbook.domain.rent.dto.response.RentSimpleResponseDto;
 import com.bookbook.domain.user.entity.User;
 import com.bookbook.domain.user.repository.UserRepository;
 import com.bookbook.domain.wishList.enums.WishListStatus;
@@ -251,46 +251,78 @@ public class RentService {
         return RentAvailableResponseDto.success(books, pagination);
     }
 
+    /**
+     * 대여 게시글 목록을 페이지로 가져옵니다.
+     *
+     * @param pageable 페이지 기본 정보
+     * @param status 대여 게시글 상태의 리스트
+     * @param userId 대여 게시글 작성자 ID
+     * @return 생성된 대여 게시글 페이지 정보
+     */
     @Transactional(readOnly = true)
     public Page<RentSimpleResponseDto> getRentsPage(
-            Pageable pageable, List<String> status, Long userId
+            Pageable pageable, List<RentStatus> status, Long userId
     ) {
         return rentRepository.findFilteredRentHistory(pageable, status, userId)
                 .map(RentSimpleResponseDto::from);
     }
 
+    /**
+     * 대여 게시글의 상태를 변경합니다.
+     *
+     * @param rentId 대여 게시글 ID
+     * @param requestDto 대여 게시글 상태 요청 본문
+     * @return 수정된 대여 게시글 상세 정보
+     */
     @Transactional
-    public RentDetailResponseDto modifyRentPageStatus(Integer id, ChangeRentStatusRequestDto requestDto) {
-        Rent rent = rentRepository.findById(id)
+    public RentDetailResponseDto modifyRentPageStatus(int rentId, ChangeRentStatusRequestDto requestDto) {
+        Rent rent = rentRepository.findById(rentId)
                 .orElseThrow(()-> new ServiceException("404-2", "해당 대여글을 찾을 수 없습니다."));
+
+        boolean isSameStatus = rent.getRentStatus() == requestDto.status();
+        boolean alreadyDeleted = isSameStatus && rent.getRentStatus() == RentStatus.DELETED;
+
+        if (alreadyDeleted) {
+            throw new ServiceException("409-1", "이미 해당 글은 삭제되었습니다.");
+        }
+
+        if (isSameStatus) {
+            throw new ServiceException("409-1", "현재 상태와 동일합니다.");
+        }
 
         rent.setRentStatus(requestDto.status());
         return RentDetailResponseDto.from(rent);
     }
 
-//    @Transactional
-//    public void removeRentPage(Integer id) {
-//        try {
-//            rentRepository.deleteById(id);
-//        } catch (RuntimeException e) {
-//            throw new ServiceException("404-1", "해당 글은 존재하지 않습니다.");
-//        }
-//    }
+    /**
+     * 대여 게시글을 HARD DELETE 합니다.
+     *
+     * @param rentId 대여 게시글의 ID
+     * @throws ServiceException (404) 해당 대여 게시글이 존재하지 않을 때
+     * @deprecated 사용되지 않습니다
+     */
+    @Deprecated
+    @Transactional
+    public void removeRentPage(int rentId) {
+        try {
+            rentRepository.deleteById(rentId);
+        } catch (RuntimeException e) {
+            throw new ServiceException("404-2", "해당 대여글을 찾을 수 없습니다.");
+        }
+    }
 
+    /**
+     * 대여 게시글에 대한 상세 정보를 가져옵니다.
+     *
+     * @param rentId 대여 게시글의 ID
+     * @return 대여 게시글 기반으로 가공된 정보
+     * @throws ServiceException (404) 해당 대여 게시글이 존재하지 않을 때
+     */
     @Transactional(readOnly = true)
-    public RentDetailResponseDto getRentPostDetail(int id) {
-        Rent rent = rentRepository.findById(id)
+    public RentDetailResponseDto getRentPostDetail(int rentId) {
+        Rent rent = rentRepository.findById(rentId)
                 .orElseThrow(() -> new ServiceException("404-2", "해당 대여글을 찾을 수 없습니다."));
 
         return RentDetailResponseDto.from(rent);
-
-    }
-
-    private void checkRentPostDeleted(Rent rent) {
-        RentStatus status = rent.getRentStatus();
-
-        if (status.equals(RentStatus.DELETED)) {
-            throw new ServiceException("409-1", "해당 글은 이미 삭제되었습니다.");
-        }
     }
 }

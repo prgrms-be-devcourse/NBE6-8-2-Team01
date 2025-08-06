@@ -71,7 +71,6 @@ export default function RentListPage() {
         }
       );
 
-      console.log('빌린 도서 목록 API 호출:', response.status);
 
       if (!response.ok) {
         if (response.status === 404) {
@@ -83,8 +82,7 @@ export default function RentListPage() {
       }
 
       const response_data = await response.json();
-      console.log('빌린 도서 목록 API 응답:', response_data);
-
+      
       // RsData 형식에 맞게 data 추출
       const data = response_data.data;
 
@@ -118,10 +116,25 @@ export default function RentListPage() {
     }
   };
 
+  // 리뷰 대상자 정보 생성 (대여받은 사람이 대여자를 평가)
+  const getReviewTarget = (book: RentedBook) => {
+    return {
+      userId: 0, // 실제로는 lenderUserId를 받아와야 함
+      nickname: book.lenderNickname || '대여자',
+      rating: undefined, // 실제로는 lender의 평점을 받아와야 함
+      reviewType: 'BORROWER_TO_LENDER' as const,
+      description: '이 사용자를 평가해주세요'
+    };
+  };
+
   const submitReview = async (rentId: number, rating: number) => {
     try {
+      const apiUrl = `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/user/${userId}/rentlist/${rentId}/review`;
+      console.log('리뷰 API 호출 URL:', apiUrl);
+      console.log('Request body:', { rating });
+      
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/user/${userId}/rentlist/${rentId}/review`,
+        apiUrl,
         {
           method: 'POST',
           headers: {
@@ -151,6 +164,40 @@ export default function RentListPage() {
     } catch (error) {
       console.error('리뷰 등록 실패:', error);
       throw error;
+    }
+  };
+
+  const returnBook = async (rentId: number) => {
+    if (!confirm('정말로 반납하시겠습니까?')) {
+      return;
+    }
+
+    try {
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/user/${userId}/rentlist/${rentId}/return`,
+        {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          mode: 'cors',
+          credentials: 'include',
+        }
+      );
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(errorText || '반납에 실패했습니다.');
+      }
+
+      const data = await response.json();
+      
+      // 성공 후 목록 새로고침
+      fetchRentedBooks(currentPage);
+      alert('도서가 성공적으로 반납되었습니다.');
+    } catch (error: any) {
+      console.error('반납 실패:', error);
+      alert(error.message || '반납에 실패했습니다. 다시 시도해주세요.');
     }
   };
 
@@ -255,6 +302,7 @@ export default function RentListPage() {
                   key={book.id}
                   book={book}
                   onReview={writeReview}
+                  onReturn={returnBook}
                   formatDate={formatDate}
                 />
               ))}
@@ -282,6 +330,7 @@ export default function RentListPage() {
               setSelectedBook(null);
             }}
             book={selectedBook}
+            target={getReviewTarget(selectedBook)}
             onSubmit={submitReview}
           />
         )}

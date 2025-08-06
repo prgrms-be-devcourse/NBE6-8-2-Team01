@@ -309,13 +309,16 @@ const BookRegionSection = () => {
     router.push(`/bookbook/rent/${bookId}`);
   };
 
+  // 🔧 간단한 이미지 에러 처리 - 재시도 없이 바로 기본 이미지로 대체
   const handleImageError = (imageUrl: string, event: React.SyntheticEvent<HTMLImageElement>) => {
     const img = event.currentTarget;
-    console.error('이미지 로드 실패:', imageUrl);
     
-    // 실패한 이미지 목록에 추가
-    setFailedImages(prev => new Set([...prev, imageUrl]));
+    // 이미 에러 처리된 이미지는 무시 (무한 재시도 방지)
+    if (img.dataset.errorHandled === 'true') {
+      return;
+    }
     
+
     // 다른 경로들을 순차적으로 시도
     const tryAlternativeUrls = [
       imageUrl.replace('/images/', '/uploads/'),
@@ -324,20 +327,20 @@ const BookRegionSection = () => {
       imageUrl.includes('/uploads/') ? imageUrl : `${process.env.NEXT_PUBLIC_API_BASE_URL}/uploads/${imageUrl.split('/').pop()}`,
       imageUrl.includes('/images/') ? imageUrl : `${process.env.NEXT_PUBLIC_API_BASE_URL}/images/${imageUrl.split('/').pop()}`
     ];
+    console.warn('이미지 로드 실패 - 기본 이미지로 대체:', imageUrl);
     
-    // 현재 URL이 아닌 다른 URL 시도
-    const currentUrl = img.src;
-    const nextUrl = tryAlternativeUrls.find(url => url !== currentUrl && !failedImages.has(url));
+    // 에러 처리 플래그 설정
+    img.dataset.errorHandled = 'true';
     
-    if (nextUrl && !failedImages.has(nextUrl)) {
-      console.log('대체 URL 시도:', nextUrl);
-      img.src = nextUrl;
-      return;
-    }
+    // 실패한 이미지 목록에 추가
+    setFailedImages(prev => new Set([...prev, imageUrl]));
     
-    // 모든 대체 URL이 실패한 경우 기본 이미지로 대체
+    // 바로 기본 이미지로 대체 (재시도 없음)
     img.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjI4MCIgdmlld0JveD0iMCAwIDIwMCAyODAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIyMDAiIGhlaWdodD0iMjgwIiBmaWxsPSIjRjNGNEY2Ii8+CjxwYXRoIGQ9Ik02MCA5MEgxNDBWMTkwSDYwVjkwWiIgZmlsbD0iIzlDQTNBRiIvPgo8cGF0aCBkPSJNODAgMTEwSDEyMFYxMzBIODBWMTEwWiIgZmlsbD0iI0Y5RkFGQiIvPgo8cGF0aCBkPSJNODAgMTQwSDEyMFYxNTBIODBWMTQwWiIgZmlsbD0iI0Y5RkFGQiIvPgo8cGF0aCBkPSJNODAgMTYwSDEwMFYxNzBIODBWMTYwWiIgZmlsbD0iI0Y5RkFGQiIvPgo8L3N2Zz4K';
     img.alt = '이미지를 불러올 수 없습니다';
+    
+    // 더 이상 onError 이벤트가 발생하지 않도록 설정
+    img.onerror = null;
   };
 
   const handleImageLoad = (imageUrl: string, event: React.SyntheticEvent<HTMLImageElement>) => {

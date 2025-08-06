@@ -7,11 +7,15 @@ import com.bookbook.domain.rent.entity.RentStatus;
 import com.bookbook.domain.rent.repository.RentRepository;
 import com.bookbook.domain.rentList.repository.RentListRepository;
 import com.bookbook.domain.user.repository.UserRepository;
+import com.bookbook.domain.review.repository.ReviewRepository;
+import com.bookbook.domain.rentList.entity.RentList;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.time.LocalDateTime;
 
 /**
  * 내가 등록한 도서 목록 관리 서비스
@@ -29,6 +33,7 @@ public class LendListService {
     private final RentRepository rentRepository;
     private final RentListRepository rentListRepository;
     private final UserRepository userRepository;
+    private final ReviewRepository reviewRepository;
 
     /**
      * 사용자가 등록한 도서 목록을 페이징하여 조회
@@ -53,7 +58,26 @@ public class LendListService {
                         .map(user -> user.getNickname())
                         .orElse(null);
             }
-            return LendListResponseDto.from(rent, borrowerNickname);
+            // 반납 날짜 조회
+            LocalDateTime returnDate = null;
+            boolean hasReview = false;
+            
+            if (rent.getRentStatus() == RentStatus.LOANED || rent.getRentStatus() == RentStatus.FINISHED) {
+                RentList rentList = rentListRepository.findByRentId(rent.getId())
+                        .stream()
+                        .findFirst()
+                        .orElse(null);
+                        
+                if (rentList != null) {
+                    returnDate = rentList.getReturnDate();
+                    
+                    // 리뷰 작성 여부 확인 (대여자가 대여받은 사람에 대한 리뷰)
+                    hasReview = reviewRepository.findByRentIdAndReviewerId(rent.getId(), userId)
+                            .isPresent();
+                }
+            }
+            
+            return LendListResponseDto.from(rent, borrowerNickname, returnDate, hasReview);
         });
     }
     
@@ -83,7 +107,26 @@ public class LendListService {
                         .map(user -> user.getNickname())
                         .orElse(null);
             }
-            return LendListResponseDto.from(rent, borrowerNickname);
+            // 반납 날짜 조회
+            LocalDateTime returnDate = null;
+            boolean hasReview = false;
+            
+            if (rent.getRentStatus() == RentStatus.LOANED || rent.getRentStatus() == RentStatus.FINISHED) {
+                RentList rentList = rentListRepository.findByRentId(rent.getId())
+                        .stream()
+                        .findFirst()
+                        .orElse(null);
+                        
+                if (rentList != null) {
+                    returnDate = rentList.getReturnDate();
+                    
+                    // 리뷰 작성 여부 확인 (대여자가 대여받은 사람에 대한 리뷰)
+                    hasReview = reviewRepository.findByRentIdAndReviewerId(rent.getId(), userId)
+                            .isPresent();
+                }
+            }
+            
+            return LendListResponseDto.from(rent, borrowerNickname, returnDate, hasReview);
         });
     }
     
