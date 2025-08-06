@@ -6,7 +6,6 @@ import Pagination from '../../../components/Pagination';
 import LendListCard from './LendListCard';
 import ReviewModal from '../../../components/ReviewModal';
 import { MyBook, PaginationInfo } from './types';
-import { dummyLendListBooks } from './dummyData';
 import { useCurrentUser } from '../../../hooks/useCurrentUser';
 
 export default function LendListPage() {

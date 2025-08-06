@@ -6,7 +6,6 @@ import Pagination from '../../../components/Pagination';
 import RentListCard from './RentListCard';
 import ReviewModal from '../../../components/ReviewModal';
 import { RentedBook, PaginationInfo } from './types';
-import { dummyRentedBooks } from './dummyData';
 import { useCurrentUser } from '../../../hooks/useCurrentUser';
 
 export default function RentListPage() {
