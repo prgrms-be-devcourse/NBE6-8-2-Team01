@@ -70,7 +70,7 @@ export default function BookDetailPage({ params }: { params: Promise<{ id: strin
             try {
                 // 백엔드 API (예: GET /bookbook/rent/{id})를 호출하여 책 상세 정보를 가져옵니다.
                 // 실제 백엔드 API 엔드포인트에 맞게 URL을 수정해야 합니다.
-                const response = await fetch(`http://localhost:8080/bookbook/rent/${id}`);
+                const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/bookbook/rent/${id}`);
 
                 if (!response.ok) {
                     // HTTP 에러가 발생한 경우
@@ -112,7 +112,7 @@ export default function BookDetailPage({ params }: { params: Promise<{ id: strin
 
         try {
             // 채팅방 생성 API 호출
-            const response = await fetch('http://localhost:8080/api/v1/bookbook/chat/rooms', {
+            const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/bookbook/chat/rooms`, {
                 method: 'POST',
                 credentials: 'include',
                 headers: {
@@ -162,7 +162,7 @@ export default function BookDetailPage({ params }: { params: Promise<{ id: strin
         try {
             if (isWishlisted) {
                 // 찜 삭제
-                const response = await fetch(`http://localhost:8080/api/v1/user/${userId}/wishlist/${bookDetail.id}`, {
+                const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/user/${userId}/wishlist/${bookDetail.id}`, {
                     method: 'DELETE',
                     credentials: 'include',
                 });
@@ -179,7 +179,7 @@ export default function BookDetailPage({ params }: { params: Promise<{ id: strin
                 alert('찜 목록에서 제거되었습니다.');
             } else {
                 // 찜 추가
-                const response = await fetch(`http://localhost:8080/api/v1/user/${userId}/wishlist`, {
+                const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/user/${userId}/wishlist`, {
                     method: 'POST',
                     credentials: 'include',
                     headers: {
@@ -245,7 +245,7 @@ export default function BookDetailPage({ params }: { params: Promise<{ id: strin
     // 모든 정보가 준비되면 상세 페이지 렌더링
     // `bookDetail` 객체의 데이터를 사용하여 UI를 구성합니다.
     const defaultCoverImageUrl = 'https://i.postimg.cc/pLC9D2vW/noimg.gif';
-    const backendBaseUrl = 'http://localhost:8080'; // 백엔드 서버 주소
+    const backendBaseUrl = `${process.env.NEXT_PUBLIC_API_BASE_URL}`; // 백엔드 서버 주소
     const displayImageUrl = `${backendBaseUrl}${bookDetail.bookImage}` || defaultCoverImageUrl; // 이미지가 없으면 기본 이미지 표시
 
     // 현재 사용자가 글 작성자인지 확인

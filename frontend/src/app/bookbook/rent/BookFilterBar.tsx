@@ -36,7 +36,7 @@ export default function BookFilterBar({ onFilterChange, loading = false }: BookF
   // 🌍 지역 목록 조회 API
   const fetchRegions = async () => {
     try {
-      const response = await fetch('http://localhost:8080/api/v1/bookbook/rent/regions', {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/bookbook/rent/regions`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -62,7 +62,7 @@ export default function BookFilterBar({ onFilterChange, loading = false }: BookF
   // 📚 카테고리 목록 조회 API
   const fetchCategories = async () => {
     try {
-      const response = await fetch('http://localhost:8080/api/v1/bookbook/rent/categories', {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/bookbook/rent/categories`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',

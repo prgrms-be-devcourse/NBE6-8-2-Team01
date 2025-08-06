@@ -49,7 +49,7 @@ export default function BookCardList() {
       setError(null);
 
       // 현재 백엔드 구조에 맞는 API 엔드포인트 호출
-      const response = await fetch('http://localhost:8080/api/v1/bookbook/rent/available', {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/bookbook/rent/available`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -112,7 +112,7 @@ export default function BookCardList() {
 
     try {
       // 현재 백엔드 구조에 맞는 대여 신청 API 호출
-      const response = await fetch(`http://localhost:8080/api/v1/bookbook/rent/${selectedBookId}/request`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/bookbook/rent/${selectedBookId}/request`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

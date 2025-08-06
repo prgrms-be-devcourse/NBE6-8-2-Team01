@@ -87,14 +87,14 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ roomId, bookTitle, otherUserNic
     }
     
     if (imageUrl.startsWith('/uploads/')) {
-      return `http://localhost:8080${imageUrl}`;
+      return `${process.env.NEXT_PUBLIC_API_BASE_URL}${imageUrl}`;
     }
     
     if (imageUrl.startsWith('uploads/')) {
-      return `http://localhost:8080/${imageUrl}`;
+      return `${process.env.NEXT_PUBLIC_API_BASE_URL}/${imageUrl}`;
     }
     
-    return `http://localhost:8080/uploads/${imageUrl}`;
+    return `${process.env.NEXT_PUBLIC_API_BASE_URL}/uploads/${imageUrl}`;
   };
 
   // 메시지 목록을 최하단으로 스크롤
@@ -120,7 +120,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ roomId, bookTitle, otherUserNic
       try {
         // 채팅방 정보 조회
         const roomResponse = await fetch(
-          `http://localhost:8080/api/v1/bookbook/chat/rooms/${roomId}`,
+          `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/bookbook/chat/rooms/${roomId}`,
           {
             credentials: 'include',
             headers: {
@@ -136,7 +136,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ roomId, bookTitle, otherUserNic
 
         // 메시지 목록 조회
         const messagesResponse = await fetch(
-          `http://localhost:8080/api/v1/bookbook/chat/rooms/${roomId}/messages?page=0&size=50`,
+          `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/bookbook/chat/rooms/${roomId}/messages?page=0&size=50`,
           {
             credentials: 'include',
             headers: {
@@ -186,7 +186,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ roomId, bookTitle, otherUserNic
   // 메시지 읽음 처리
   const markMessagesAsRead = async () => {
     try {
-      await fetch(`http://localhost:8080/api/v1/bookbook/chat/rooms/${roomId}/read`, {
+      await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/bookbook/chat/rooms/${roomId}/read`, {
         method: 'PATCH',
         credentials: 'include',
         headers: {
@@ -209,7 +209,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ roomId, bookTitle, otherUserNic
     setNewMessage('');
 
     try {
-      const response = await fetch('http://localhost:8080/api/v1/bookbook/chat/messages', {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/bookbook/chat/messages`, {
         method: 'POST',
         credentials: 'include',
         headers: {

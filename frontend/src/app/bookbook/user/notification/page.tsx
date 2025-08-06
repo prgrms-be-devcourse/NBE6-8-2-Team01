@@ -408,14 +408,19 @@ export default function NotificationPage() {
     const trimmedUrl = imageUrl.trim();
     
     if (trimmedUrl.startsWith('http://') || trimmedUrl.startsWith('https://')) {
-      return trimmedUrl;
-    } else if (trimmedUrl.startsWith('/')) {
-      return `http://localhost:8080${trimmedUrl}`;
-    } else if (trimmedUrl.startsWith('uploads/')) {
-      return `http://localhost:8080/${trimmedUrl}`;
-    } else {
-      return `http://localhost:8080/uploads/${trimmedUrl}`;
-    }
+  return trimmedUrl;
+}
+
+// 환경 변수가 설정되어 있지 않으면 로컬호스트를 기본값으로 사용합니다.
+const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8080';
+
+if (trimmedUrl.startsWith('/')) {
+  return `${baseUrl}${trimmedUrl}`;
+} else if (trimmedUrl.startsWith('uploads/')) {
+  return `${baseUrl}/${trimmedUrl}`;
+} else {
+  return `${baseUrl}/uploads/${trimmedUrl}`;
+}
   };
 
   const handleImageError = (e: React.SyntheticEvent<HTMLImageElement>, notification: Notification) => {

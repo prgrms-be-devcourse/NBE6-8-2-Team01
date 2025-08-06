@@ -13,7 +13,7 @@ export default function WishListCard({ item, onRemove }: WishListCardProps) {
     const router = useRouter();
     
     // 이미지 URL 처리
-    const backendBaseUrl = 'http://localhost:8080';
+    const backendBaseUrl = `${process.env.NEXT_PUBLIC_API_BASE_URL}`;
     const defaultCoverImageUrl = 'https://i.postimg.cc/pLC9D2vW/noimg.gif';
     const displayImageUrl = item.bookImage 
         ? (item.bookImage.startsWith('http') ? item.bookImage : `${backendBaseUrl}${item.bookImage}`)
