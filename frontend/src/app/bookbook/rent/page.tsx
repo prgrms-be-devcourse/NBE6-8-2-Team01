@@ -66,6 +66,8 @@ export default function RentPage() {
     category: 'all',
     searchKeyword: ''
   });
+  // 실패한 이미지 추적을 위한 상태 추가
+  const [failedImages, setFailedImages] = useState<Set<string>>(new Set());
 
   // 📚 책 목록 조회 API (필터 + 페이지네이션)
   const fetchBooks = async (filters: FilterOptions, page: number = 1) => {
@@ -140,6 +142,8 @@ export default function RentPage() {
   const handleFilterChange = (filters: FilterOptions) => {
     console.log('필터 변경:', filters);
     setCurrentFilters(filters);
+    // 필터 변경 시 실패한 이미지 목록 초기화
+    setFailedImages(new Set());
     fetchBooks(filters, 1); // 첫 페이지부터 검색
   };
 
@@ -154,6 +158,31 @@ export default function RentPage() {
   const handleBookClick = (bookId: number) => {
     console.log('책 클릭 - ID:', bookId);
     router.push(`/bookbook/rent/${bookId}`);
+  };
+
+  // 🔧 간단한 이미지 에러 처리 - 재시도 없이 바로 기본 이미지로 대체
+  const handleImageError = (imageUrl: string, event: React.SyntheticEvent<HTMLImageElement>) => {
+    const img = event.currentTarget;
+    
+    // 이미 에러 처리된 이미지는 무시 (무한 재시도 방지)
+    if (img.dataset.errorHandled === 'true') {
+      return;
+    }
+    
+    console.warn('이미지 로드 실패 - 기본 이미지로 대체:', imageUrl);
+    
+    // 에러 처리 플래그 설정
+    img.dataset.errorHandled = 'true';
+    
+    // 실패한 이미지 목록에 추가
+    setFailedImages(prev => new Set([...prev, imageUrl]));
+    
+    // 바로 기본 이미지로 대체 (재시도 없음)
+    img.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjI4MCIgdmlld0JveD0iMCAwIDIwMCAyODAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIyMDAiIGhlaWdodD0iMjgwIiBmaWxsPSIjRjNGNEY2Ii8+CjxwYXRoIGQ9Ik02MCA5MEgxNDBWMTkwSDYwVjkwWiIgZmlsbD0iIzlDQTNBRiIvPgo8cGF0aCBkPSJNODAgMTEwSDEyMFYxMzBIODBWMTEwWiIgZmlsbD0iI0Y5RkFGQiIvPgo8cGF0aCBkPSJNODAgMTQwSDEyMFYxNTBIODBWMTQwWiIgZmlsbD0iI0Y5RkFGQiIvPgo8cGF0aCBkPSJNODAgMTYwSDEwMFYxNzBIODBWMTYwWiIgZmlsbD0iI0Y5RkFGQiIvPgo8L3N2Zz4K';
+    img.alt = '이미지를 불러올 수 없습니다';
+    
+    // 더 이상 onError 이벤트가 발생하지 않도록 설정
+    img.onerror = null;
   };
 
   // 컴포넌트 마운트 시 초기 데이터 로드
@@ -248,9 +277,8 @@ export default function RentPage() {
                       src={book.bookImage}
                       alt={book.bookTitle}
                       className="w-32 h-48 object-cover rounded-lg shadow-md"
-                      onError={(e) => {
-                        e.currentTarget.src = '/book-placeholder.png';
-                      }}
+                      loading="lazy"
+                      onError={(e) => handleImageError(book.bookImage, e)}
                     />
                   </div>
                   
