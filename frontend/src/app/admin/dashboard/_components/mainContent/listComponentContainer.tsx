@@ -33,10 +33,10 @@ export function ListComponentContainer() {
 
     const ContentComponent = componentMap[activeItem] ?? DashBoardComponent;
 
-    const [data, setData] = useState<PageResponse<unknown>>(null as unknown as PageResponse<unknown>);
+    const [data, setData] = useState<PageResponse<never>>(null as never as PageResponse<never>);
 
     useEffect(() => {
-        const pageData = responseData as PageResponse<unknown>;
+        const pageData = responseData as PageResponse<never>;
         setData(pageData);
     }, [responseData]);
 
