@@ -73,13 +73,13 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ roomId, bookTitle, otherUserNic
   const router = useRouter();
 
   // 긴 텍스트 생략 함수
-  const truncateText = (text: string, maxLength: number = 25) => {
+  const truncateText = (text: string, maxLength: number = 25): string => {
     if (text.length <= maxLength) return text;
     return text.substring(0, maxLength) + '...';
   };
 
   // 이미지 URL 처리 함수
-  const getImageUrl = (imageUrl: string | null | undefined) => {
+  const getImageUrl = (imageUrl: string | null | undefined): string => {
     if (!imageUrl) return 'https://i.postimg.cc/pLC9D2vW/noimg.gif';
     
     if (imageUrl.startsWith('http://') || imageUrl.startsWith('https://')) {
@@ -98,12 +98,12 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ roomId, bookTitle, otherUserNic
   };
 
   // 메시지 목록을 최하단으로 스크롤
-  const scrollToBottom = () => {
+  const scrollToBottom = (): void => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
   // 책 상세페이지로 이동
-  const handleBookClick = () => {
+  const handleBookClick = (): void => {
     if (chatRoomInfo?.rentId) {
       router.push(`/bookbook/rent/${chatRoomInfo.rentId}`);
     }
@@ -111,7 +111,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ roomId, bookTitle, otherUserNic
 
   // 컴포넌트 마운트 시 채팅방 정보와 메시지 목록 로드
   useEffect(() => {
-    const fetchChatData = async () => {
+    const fetchChatData = async (): Promise<void> => {
       if (!roomId) return;
 
       setLoading(true);
@@ -131,7 +131,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ roomId, bookTitle, otherUserNic
 
         if (roomResponse.ok) {
           const roomResult: ApiResponse<ChatRoomInfo> = await roomResponse.json();
-          setChatRoomInfo(roomResult.data);
+          setChatRoomInfo(roomResult.data || null);
         }
 
         // 메시지 목록 조회
@@ -165,9 +165,18 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ roomId, bookTitle, otherUserNic
 
         await markMessagesAsRead();
 
-      } catch (err: any) {
-        console.error('채팅 데이터 로드 실패:', err);
-        setError(err.message || '채팅 데이터를 불러오는 데 실패했습니다.');
+      } catch (error: unknown) {
+        console.error('채팅 데이터 로드 실패:', error);
+        
+        // error 타입 가드 처리
+        let errorMessage = '채팅 데이터를 불러오는 데 실패했습니다.';
+        if (error instanceof Error) {
+          errorMessage = error.message;
+        } else if (typeof error === 'string') {
+          errorMessage = error;
+        }
+        
+        setError(errorMessage);
       } finally {
         setLoading(false);
       }
@@ -184,7 +193,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ roomId, bookTitle, otherUserNic
   }, [messages]);
 
   // 메시지 읽음 처리
-  const markMessagesAsRead = async () => {
+  const markMessagesAsRead = async (): Promise<void> => {
     try {
       await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/bookbook/chat/rooms/${roomId}/read`, {
         method: 'PATCH',
@@ -199,7 +208,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ roomId, bookTitle, otherUserNic
   };
 
   // 메시지 전송
-  const handleSendMessage = async (e: React.FormEvent) => {
+  const handleSendMessage = async (e: React.FormEvent): Promise<void> => {
     e.preventDefault();
     
     if (!newMessage.trim() || sending) return;
@@ -235,11 +244,22 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ roomId, bookTitle, otherUserNic
       const result: ApiResponse<MessageResponse> = await response.json();
       const sentMessage = result.data;
 
-      setMessages(prev => [...prev, sentMessage]);
+      if (sentMessage) {
+        setMessages(prev => [...prev, sentMessage]);
+      }
 
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('메시지 전송 실패:', error);
-      alert(error.message || '메시지 전송에 실패했습니다. 다시 시도해주세요.');
+      
+      // error 타입 가드 처리
+      let errorMessage = '메시지 전송에 실패했습니다. 다시 시도해주세요.';
+      if (error instanceof Error) {
+        errorMessage = error.message;
+      } else if (typeof error === 'string') {
+        errorMessage = error;
+      }
+      
+      alert(errorMessage);
       setNewMessage(messageToSend);
     } finally {
       setSending(false);
@@ -248,7 +268,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ roomId, bookTitle, otherUserNic
   };
 
   // Enter 키로 메시지 전송
-  const handleKeyPress = (e: React.KeyboardEvent) => {
+  const handleKeyPress = (e: React.KeyboardEvent): void => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSendMessage(e);
@@ -256,7 +276,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ roomId, bookTitle, otherUserNic
   };
 
   // 메시지 시간 포맷팅
-  const formatMessageTime = (dateString: string) => {
+  const formatMessageTime = (dateString: string): string => {
     const date = new Date(dateString);
     return date.toLocaleTimeString('ko-KR', { 
       hour: '2-digit', 
@@ -266,7 +286,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ roomId, bookTitle, otherUserNic
   };
 
   // 날짜가 바뀌는 경우 날짜 구분선 표시 여부 확인
-  const shouldShowDateSeparator = (currentMessage: MessageResponse, previousMessage?: MessageResponse) => {
+  const shouldShowDateSeparator = (currentMessage: MessageResponse, previousMessage?: MessageResponse): boolean => {
     if (!previousMessage) return true;
     
     const currentDate = new Date(currentMessage.createdDate).toDateString();
@@ -276,7 +296,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ roomId, bookTitle, otherUserNic
   };
 
   // 날짜 포맷팅
-  const formatDateSeparator = (dateString: string) => {
+  const formatDateSeparator = (dateString: string): string => {
     const date = new Date(dateString);
     const today = new Date();
     const yesterday = new Date(today);
@@ -293,6 +313,11 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ roomId, bookTitle, otherUserNic
         day: 'numeric' 
       });
     }
+  };
+
+  // 이미지 에러 핸들러
+  const handleImageError = (e: React.SyntheticEvent<HTMLImageElement>): void => {
+    e.currentTarget.src = 'https://i.postimg.cc/pLC9D2vW/noimg.gif';
   };
 
   // 로딩 상태
@@ -341,7 +366,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ roomId, bookTitle, otherUserNic
   const displayOtherUserNickname = chatRoomInfo?.otherUserNickname || otherUserNickname;
 
   return (
-    <div className="flex flex-col h-full bg-white max-w-lg mx-auto"> {/* max-w-md → max-w-lg로 더 넓게 */}
+    <div className="flex flex-col h-full bg-white max-w-lg mx-auto">
       {/* 헤더 - 카카오톡 스타일 */}
       <div className="flex items-center px-4 py-3 border-b border-gray-200 bg-white">
         <button onClick={onBack} className="mr-3">
@@ -367,9 +392,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ roomId, bookTitle, otherUserNic
                 src={getImageUrl(chatRoomInfo.bookImage)}
                 alt={chatRoomInfo.bookTitle}
                 className="w-12 h-12 object-cover rounded border border-gray-200"
-                onError={(e) => {
-                  e.currentTarget.src = 'https://i.postimg.cc/pLC9D2vW/noimg.gif';
-                }}
+                onError={handleImageError}
               />
             </div>
             

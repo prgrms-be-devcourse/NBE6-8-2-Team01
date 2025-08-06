@@ -9,6 +9,7 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@stomp/stompjs": "^7.1.1",
     "axios": "^1.11.0",
     "lucide-react": "^0.525.0",
     "next": "^15.4.4",
@@ -16,7 +17,8 @@
     "react-dom": "^19.1.0",
     "react-icons": "^5.5.0",
     "react-modal": "^3.16.3",
-    "react-toastify": "^11.0.5"
+    "react-toastify": "^11.0.5",
+    "sockjs-client": "^1.6.1"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
@@ -25,6 +27,7 @@
     "@types/react": "^19.1.8",
     "@types/react-dom": "^19",
     "@types/react-modal": "^3.16.3",
+    "@types/sockjs-client": "^1.5.4",
     "eslint": "^9",
     "eslint-config-next": "15.4.4",
     "tailwindcss": "^4",
