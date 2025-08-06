@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import {getRentStatus, rentStatus} from "@/app/admin/dashboard/_types/rentPost";
+import { getRentStatus, rentStatus } from "@/app/admin/dashboard/_types/rentPost";
 
 interface PostStatusFilterProps {
   selectedStatuses: Set<rentStatus>;
@@ -30,6 +30,9 @@ function PostStatusFilterItem({ checked, onChange, fontStyle, value} : PostStatu
   )
 }
 
+/*
+* 대여 게시글 필터
+*/
 export function PostStatusFilter({
   selectedStatuses,
   onStatusToggle,
@@ -40,6 +43,21 @@ export function PostStatusFilter({
   const isAllSelected = allStatuses.every((status) =>
     selectedStatuses.has(status)
   );
+
+  const fontStyle = (status : rentStatus) => {
+      switch (status) {
+          case "AVAILABLE":
+              return "ml-2 text-sm text-green-700"
+          case "LOANED":
+              return "ml-2 text-sm text-blue-700"
+          case "FINISHED":
+              return "ml-2 text-sm text-gray-700"
+          case "DELETED":
+              return "ml-2 text-sm text-red-700"
+          default:
+              return ""
+      }
+  }
 
   return (
     <div>
@@ -53,34 +71,15 @@ export function PostStatusFilter({
           fontStyle="ml-2 text-sm text-gray-700 font-medium"
           value="전체"
         />
-
-        <PostStatusFilterItem
-            checked={selectedStatuses.has("AVAILABLE")}
-            onChange={() => onStatusToggle("AVAILABLE")}
-            fontStyle="ml-2 text-sm text-green-700"
-            value={getRentStatus("AVAILABLE")}
-        />
-
-        <PostStatusFilterItem
-            checked={selectedStatuses.has("LOANED")}
-            onChange={() => onStatusToggle("LOANED")}
-            fontStyle="ml-2 text-sm text-blue-700"
-            value={getRentStatus("LOANED")}
-        />
-
-        <PostStatusFilterItem
-            checked={selectedStatuses.has("FINISHED")}
-            onChange={() => onStatusToggle("FINISHED")}
-            fontStyle="ml-2 text-sm text-gray-700"
-            value={getRentStatus("FINISHED")}
-        />
-
+        {allStatuses.map(status => (
           <PostStatusFilterItem
-              checked={selectedStatuses.has("DELETED")}
-              onChange={() => onStatusToggle("DELETED")}
-              fontStyle="ml-2 text-sm text-red-700"
-              value={getRentStatus("DELETED")}
+            key={status}
+            checked={selectedStatuses.has(status)}
+            onChange={() => onStatusToggle(status)}
+            fontStyle={fontStyle(status)}
+            value={getRentStatus(status)}
           />
+        ))}
       </div>
     </div>
   );
