@@ -31,6 +31,9 @@ function ManagementButton({ rentPost, onClick }: ManagementButtonProps) {
     );
 }
 
+/*
+* 유저의 게시글을 나타내는 컴포넌트
+*/
 export function UserRentPostComponent({ data, onRefresh }: ContentComponentProps) {
     // data가 없거나 잘못된 형태일 때 기본값 설정
     const [selectedRentPost, setSelectedRentPost] = useState<RentPostDetailResponseDto>(
@@ -75,8 +78,6 @@ export function UserRentPostComponent({ data, onRefresh }: ContentComponentProps
     }, [filters]);
 
     const handleManageClick = async (post : RentPostSimpleResponseDto) => {
-        console.log(`관리 버튼 클릭: 멤버 ID - ${post.id}`);
-
         const response = await fetch(`/api/v1/admin/rent/${post.id}`, {
             method: "GET",
             headers: {
@@ -110,14 +111,14 @@ export function UserRentPostComponent({ data, onRefresh }: ContentComponentProps
         }
 
         if (newStatuses.size === 0) {
-            setFilters((prev) => ({ ...prev, statuses: new Set(["AVAILABLE", "LOANED", "FINISHED", "DELETED"])}));
+            setFilters((prev) => ({ ...prev, statuses: new Set(statusList)}));
         } else {
             setFilters((prev) => ({ ...prev, statuses: newStatuses }));
         }
     };
 
     const handleSelectAll = () => {
-        const allStatuses: rentStatus[] = ["AVAILABLE", "LOANED", "FINISHED", "DELETED"];
+        const allStatuses: rentStatus[] = statusList;
         const isAllSelected = allStatuses.every((status) =>
             filters.statuses.has(status)
         );
@@ -135,7 +136,7 @@ export function UserRentPostComponent({ data, onRefresh }: ContentComponentProps
 
     const resetFilters = () => {
         const resetState: FilterState = {
-            statuses: new Set(["AVAILABLE", "LOANED", "FINISHED", "DELETED"]),
+            statuses: new Set(statusList),
             searchTerm: "",
         };
         setFilters(resetState);

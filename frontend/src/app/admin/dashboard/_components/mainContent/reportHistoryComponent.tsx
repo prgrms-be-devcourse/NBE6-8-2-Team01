@@ -31,6 +31,9 @@ function ManagementButton({ report, onClick }: ManagementButtonProps) {
   );
 }
 
+/*
+* 유저 신고 목록을 나타내는 컴포넌트
+*/
 export function ReportHistoryComponent({ data, onRefresh }: ContentComponentProps) {
   const statusList : ReportStatus[] = ["PENDING", "REVIEWED", "PROCESSED"];
 
@@ -75,8 +78,6 @@ export function ReportHistoryComponent({ data, onRefresh }: ContentComponentProp
   }, [filters]);
 
   const handleManageClick = async (report : ReportSimpleResponseDto) => {
-    console.log(`관리 버튼 클릭: 멤버 ID - ${report.id}`);
-
     const response = await fetch(
         `/api/v1/admin/reports/${report.id}/review`,
         {

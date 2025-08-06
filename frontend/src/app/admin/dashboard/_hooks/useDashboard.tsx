@@ -18,12 +18,10 @@ export default function useDashboard() {
             .then(response => response.json())
             .then(data => {
                 if (data) {
-                    console.log('데이터 새로고침:', data);
                     setResponseData(data.data);
                 }
             })
             .catch(error => {
-                console.log(error.message);
                 setResponseData(null);
                 setError(true);
             })
