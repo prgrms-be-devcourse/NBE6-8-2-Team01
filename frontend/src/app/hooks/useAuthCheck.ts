@@ -68,16 +68,23 @@ export function useAuthCheck(): UseAuthCheckReturn {
             // isAuthenticated API 호출 자체가 실패한 경우 (서버 오류 등)
             throw new Error('인증 상태를 확인하는 데 실패했습니다.');
         }
-      } catch (err: any) {
-        if (!mounted) return;
-        console.error('인증 상태 확인 또는 사용자 정보 조회 실패:', err);
-        setError(err.message || '사용자 정보를 불러오는 데 실패했습니다.');
-        setUser(null);
-        setIsAuthenticated(false);
+      } catch (err: unknown) {
+          if (!mounted) return;
+          console.error('인증 상태 확인 또는 사용자 정보 조회 실패:', err);
+
+          //  err가 Error 객체인지 확인하고 message에 접근합니다.
+          if (err instanceof Error) {
+              setError(err.message || '사용자 정보를 불러오는 데 실패했습니다.');
+          } else {
+              setError('사용자 정보를 불러오는 데 실패했습니다.');
+          }
+
+          setUser(null);
+          setIsAuthenticated(false);
       } finally {
-        if (mounted) {
-          setLoading(false);
-        }
+          if (mounted) {
+              setLoading(false);
+          }
       }
     };
 
