@@ -162,11 +162,34 @@ export default function BookDetailPage({ params }: BookDetailPageProps): React.J
         setSelectedLenderId(null);
     };
 
-    // 북북톡 버튼 클릭 핸들러 - 채팅방 생성 후 채팅 페이지로 이동
+    // 북북톡 버튼 클릭 핸들러 - 채팅방 생성 후 채팅 페이지로 이동 (디버깅 로그 추가)
     const handleChatClick = async (): Promise<void> => {
-        if (!bookDetail) return;
+        if (!bookDetail) {
+            console.error('❌ bookDetail이 없습니다');
+            alert('책 정보를 불러오지 못했습니다.');
+            return;
+        }
+
+        console.log('🚀 채팅방 생성 시작');
+        console.log('📊 현재 상태 정보:', {
+            rentId: bookDetail.id,
+            lenderId: bookDetail.lenderUserId,
+            currentUserId: userId,
+            isAuthenticated: isAuthenticated,
+            user: user ? user.nickname || user.email : null,
+            bookTitle: bookDetail.bookTitle,
+            apiBaseUrl: process.env.NEXT_PUBLIC_API_BASE_URL
+        });
 
         try {
+            const requestBody = {
+                rentId: bookDetail.id,
+                lenderId: bookDetail.lenderUserId || 1
+            };
+
+            console.log('📤 API 요청 데이터:', requestBody);
+            console.log('📤 요청 URL:', `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/bookbook/chat/rooms`);
+
             // 채팅방 생성 API 호출
             const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/bookbook/chat/rooms`, {
                 method: 'POST',
@@ -174,33 +197,120 @@ export default function BookDetailPage({ params }: BookDetailPageProps): React.J
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({
-                    rentId: bookDetail.id,
-                    lenderId: bookDetail.lenderUserId || 1 // lenderUserId가 없으면 임시로 1 사용
-                })
+                body: JSON.stringify(requestBody)
             });
 
+            console.log('📥 응답 상태:', response.status, response.statusText);
+            console.log('📥 응답 헤더:', Object.fromEntries(response.headers.entries()));
+
+            // 응답 본문을 텍스트로 먼저 받기
+            const responseText = await response.text();
+            console.log('📥 응답 본문 (원본):', responseText);
+
             if (!response.ok) {
+                console.error('❌ HTTP 에러 발생');
+                
+                let errorMessage = '채팅방 생성에 실패했습니다.';
+                
+                // 응답이 있으면 파싱 시도
+                if (responseText && responseText.trim()) {
+                    try {
+                        const errorData = JSON.parse(responseText);
+                        console.error('❌ 파싱된 에러 데이터:', errorData);
+                        
+                        // 백엔드 에러 메시지 추출
+                        if (errorData.message) {
+                            errorMessage = errorData.message;
+                        } else if (errorData.msg) {
+                            errorMessage = errorData.msg;
+                        } else if (errorData.error) {
+                            errorMessage = errorData.error;
+                        } else if (typeof errorData === 'string') {
+                            errorMessage = errorData;
+                        }
+                    } catch (parseError) {
+                        console.error('❌ JSON 파싱 실패:', parseError);
+                        errorMessage = responseText;
+                    }
+                }
+
                 if (response.status === 401) {
+                    console.error('❌ 인증 에러 - 로그인 필요');
                     alert('로그인이 필요합니다.');
                     return;
+                } else if (response.status === 403) {
+                    console.error('❌ 권한 에러');
+                    alert('권한이 없습니다.');
+                    return;
                 } else if (response.status === 400) {
-                    const errorData: ApiResponse<unknown> = await response.json();
-                    alert(errorData.message || '채팅방 생성에 실패했습니다.');
+                    console.error('❌ 잘못된 요청:', errorMessage);
+                    alert(`채팅방 생성 실패: ${errorMessage}`);
+                    return;
+                } else {
+                    console.error('❌ 기타 HTTP 에러:', response.status);
+                    alert(`서버 오류가 발생했습니다 (${response.status}): ${errorMessage}`);
                     return;
                 }
-                throw new Error(`채팅방 생성 실패: ${response.status}`);
             }
 
-            const result: ApiResponse<ChatRoomResponse> = await response.json();
+            // 성공 응답 처리
+            if (!responseText || !responseText.trim()) {
+                console.error('❌ 빈 응답 받음');
+                alert('서버에서 빈 응답을 받았습니다.');
+                return;
+            }
+
+            let result;
+            try {
+                result = JSON.parse(responseText);
+                console.log('✅ 성공 응답 파싱 결과:', result);
+            } catch (parseError) {
+                console.error('❌ 성공 응답 JSON 파싱 실패:', parseError);
+                console.error('❌ 파싱 실패한 응답:', responseText);
+                alert('응답 처리 중 오류가 발생했습니다.');
+                return;
+            }
+
+            // 채팅방 데이터 검증
             const chatRoom = result.data;
+            if (!chatRoom) {
+                console.error('❌ result.data가 null/undefined:', result);
+                alert('채팅방 데이터를 받지 못했습니다.');
+                return;
+            }
+
+            if (!chatRoom.roomId) {
+                console.error('❌ roomId가 없음:', chatRoom);
+                alert('채팅방 ID를 받지 못했습니다.');
+                return;
+            }
+
+            console.log('✅ 채팅방 생성 성공:', chatRoom);
+
+            // 채팅 페이지로 이동 URL 생성
+            const chatUrl = `/bookbook/MessagePopup/${chatRoom.roomId}?bookTitle=${encodeURIComponent(bookDetail.bookTitle)}&otherUserNickname=${encodeURIComponent('대여자')}`;
+            console.log('🚀 페이지 이동 URL:', chatUrl);
 
             // 채팅 페이지로 이동 (ChatWindow 컴포넌트가 있는 경로)
-            router.push(`/bookbook/MessagePopup/${chatRoom.roomId}?bookTitle=${encodeURIComponent(bookDetail.bookTitle)}&otherUserNickname=${encodeURIComponent('대여자')}`);
+            router.push(chatUrl);
 
         } catch (error: unknown) {
-            console.error('채팅방 생성 실패:', error);
-            alert('채팅방 생성에 실패했습니다. 다시 시도해주세요.');
+            console.error('💥 네트워크 오류 또는 예외 발생:', error);
+            
+            if (error instanceof TypeError && error.message.includes('fetch')) {
+                console.error('💥 fetch 에러 - 네트워크 연결 문제');
+                alert('네트워크 연결을 확인해주세요.');
+            } else if (error instanceof Error) {
+                console.error('💥 에러 상세 정보:', {
+                    name: error.name,
+                    message: error.message,
+                    stack: error.stack
+                });
+                alert(`오류가 발생했습니다: ${error.message}`);
+            } else {
+                console.error('💥 알 수 없는 에러 타입:', typeof error, error);
+                alert('알 수 없는 오류가 발생했습니다. 다시 시도해주세요.');
+            }
         }
     };
 
