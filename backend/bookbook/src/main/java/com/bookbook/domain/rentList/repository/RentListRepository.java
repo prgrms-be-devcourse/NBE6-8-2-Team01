@@ -6,16 +6,19 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface RentListRepository extends JpaRepository<RentList, Long> {
     
-    List<RentList> findByBorrowerUserId(Long borrowerUserId);
+    List<RentList> findByBorrowerUserIdOrderByCreatedDateDesc(Long borrowerUserId);
     
     List<RentList> findByBorrowerUserIdAndStatus(Long borrowerUserId, RentRequestStatus status);
-    
+
     List<RentList> findByRentId(Integer rentId);
-    
+
+    Optional<RentList> findByBorrowerUserIdAndRentId(Long borrowerUserId, Integer rentId);
+
     List<RentList> findByRentIdAndStatus(Integer rentId, RentRequestStatus status);
     
     // 특정 신청자의 특정 책에 대한 특정 상태의 신청 조회

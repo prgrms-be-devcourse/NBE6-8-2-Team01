@@ -85,6 +85,26 @@ public class RentListController {
     }
     
     /**
+     * 도서 반납하기
+     * 
+     * 대여받은 사람이 도서를 조기 반납하는 기능입니다.
+     * 반납 시 해당 대여 기록의 상태와 원본 게시글의 상태를 업데이트합니다.
+     * 
+     * @param borrowerUserId 대여받은 사용자 ID
+     * @param rentId 대여 게시글 ID
+     * @return 성공 메시지
+     */
+    @PatchMapping("/{rentId}/return")
+    public ResponseEntity<RsData<Void>> returnBook(
+            @PathVariable Long borrowerUserId,
+            @PathVariable Integer rentId) {
+        
+        rentListService.returnBook(borrowerUserId, rentId);
+        
+        return ResponseEntity.ok(RsData.of("200", "도서가 성공적으로 반납되었습니다."));
+    }
+
+    /**
      * 대여받은 사람이 대여자에게 리뷰 작성
      * 
      * 거래 완료 후 도서를 빌린 사람이 빌려준 사람을 평가하는 기능입니다.

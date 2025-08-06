@@ -2,7 +2,7 @@ export interface FetchRequestInit extends RequestInit {
     _retry?: boolean;
 }
 
-const BASE_BACKEND_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000';
+const BASE_BACKEND_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8080';
 
 let globalOpenLoginModal: (() => void) | null = null;
 export const setFetchInterceptorOpenLoginModal = (func: () => void) => {

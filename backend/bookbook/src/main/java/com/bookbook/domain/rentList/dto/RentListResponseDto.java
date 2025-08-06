@@ -26,8 +26,9 @@ public class RentListResponseDto {
     private String lenderNickname;
     private LocalDateTime createdDate;
     private LocalDateTime modifiedDate;
+    private boolean hasReview;
 
-    public static RentListResponseDto from(RentList rentList, String lenderNickname) {
+    public static RentListResponseDto from(RentList rentList, String lenderNickname, boolean hasReview) {
         return new RentListResponseDto(
                 rentList.getId(),
                 rentList.getLoanDate(),
@@ -44,7 +45,8 @@ public class RentListResponseDto {
                 rentList.getRent().getAddress(),
                 lenderNickname,
                 rentList.getCreatedDate(),
-                rentList.getModifiedDate()
+                rentList.getModifiedDate(),
+                hasReview
         );
     }
 }
