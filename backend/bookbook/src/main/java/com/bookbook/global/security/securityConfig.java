@@ -84,6 +84,7 @@ public class securityConfig {
                                 "/api/v1/bookbook/rent/**", // API 형태의 Rent 페이지 조회 허용 추가
                                 "/api/v1/bookbook/upload-image", // 이미지 업로드 API 경로 허용 추가
                                 "/api/v1/bookbook/searchbook", // 알라딘 책 검색 API 경로 허용 추가
+                                "/api/v1/public/**", // public API는 모두 허용
                                 "/ws/**", // WebSocket 엔드포인트 허용
                                 "/swagger-ui/**", // Swagger UI 접근 허용
                                 "/swagger-ui.html", // Swagger UI 메인 페이지 접근 허용
@@ -94,6 +95,7 @@ public class securityConfig {
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll() // OPTIONS 메서드 요청은 모든 경로에 대해 허용 (Preflight 요청)
                         .requestMatchers(HttpMethod.GET, "/api/v1/bookbook/users/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/user/**").permitAll()
+                        .requestMatchers(HttpMethod.PATCH, "/api/v1/user/*/rentlist/*/decision").authenticated() // 대여 신청 처리는 인증 필요
                         .requestMatchers(HttpMethod.GET, "/api/v1/bookbook/users/me").authenticated()
                         .requestMatchers(HttpMethod.PATCH, "/api/v1/bookbook/users/me").authenticated()
                         .requestMatchers(HttpMethod.DELETE, "/api/v1/bookbook/users/me").authenticated()

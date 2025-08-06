@@ -206,6 +206,33 @@ public class RentListService {
             rentListRepository.save(rentList);
             rentRepository.save(rent);
             
+            // 🆕 같은 책에 대한 다른 모든 PENDING 신청들을 자동으로 거절 처리
+            List<RentList> otherPendingRequests = rentListRepository
+                    .findByRentIdAndStatus(rent.getId(), RentRequestStatus.PENDING);
+            
+            for (RentList otherRequest : otherPendingRequests) {
+                if (otherRequest.getId() != rentListId) { // 현재 처리하는 신청은 제외
+                    otherRequest.setStatus(RentRequestStatus.REJECTED);
+                    rentListRepository.save(otherRequest);
+                    
+                    // 다른 신청자들에게 거절 알림 발송
+                    User otherBorrower = otherRequest.getBorrowerUser();
+                    String rejectMessage = String.format("'%s' 대여 요청이 거절되었습니다.", rent.getBookTitle());
+                    notificationService.createNotification(
+                            otherBorrower,
+                            null,
+                            NotificationType.RENT_REJECTED,
+                            rejectMessage,
+                            rent.getBookTitle(),
+                            rent.getBookImage(),
+                            (long) rent.getId()
+                    );
+                    
+                    log.info("다른 신청자 자동 거절 처리 - 신청자: {}, 사유: 다른 사용자 수락됨", 
+                            otherBorrower.getNickname());
+                }
+            }
+            
             // 신청자에게 수락 알림 발송
             String approveMessage = String.format("'%s' 대여 요청이 수락되었습니다!", rent.getBookTitle());
             notificationService.createNotification(
@@ -218,8 +245,9 @@ public class RentListService {
                     (long) rent.getId()
             );
             
-            log.info("대여 신청 수락 완료 - 책: {}, 대여자: {}, 신청자: {}", 
-                    rent.getBookTitle(), currentUser.getNickname(), borrower.getNickname());
+            log.info("대여 신청 수락 완료 - 책: {}, 대여자: {}, 신청자: {}, 자동 거절된 다른 신청: {}개", 
+                    rent.getBookTitle(), currentUser.getNickname(), borrower.getNickname(), 
+                    otherPendingRequests.size() - 1);
             
             return "대여 신청을 수락했습니다.";
             

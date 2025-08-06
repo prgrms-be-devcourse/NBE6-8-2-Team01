@@ -157,63 +157,6 @@ public class NotificationController {
             return RsData.of("400-1", e.getMessage());
         }
     }
-
-    // 개발용 간단한 테스트 API
-    @GetMapping(value = "/test", produces = "application/json")
-    @Operation(summary = "[테스트용] 연결 테스트", description = "API 연결 테스트용")
-    public RsData<String> testConnection() {
-        log.info("테스트 API 호출됨");
-        return RsData.of("200-1", "연결 성공", "Hello from backend!");
-    }
-
-    // 개발용 스키마 업데이트 API
-    @PostMapping(value = "/update-schema", produces = "application/json")
-    @Operation(summary = "[테스트용] 스키마 업데이트", description = "NotificationType에 POST_CREATED 추가")
-    public RsData<String> updateSchema() {
-        log.info("스키마 업데이트 API 호출됨");
-        try {
-            // 실제로는 @Sql 또는 Flyway를 사용해야 하지만, 개발용으로 간단히 처리
-            return RsData.of("200-1", "스키마 업데이트가 필요합니다. H2 콘솔에서 수동으로 실행해주세요.",
-                    "ALTER TABLE notification DROP CONSTRAINT IF EXISTS notification_type_check; " +
-                            "ALTER TABLE notification ADD CONSTRAINT notification_type_check CHECK (type IN ('RENT_REQUEST', 'RETURN_REMINDER', 'WISHLIST_AVAILABLE', 'POST_CREATED'));");
-        } catch (Exception e) {
-            log.error("스키마 업데이트 실패: {}", e.getMessage());
-            return RsData.of("500-1", "스키마 업데이트 실패: " + e.getMessage());
-        }
-    }
-
-    // 개발용 알림 강제 생성 API
-    @PostMapping(value = "/create-test-notification", produces = "application/json")
-    @Operation(summary = "[테스트용] 테스트 알림 생성", description = "현재 로그인한 사용자에게 테스트 알림 생성")
-    public RsData<String> createTestNotification(
-            @AuthenticationPrincipal CustomOAuth2User customOAuth2User
-    ) {
-        if (customOAuth2User == null || customOAuth2User.getUserId() == null) {
-            return new RsData<>("401-1", "로그인 후 사용해주세요.", null);
-        }
-
-        User user = userService.findById(customOAuth2User.getUserId());
-        if (user == null) {
-            return new RsData<>("404-1", "사용자 정보를 찾을 수 없습니다.", null);
-        }
-
-        try {
-            notificationService.createNotification(
-                    user,
-                    null,
-                    NotificationType.RENT_REQUEST,
-                    "테스트 알림입니다 - 글 등록 성공!",
-                    "테스트 도서",
-                    "https://image.yes24.com/goods/11681152/XL",
-                    999L
-            );
-            log.info("테스트 알림 생성 성공 - 사용자 ID: {}", user.getId());
-            return RsData.of("200-1", "테스트 알림이 생성되었습니다.");
-        } catch (Exception e) {
-            log.error("테스트 알림 생성 실패: {}", e.getMessage());
-            return RsData.of("500-1", "테스트 알림 생성 실패: " + e.getMessage());
-        }
-    }
     
     /**
      * 대여 신청에 대한 상세 정보 조회
