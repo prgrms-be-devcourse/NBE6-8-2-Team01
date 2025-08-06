@@ -1,10 +1,11 @@
 package com.bookbook.domain.notification.service;
-
+//08-06 유효상
 import com.bookbook.domain.notification.dto.NotificationResponseDto;
 import com.bookbook.domain.notification.entity.Notification;
 import com.bookbook.domain.notification.enums.NotificationType;
 import com.bookbook.domain.notification.repository.NotificationRepository;
 import com.bookbook.domain.rent.entity.Rent;
+import com.bookbook.domain.rent.entity.RentStatus;
 import com.bookbook.domain.rent.repository.RentRepository;
 import com.bookbook.domain.rentList.entity.RentList;
 import com.bookbook.domain.rentList.entity.RentRequestStatus;
@@ -125,35 +126,81 @@ public class NotificationService {
         Rent rent = rentRepository.findById(rentId.intValue())
                 .orElseThrow(() -> new RuntimeException("대여 게시글을 찾을 수 없습니다. ID: " + rentId));
 
-        // 해당 Rent에 대한 PENDING 상태의 RentList 조회 (대여 신청자 정보 포함)
-        List<RentList> pendingRentLists = rentListRepository.findByRentIdAndStatus(rentId.intValue(), RentRequestStatus.PENDING);
+        // 📝 수정된 부분: 특정 알림의 발송자(신청자)와 일치하는 RentList 조회
+        User requester = notification.getSender(); // 알림을 발생시킨 사용자 (신청자)
         
         Map<String, Object> detail = new HashMap<>();
-        detail.put("rentId", rent.getId()); // 👈 rent ID를 맨 앞에 명시적으로 추가
+        detail.put("rentId", rent.getId());
         detail.put("bookTitle", rent.getBookTitle());
         detail.put("bookImage", rent.getBookImage());
         detail.put("rentStatus", rent.getRentStatus().getDescription());
         
-        if (!pendingRentLists.isEmpty()) {
-            // 가장 최근 신청을 기준으로 (여러 신청이 있을 수 있음)
-            RentList latestRentList = pendingRentLists.get(pendingRentLists.size() - 1);
-            detail.put("rentListId", latestRentList.getId());
-            detail.put("requesterNickname", latestRentList.getBorrowerUser().getNickname());
-            detail.put("requestDate", latestRentList.getCreatedDate());
-            detail.put("loanDate", latestRentList.getLoanDate());
-            detail.put("returnDate", latestRentList.getReturnDate());
+        // 🆕 처리 가능 여부 추가
+        boolean isProcessable = true;
+        String processStatus = "PENDING";
+        
+        if (requester != null) {
+            // 해당 신청자의 모든 RentList 조회 (상태 무관)
+            List<RentList> requesterRentLists = rentListRepository
+                    .findByRentIdAndBorrowerUserId(rentId.intValue(), requester.getId());
+            
+            if (!requesterRentLists.isEmpty()) {
+                // 가장 최근 신청의 상태 확인
+                RentList latestRentList = requesterRentLists.get(requesterRentLists.size() - 1);
+                detail.put("rentListId", latestRentList.getId());
+                detail.put("requesterNickname", requester.getNickname());
+                detail.put("requestDate", latestRentList.getCreatedDate());
+                detail.put("loanDate", latestRentList.getLoanDate());
+                detail.put("returnDate", latestRentList.getReturnDate());
+                
+                // 🆕 처리 상태 확인
+                RentRequestStatus status = latestRentList.getStatus();
+                if (status == RentRequestStatus.APPROVED) {
+                    isProcessable = false;
+                    processStatus = "APPROVED";
+                } else if (status == RentRequestStatus.REJECTED) {
+                    isProcessable = false;
+                    processStatus = "REJECTED";
+                } else {
+                    // 🆕 PENDING 상태여도 책이 이미 대여 중이면 처리 불가
+                    if (rent.getRentStatus() == RentStatus.LOANED) {
+                        isProcessable = false;
+                        processStatus = "BOOK_ALREADY_LOANED"; // 다른 사람에게 대여됨
+                    } else {
+                        processStatus = "PENDING";
+                    }
+                }
+                
+                log.info("신청자 {}의 신청 상태: {}, 책 상태: {}, 처리가능: {}", 
+                        requester.getNickname(), status, rent.getRentStatus(), isProcessable);
+            } else {
+                // 신청 기록이 없는 경우
+                detail.put("rentListId", null);
+                detail.put("requesterNickname", requester.getNickname());
+                detail.put("requestDate", null);
+                detail.put("loanDate", null);
+                detail.put("returnDate", null);
+                isProcessable = false;
+                processStatus = "NOT_FOUND";
+            }
         } else {
-            // PENDING 상태의 신청이 없더라도 rent 정보는 제공
-            log.warn("대기 중인 대여 신청이 없지만 기본 정보는 제공 - Rent ID: {}", rentId);
+            // 시스템 알림 등으로 sender가 없는 경우
+            log.warn("알림에 발송자 정보가 없음 - 알림 ID: {}", notificationId);
             detail.put("rentListId", null);
             detail.put("requesterNickname", "알 수 없음");
             detail.put("requestDate", null);
             detail.put("loanDate", null);
             detail.put("returnDate", null);
+            isProcessable = false;
+            processStatus = "NO_SENDER";
         }
         
-        log.info("대여 신청 상세 정보 조회 완료 - 알림 ID: {}, Rent ID: {}, RentList 개수: {}", 
-                notificationId, rent.getId(), pendingRentLists.size());
+        // 🆕 처리 가능 여부 정보 추가
+        detail.put("isProcessable", isProcessable);
+        detail.put("processStatus", processStatus);
+        
+        log.info("대여 신청 상세 정보 조회 완료 - 알림 ID: {}, Rent ID: {}, 신청자: {}, 처리가능: {}, 상태: {}", 
+                notificationId, rent.getId(), requester != null ? requester.getNickname() : "없음", isProcessable, processStatus);
 
         return detail;
     }

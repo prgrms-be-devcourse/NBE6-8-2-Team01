@@ -1,5 +1,5 @@
 package com.bookbook.domain.rentList.service;
-
+//08-06 유효상
 import com.bookbook.domain.notification.enums.NotificationType;
 import com.bookbook.domain.notification.service.NotificationService;
 import com.bookbook.domain.rent.entity.Rent;
@@ -13,6 +13,7 @@ import com.bookbook.domain.rentList.entity.RentRequestStatus;
 import com.bookbook.domain.rentList.repository.RentListRepository;
 import com.bookbook.domain.user.entity.User;
 import com.bookbook.domain.user.repository.UserRepository;
+import com.bookbook.domain.review.repository.ReviewRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -36,7 +37,8 @@ public class RentListService {
     private final UserRepository userRepository;
     private final RentRepository rentRepository;
     private final NotificationService notificationService;
-    
+    private final ReviewRepository reviewRepository;
+
     /**
      * 사용자가 대여한 도서 목록 조회
      * 
@@ -44,12 +46,15 @@ public class RentListService {
      * @return 대여한 도서 목록
      */
     public List<RentListResponseDto> getRentListByUserId(Long borrowerUserId) {
-        return rentListRepository.findByBorrowerUserId(borrowerUserId).stream()
+        return rentListRepository.findByBorrowerUserIdOrderByCreatedDateDesc(borrowerUserId).stream()
                 .map(rentList -> {
                     String lenderNickname = userRepository.findById(rentList.getRent().getLenderUserId())
                             .map(user -> user.getNickname())
                             .orElse("알 수 없음");
-                    return RentListResponseDto.from(rentList, lenderNickname);
+                    // 리뷰 작성 여부 확인 (대여받은 사람이 대여자에 대한 리뷰)
+                    boolean hasReview = reviewRepository.findByRentIdAndReviewerId(rentList.getRent().getId(), borrowerUserId)
+                            .isPresent();
+                    return RentListResponseDto.from(rentList, lenderNickname, hasReview);
                 })
                 .collect(Collectors.toList());
     }
@@ -62,7 +67,7 @@ public class RentListService {
      * @return 검색된 대여한 도서 목록
      */
     public List<RentListResponseDto> searchRentListByUserId(Long borrowerUserId, String searchKeyword) {
-        List<RentList> rentLists = rentListRepository.findByBorrowerUserId(borrowerUserId);
+        List<RentList> rentLists = rentListRepository.findByBorrowerUserIdOrderByCreatedDateDesc(borrowerUserId);
         
         if (searchKeyword == null || searchKeyword.trim().isEmpty()) {
             return rentLists.stream()
@@ -70,7 +75,10 @@ public class RentListService {
                         String lenderNickname = userRepository.findById(rentList.getRent().getLenderUserId())
                                 .map(user -> user.getNickname())
                                 .orElse("알 수 없음");
-                        return RentListResponseDto.from(rentList, lenderNickname);
+                        // 리뷰 작성 여부 확인 (대여받은 사람이 대여자에 대한 리뷰)
+                    boolean hasReview = reviewRepository.findByRentIdAndReviewerId(rentList.getRent().getId(), borrowerUserId)
+                            .isPresent();
+                    return RentListResponseDto.from(rentList, lenderNickname, hasReview);
                     })
                     .collect(Collectors.toList());
         }
@@ -89,7 +97,10 @@ public class RentListService {
                     String lenderNickname = userRepository.findById(rentList.getRent().getLenderUserId())
                             .map(user -> user.getNickname())
                             .orElse("알 수 없음");
-                    return RentListResponseDto.from(rentList, lenderNickname);
+                    // 리뷰 작성 여부 확인 (대여받은 사람이 대여자에 대한 리뷰)
+                    boolean hasReview = reviewRepository.findByRentIdAndReviewerId(rentList.getRent().getId(), borrowerUserId)
+                            .isPresent();
+                    return RentListResponseDto.from(rentList, lenderNickname, hasReview);
                 })
                 .collect(Collectors.toList());
     }
@@ -206,6 +217,33 @@ public class RentListService {
             rentListRepository.save(rentList);
             rentRepository.save(rent);
             
+            // 🆕 같은 책에 대한 다른 모든 PENDING 신청들을 자동으로 거절 처리
+            List<RentList> otherPendingRequests = rentListRepository
+                    .findByRentIdAndStatus(rent.getId(), RentRequestStatus.PENDING);
+
+            for (RentList otherRequest : otherPendingRequests) {
+                if (otherRequest.getId() != rentListId) { // 현재 처리하는 신청은 제외
+                    otherRequest.setStatus(RentRequestStatus.REJECTED);
+                    rentListRepository.save(otherRequest);
+
+                    // 다른 신청자들에게 거절 알림 발송
+                    User otherBorrower = otherRequest.getBorrowerUser();
+                    String rejectMessage = String.format("'%s' 대여 요청이 거절되었습니다.", rent.getBookTitle());
+                    notificationService.createNotification(
+                            otherBorrower,
+                            null,
+                            NotificationType.RENT_REJECTED,
+                            rejectMessage,
+                            rent.getBookTitle(),
+                            rent.getBookImage(),
+                            (long) rent.getId()
+                    );
+                    
+                    log.info("다른 신청자 자동 거절 처리 - 신청자: {}, 사유: 다른 사용자 수락됨", 
+                            otherBorrower.getNickname());
+                }
+            }
+            
             // 신청자에게 수락 알림 발송
             String approveMessage = String.format("'%s' 대여 요청이 수락되었습니다!", rent.getBookTitle());
             notificationService.createNotification(
@@ -218,8 +256,9 @@ public class RentListService {
                     (long) rent.getId()
             );
             
-            log.info("대여 신청 수락 완료 - 책: {}, 대여자: {}, 신청자: {}", 
-                    rent.getBookTitle(), currentUser.getNickname(), borrower.getNickname());
+            log.info("대여 신청 수락 완료 - 책: {}, 대여자: {}, 신청자: {}, 자동 거절된 다른 신청: {}개", 
+                    rent.getBookTitle(), currentUser.getNickname(), borrower.getNickname(), 
+                    otherPendingRequests.size() - 1);
             
             return "대여 신청을 수락했습니다.";
             
@@ -249,5 +288,36 @@ public class RentListService {
             
             return "대여 신청을 거절했습니다.";
         }
+    }
+
+    /**
+     * 도서 반납하기
+     *
+     * 대여받은 사람이 도서를 조기 반납하는 기능입니다.
+     * 반납 시 해당 대여 기록과 원본 게시글의 상태를 업데이트합니다.
+     *
+     * @param borrowerUserId 대여받은 사용자 ID
+     * @param rentId 대여 게시글 ID
+     * @throws IllegalArgumentException 대여 기록을 찾을 수 없거나 이미 반납된 경우
+     */
+    @Transactional
+    public void returnBook(Long borrowerUserId, Integer rentId) {
+        // 해당 사용자의 대여 기록 조회
+        RentList rentList = rentListRepository.findByBorrowerUserIdAndRentId(borrowerUserId, rentId)
+                .orElseThrow(() -> new IllegalArgumentException("대여 기록을 찾을 수 없습니다."));
+
+        // 원본 게시글 조회
+        Rent rent = rentList.getRent();
+
+        // 이미 반납된 상태인지 확인 (게시글 상태가 FINISHED이면 이미 반납됨)
+        if (rent.getRentStatus() == RentStatus.FINISHED) {
+            throw new IllegalArgumentException("이미 반납된 도서입니다.");
+        }
+
+        // 원본 게시글 상태를 FINISHED로 변경 (반납 완료)
+        rent.setRentStatus(RentStatus.FINISHED);
+
+        // 변경사항 저장
+        rentRepository.save(rent);
     }
 }

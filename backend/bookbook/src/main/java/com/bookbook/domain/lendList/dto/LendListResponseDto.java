@@ -23,8 +23,10 @@ public class LendListResponseDto {
     private String borrowerNickname;
     private LocalDateTime createdDate;
     private LocalDateTime modifiedDate;
+    private LocalDateTime returnDate;
+    private boolean hasReview;
 
-    public static LendListResponseDto from(Rent rent, String borrowerNickname) {
+    public static LendListResponseDto from(Rent rent, String borrowerNickname, LocalDateTime returnDate, boolean hasReview) {
         return LendListResponseDto.builder()
                 .id(rent.getId())
                 .lenderUserId(rent.getLenderUserId())
@@ -39,6 +41,8 @@ public class LendListResponseDto {
                 .borrowerNickname(borrowerNickname)
                 .createdDate(rent.getCreatedDate())
                 .modifiedDate(rent.getModifiedDate())
+                .returnDate(returnDate)
+                .hasReview(hasReview)
                 .build();
     }
 }
