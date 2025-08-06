@@ -3,7 +3,6 @@
 import { useState, useEffect } from 'react';
 import { Heart, Search } from 'lucide-react';
 import { WishListItem } from './types';
-import { dummyWishList } from './dummyData';
 import WishListCard from './WishListCard';
 import Pagination from '../../../components/Pagination';
 import { useCurrentUser } from '../../../hooks/useCurrentUser';
