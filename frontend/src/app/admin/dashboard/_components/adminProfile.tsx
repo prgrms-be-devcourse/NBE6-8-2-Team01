@@ -2,7 +2,6 @@ import { useState } from "react";
 import Image from "next/image";
 import { User, ChevronDown, LogOut } from "lucide-react";
 import { UserLoginResponseDto } from "@/app/admin/global/hooks/useAuth";
-import ConfirmModal from "./common/confirmModal";
 
 interface AdminProfileProps {
   admin: UserLoginResponseDto;
@@ -12,13 +11,11 @@ interface AdminProfileProps {
 // 관리자 프로필 영역 컴포넌트
 export function AdminProfile(props: AdminProfileProps) {
   const { admin, onLogout } = props;
-  const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
 
   const handleLogout = () => {
     setShowDropdown(false);
     onLogout();
-    setShowConfirmModal(false);
   };
 
   const avatar = "";
@@ -71,7 +68,7 @@ export function AdminProfile(props: AdminProfileProps) {
               </div>
 
               <button
-                onClick={() => setShowConfirmModal(true)}
+                onClick={handleLogout}
                 className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center space-x-2"
               >
                 <LogOut size={16} />
@@ -81,12 +78,6 @@ export function AdminProfile(props: AdminProfileProps) {
           )}
         </div>
       </div>
-      {showConfirmModal && (
-        <ConfirmModal
-          message="로그아웃이 완료되었습니다"
-          onConfirm={handleLogout}
-        />
-      )}
     </>
   );
 }

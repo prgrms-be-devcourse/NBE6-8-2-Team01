@@ -97,11 +97,31 @@ public class RentListController {
     @PatchMapping("/{rentId}/return")
     public ResponseEntity<RsData<Void>> returnBook(
             @PathVariable Long borrowerUserId,
-            @PathVariable Integer rentId) {
+            @PathVariable Integer rentId,
+            @AuthenticationPrincipal CustomOAuth2User customOAuth2User) {
         
-        rentListService.returnBook(borrowerUserId, rentId);
+        // 로그인 검증
+        if (customOAuth2User == null || customOAuth2User.getUserId() == null) {
+            return ResponseEntity.status(401)
+                    .body(RsData.of("401-1", "로그인 후 사용해주세요."));
+        }
+
+        // 권한 검증: 반납하는 사용자가 실제 대여한 사용자인지 확인
+        if (!customOAuth2User.getUserId().equals(borrowerUserId)) {
+            return ResponseEntity.status(403)
+                    .body(RsData.of("403-1", "본인이 대여한 도서만 반납할 수 있습니다."));
+        }
         
-        return ResponseEntity.ok(RsData.of("200", "도서가 성공적으로 반납되었습니다."));
+        try {
+            rentListService.returnBook(borrowerUserId, rentId);
+            return ResponseEntity.ok(RsData.of("200", "도서가 성공적으로 반납되었습니다."));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest()
+                    .body(RsData.of("400-1", e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError()
+                    .body(RsData.of("500-1", "반납 처리 중 오류가 발생했습니다: " + e.getMessage()));
+        }
     }
 
     /**

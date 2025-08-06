@@ -4,6 +4,7 @@ import ReportBasicInfo from "./reportBasicInfo";
 import { ReportStatusInfo } from "./reportStatusInfo";
 import ReportInfo from "./reportInfo";
 import { ReportDetailResponseDto } from "@/app/admin/dashboard/_types/report";
+import { toast } from "react-toastify";
 
 interface ReportDetailModalProps {
   report: ReportDetailResponseDto;
@@ -29,22 +30,26 @@ const ReportDetailModal: React.FC<ReportDetailModalProps> = ({
 
   if (!isOpen || !report) return null;
 
-  const handleAsProcessed = () => {
-    fetch(`/api/v1/admin/reports/${report.id}/process`,
+  const handleAsProcessed = async () => {
+    const response = await fetch(`/api/v1/admin/reports/${report.id}/process`,
       {
         method: "PATCH",
         headers : {
           "Content-Type": "application/json",
         }
       })
-        .then((response) => response.json())
-        .then(data => {
-          alert(data.msg);
-          _onClose();
-      })
-        .catch(error => {
-          throw error;
-        })
+
+    const data = await response.json().catch(error => {
+      throw error;
+    })
+
+    if (!response.ok) {
+      if (data.statusCode === 409) _onClose();
+      throw data.msg;
+    }
+
+    toast.success(data.msg);
+    _onClose();
   }
 
   const _onClose = () => {
@@ -52,19 +57,12 @@ const ReportDetailModal: React.FC<ReportDetailModalProps> = ({
     onRefresh?.();
   }
 
-  const handleConfirmAction = () => {
+  const handleConfirmAction = async () => {
     try {
-      handleAsProcessed();
+      await handleAsProcessed();
       resetModalState();
     } catch (error) {
-      let errorMessage = "원인을 알 수 없습니다."
-
-      if (error instanceof Error) {
-        errorMessage = error.message;
-      }
-
-      console.error("처리 중 오류 발생:", errorMessage);
-      alert(`처리 중 오류가 발생했습니다.\n${errorMessage}`);
+      toast.error(error as string);
     }
   };
 

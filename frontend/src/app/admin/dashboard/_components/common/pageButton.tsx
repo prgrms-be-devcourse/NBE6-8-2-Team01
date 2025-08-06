@@ -6,6 +6,10 @@ interface PageButtonContainerProps {
     pageInfo: PageInfo;
 }
 
+/*
+* Page와 상호작용 할 때 쓰이는 컴포넌트 입니다.
+* 페이지 현황에 따라 자동으로 비활성화 됩니다.
+*/
 export function PageButtonContainer(
     { page, setPage, pageInfo } : PageButtonContainerProps
 ) {

@@ -3,9 +3,15 @@
 import { useState } from "react";
 import { Lock, User, Eye, EyeOff, BookOpen, AlertTriangle } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useAuthContext } from "@/app/admin/global/hooks/useAuth";
+import { useAuthContext, UserLoginResponseDto } from "@/app/admin/global/hooks/useAuth";
 import { UnauthorizedModal } from "../adminGuard";
+import { toast } from "react-toastify";
 
+/*
+* 관리자 로그인 페이지
+*
+* 로그인
+*/
 export default function AdminLoginPage() {
     const { setLoginMember } = useAuthContext();
     const router = useRouter();
@@ -59,18 +65,25 @@ export default function AdminLoginPage() {
                 if (message.endsWith("fetch")) {
                     alert("서버와 연결하지 못했습니다.");
                 }
-                console.log(error);
                 throw error;
             })
 
-            console.log(data);
-            if (data.statusCode !== 200) {
+            if (data.statusCode === 404) {
+                toast.error("정보가 일치하지 않습니다.")
+                return
+            }
+
+            if (data.statusCode === 401) {
                 setShowUnauthorizedModal(true);
                 return;
             }
 
-            setLoginMember(data.data);
-            router.push("/admin/dashboard");
+            const userInfo = data.data as UserLoginResponseDto;
+            setLoginMember(userInfo);
+
+            router.prefetch("/admin/dashboard");
+
+            toast.success(`어서오세요 ${userInfo.nickname}님!`);
         } finally {
             setIsLoading(false);
         }

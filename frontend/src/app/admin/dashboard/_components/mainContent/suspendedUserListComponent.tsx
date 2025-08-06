@@ -6,6 +6,9 @@ import { SuspendedUser } from "../../_types/suspendedUser";
 import { ContentComponentProps } from "./baseContentComponentProps";
 import { formatDate } from "@/app/admin/dashboard/_components/common/dateFormatter";
 
+/*
+* 정지 유저 이력을 나타내는 컴포넌트
+*/
 export function SuspendedUserListComponent({ data }: ContentComponentProps) {
   const columns: ColumnDefinition<SuspendedUser>[] = [
     { key: "id", label: "No" },

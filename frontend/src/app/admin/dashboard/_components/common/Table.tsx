@@ -25,22 +25,21 @@ export interface ColumnDefinition<T> {
  */
 interface DataTableProps<T> {
   columns: ColumnDefinition<T>[];
-  data: PageResponse<any | null>;
+  data: PageResponse<T>;
   pageFactory?: () => URLSearchParams;
 }
 
 /**
  * 데이터를 받아 테이블 형태로 렌더링하는 재사용 가능한 컴포넌트
- * @template T - 데이터 객체는 'id' 프로퍼티를 가져야 함.
+ * @template T - 데이터 객체는 프로퍼티를 가져야 함.
  */
 export function DataTable<T extends { id: string | number }>(
     { columns, data, pageFactory }: DataTableProps<T>
 ) {
-  const [page, setPage] = useState(1);
   const { fetchData, currentItem } = useDashBoardContext();
 
+  const [page, setPage] = useState(data?.pageInfo?.currentPage || 1);
   const PER_PAGE = 10;
-  const currentPage = data?.pageInfo?.currentPage || 1;
   const pagedData = data?.data || [];
   const maxPage = data?.pageInfo?.totalPages || 0;
 
@@ -64,6 +63,7 @@ export function DataTable<T extends { id: string | number }>(
     <>
       <div className="w-full overflow-x-auto bg-white rounded-lg shadow-sm border border-gray-200">
         <table className="min-w-full divide-y divide-gray-100">
+          {/* 테이블 Head */}
           <thead className="bg-blue-100">
             <tr>
               {columns.map((col) => (
@@ -77,6 +77,7 @@ export function DataTable<T extends { id: string | number }>(
               ))}
             </tr>
           </thead>
+          {/* 테이블 Body */}
           <tbody className="bg-white divide-y divide-gray-200">
             {pagedData?.length > 0 ? (
               pagedData.map((item) => (
@@ -100,9 +101,8 @@ export function DataTable<T extends { id: string | number }>(
         </table>
       </div>
       {maxPage > 0 && (
-        <
-          PageButtonContainer
-            page={currentPage}
+        <PageButtonContainer
+            page={page}
             setPage={getDataFromButton}
             pageInfo={data.pageInfo}
         />

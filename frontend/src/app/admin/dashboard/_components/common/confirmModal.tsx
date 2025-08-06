@@ -8,6 +8,11 @@ interface ConfirmModalProps {
   onCancel?: () => void;
 }
 
+/*
+* 설정에 따른 action 취하는 modal 입니다.
+*
+* [출처](https://github.com/prgrms-be-devcourse/NBE6-8-1-Team14/blob/main/frontend/src/components/modal/ConfirmModal.tsx)
+*/
 const ConfirmModal = ({
   message,
   confirmText = "확인",

@@ -6,17 +6,20 @@ import UserBasicInfo from "./userBasicInfo";
 import UserStatusInfo from "./userStatusInfo";
 import UserJoinInfo from "./userJoinInfo";
 import SuspendForm from "./suspendForm";
+import { toast } from "react-toastify";
 
 interface UserDetailModalProps {
   user: UserDetailResponseDto;
   isOpen: boolean;
   onClose: () => void;
+  onRefresh?: () => void
 }
 
 const UserDetailModal: React.FC<UserDetailModalProps> = ({
   user,
   isOpen,
   onClose,
+  onRefresh,
 }) => {
   const [currentUser, setCurrentUser] = useState<UserDetailResponseDto>(user);
   const [showSuspendForm, setShowSuspendForm] = useState(false);
@@ -31,11 +34,9 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
 
   const handleSuspendClick = () => {
     if (currentUser.baseResponseDto.userStatus === "SUSPENDED") {
-      // 정지 해제
       setConfirmAction("unsuspend");
       setShowConfirmModal(true);
     } else {
-      // 정지하기
       setShowSuspendForm(true);
     }
   };
@@ -57,10 +58,19 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
         "Content-Type": "application/json"
       }
     });
-    return await response.json().catch(error => {
-      console.error("API 요청 실패:", error);
+
+    const data = await response.json().catch(error => {
       throw error;
     });
+
+    if ([403, 404, 409, 422].includes(data.statusCode)) {
+      resetModalState();
+      onClose();
+      onRefresh?.();
+      throw data.msg;
+    }
+
+    return data;
   };
 
   const suspendUser = async () => {
@@ -75,11 +85,11 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
         body: JSON.stringify(requestDto),
       });
 
-      alert(`${currentUser.baseResponseDto.nickname}님이 정지되었습니다.`);
+      toast.success(`${currentUser.baseResponseDto.nickname}님이 정지되었습니다.`);
       setCurrentUser(data.data as UserDetailResponseDto);
 
     } catch (error) {
-      throw new Error(`정지 처리 중 오류가 발생했습니다.\n${error}`, );
+      throw error;
     }
   };
 
@@ -89,11 +99,11 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
 
       const data = await doRequest(`/api/v1/admin/users/${userId}/resume`);
 
-      alert(`${currentUser.baseResponseDto.nickname}님의 정지가 해제되었습니다.`);
+      toast.success(`${currentUser.baseResponseDto.nickname}님의 정지가 해제되었습니다.`);
       setCurrentUser(data.data as UserDetailResponseDto);
 
     } catch (error) {
-      throw new Error(`정지 해제 처리 중 오류가 발생했습니다.\n${error}`, );
+      throw error;
     }
   };
 
@@ -106,11 +116,11 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
       }
 
       resetModalState();
+      onRefresh?.();
+
     } catch (error) {
       // 에러 발생시 모달을 닫지 않고 사용자가 다시 시도할 수 있도록 함
-      // toast.error(error as string);
-      alert(`작업을 진행하는데 실패했습니다. ${error}`)
-      console.error("처리 중 오류 발생:", error);
+      toast.error(error as string)
     }
   };
 

@@ -18,18 +18,20 @@ public interface ChatMessageRepository extends JpaRepository<ChatMessage, Intege
     // 특정 채팅방의 메시지 개수
     long countByRoomId(String roomId);
     
-    // 특정 사용자의 읽지 않은 메시지 개수 (전체)
+    // 특정 사용자의 읽지 않은 메시지 개수 (전체) - 시스템 메시지 제외
     @Query("SELECT COUNT(cm) FROM ChatMessage cm " +
            "JOIN ChatRoom cr ON cm.roomId = cr.roomId " +
            "WHERE (cr.lenderId = :userId OR cr.borrowerId = :userId) " +
            "AND cm.senderId != :userId " +
+           "AND cm.senderId != 0 " +
            "AND cm.isRead = false")
     long countUnreadMessagesByUserId(@Param("userId") Integer userId);
     
-    // 특정 채팅방에서 특정 사용자의 읽지 않은 메시지 개수
+    // 특정 채팅방에서 특정 사용자의 읽지 않은 메시지 개수 - 시스템 메시지 제외
     @Query("SELECT COUNT(cm) FROM ChatMessage cm " +
            "WHERE cm.roomId = :roomId " +
            "AND cm.senderId != :userId " +
+           "AND cm.senderId != 0 " +
            "AND cm.isRead = false")
     long countUnreadMessagesByRoomIdAndUserId(@Param("roomId") String roomId, @Param("userId") Integer userId);
     

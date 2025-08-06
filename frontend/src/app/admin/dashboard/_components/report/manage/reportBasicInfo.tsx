@@ -22,7 +22,9 @@ const ReportBasicInfo: React.FC<ReportBasicInfoProps> = ({ report }) => {
           <p className="text-gray-900">{report.reporterUserId}</p>
         </div>
         <div>
-          <label className="block font-medium text-gray-700 mb-1">신고대상자 ID</label>
+          <label className="block font-medium text-gray-700 mb-1">
+            신고대상자 ID
+          </label>
           <p className="text-gray-900">{report.targetUserId}</p>
         </div>
       </div>

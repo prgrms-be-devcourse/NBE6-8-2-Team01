@@ -89,9 +89,18 @@ const MessagePanel: React.FC<MessagePanelProps> = ({ onClose }) => {
           setUnreadCount(unreadResult.data || 0);
         }
 
-      } catch (err: any) {
-        console.error('채팅방 목록 조회 실패:', err);
-        setError(err.message || '채팅방 목록을 불러오는 데 실패했습니다.');
+      } catch (error: unknown) {
+        console.error('채팅방 목록 조회 실패:', error);
+        
+        // error 타입 가드 처리
+        let errorMessage = '채팅방 목록을 불러오는 데 실패했습니다.';
+        if (error instanceof Error) {
+          errorMessage = error.message;
+        } else if (typeof error === 'string') {
+          errorMessage = error;
+        }
+        
+        setError(errorMessage);
       } finally {
         setLoading(false);
       }
@@ -107,7 +116,7 @@ const MessagePanel: React.FC<MessagePanelProps> = ({ onClose }) => {
   };
 
   // 시간 포맷팅
-  const formatTime = (dateString?: string) => {
+  const formatTime = (dateString?: string): string => {
     if (!dateString) return '';
     
     const date = new Date(dateString);
@@ -127,19 +136,19 @@ const MessagePanel: React.FC<MessagePanelProps> = ({ onClose }) => {
   };
 
   // 메시지 내용 미리보기 (길이 제한)
-  const truncateMessage = (message: string, maxLength: number = 50) => { // 30 → 50으로 늘림
+  const truncateMessage = (message: string, maxLength: number = 50): string => {
     if (message.length <= maxLength) return message;
     return message.substring(0, maxLength) + '...';
   };
 
   return (
-    <div className="fixed inset-0 flex justify-end z-50" style={{ backgroundColor: 'rgba(0, 0, 0, 0.3)' }}> {/* 인라인 스타일로 반투명 배경 적용 */}
-      <div className="bg-white w-96 h-full shadow-xl overflow-hidden"> {/* w-64 → w-96으로 1.5배 확대 (384px) */}
+    <div className="fixed inset-0 flex justify-end z-50" style={{ backgroundColor: 'rgba(0, 0, 0, 0.3)' }}>
+      <div className="bg-white w-96 h-full shadow-xl overflow-hidden">
         {/* 헤더 */}
-        <div className="flex items-center justify-between p-5 border-b border-gray-200 bg-gray-50"> {/* p-4 → p-5로 여백 증가 */}
-          <div className="flex items-center space-x-3"> {/* space-x-2 → space-x-3 */}
-            <MessageCircle className="w-6 h-6 text-blue-500" /> {/* w-5 h-5 → w-6 h-6 */}
-            <h2 className="text-xl font-bold text-gray-800">메시지</h2> {/* text-lg → text-xl */}
+        <div className="flex items-center justify-between p-5 border-b border-gray-200 bg-gray-50">
+          <div className="flex items-center space-x-3">
+            <MessageCircle className="w-6 h-6 text-blue-500" />
+            <h2 className="text-xl font-bold text-gray-800">메시지</h2>
             {unreadCount > 0 && (
               <span className="bg-red-500 text-white text-xs font-bold rounded-full px-2 py-1 min-w-[20px] text-center">
                 {unreadCount > 99 ? '99+' : unreadCount}
@@ -148,7 +157,7 @@ const MessagePanel: React.FC<MessagePanelProps> = ({ onClose }) => {
           </div>
           <button 
             onClick={onClose}
-            className="p-2 hover:bg-gray-200 rounded-full transition-colors"> {/* p-1 → p-2 */}
+            className="p-2 hover:bg-gray-200 rounded-full transition-colors">
             <X className="w-5 h-5 text-gray-500" />
           </button>
         </div>
@@ -157,33 +166,33 @@ const MessagePanel: React.FC<MessagePanelProps> = ({ onClose }) => {
         <div className="flex-1 overflow-y-auto">
           {loading ? (
             // 로딩 상태
-            <div className="flex items-center justify-center py-16"> {/* py-12 → py-16 */}
+            <div className="flex items-center justify-center py-16">
               <div className="text-center">
-                <div className="w-10 h-10 border-2 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-3"></div> {/* w-8 h-8 → w-10 h-10, mb-2 → mb-3 */}
-                <p className="text-gray-500 text-base">채팅방을 불러오는 중...</p> {/* text-sm → text-base */}
+                <div className="w-10 h-10 border-2 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-3"></div>
+                <p className="text-gray-500 text-base">채팅방을 불러오는 중...</p>
               </div>
             </div>
           ) : error ? (
             // 에러 상태
-            <div className="flex items-center justify-center py-16"> {/* py-12 → py-16 */}
+            <div className="flex items-center justify-center py-16">
               <div className="text-center">
-                <div className="text-5xl mb-4">😅</div> {/* text-4xl → text-5xl */}
-                <p className="text-red-500 text-base mb-4">{error}</p> {/* text-sm → text-base */}
+                <div className="text-5xl mb-4">😅</div>
+                <p className="text-red-500 text-base mb-4">{error}</p>
                 <button 
                   onClick={() => window.location.reload()}
-                  className="px-5 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 text-base"> {/* px-4 → px-5, text-sm → text-base */}
+                  className="px-5 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 text-base">
                   다시 시도
                 </button>
               </div>
             </div>
           ) : chatRooms.length === 0 ? (
             // 채팅방이 없는 경우
-            <div className="flex items-center justify-center py-16"> {/* py-12 → py-16 */}
+            <div className="flex items-center justify-center py-16">
               <div className="text-center">
-                <div className="text-7xl mb-4">💬</div> {/* text-6xl → text-7xl */}
-                <p className="text-gray-500 text-xl mb-3">아직 채팅방이 없습니다</p> {/* text-lg → text-xl, mb-2 → mb-3 */}
-                <p className="text-gray-400 text-base">책을 빌리거나 빌려주면서</p> {/* text-sm → text-base */}
-                <p className="text-gray-400 text-base">새로운 대화를 시작해보세요!</p> {/* text-sm → text-base */}
+                <div className="text-7xl mb-4">💬</div>
+                <p className="text-gray-500 text-xl mb-3">아직 채팅방이 없습니다</p>
+                <p className="text-gray-400 text-base">책을 빌리거나 빌려주면서</p>
+                <p className="text-gray-400 text-base">새로운 대화를 시작해보세요!</p>
               </div>
             </div>
           ) : (
@@ -193,41 +202,41 @@ const MessagePanel: React.FC<MessagePanelProps> = ({ onClose }) => {
                 <div
                   key={chatRoom.id}
                   onClick={() => handleChatRoomClick(chatRoom)}
-                  className="p-5 hover:bg-gray-50 cursor-pointer transition-colors"> {/* p-4 → p-5 */}
-                  <div className="flex items-start space-x-4"> {/* space-x-3 → space-x-4 */}
+                  className="p-5 hover:bg-gray-50 cursor-pointer transition-colors">
+                  <div className="flex items-start space-x-4">
                     {/* 프로필 아이콘 */}
                     <div className="flex-shrink-0">
-                      <div className="w-14 h-14 bg-gray-200 rounded-full flex items-center justify-center"> {/* w-12 h-12 → w-14 h-14 */}
-                        <User className="w-7 h-7 text-gray-500" /> {/* w-6 h-6 → w-7 h-7 */}
+                      <div className="w-14 h-14 bg-gray-200 rounded-full flex items-center justify-center">
+                        <User className="w-7 h-7 text-gray-500" />
                       </div>
                     </div>
 
                     {/* 채팅 정보 */}
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between mb-2"> {/* mb-1 → mb-2 */}
-                        <h3 className="text-base font-semibold text-gray-900 truncate"> {/* text-sm → text-base */}
+                      <div className="flex items-center justify-between mb-2">
+                        <h3 className="text-base font-semibold text-gray-900 truncate">
                           {chatRoom.otherUserNickname}
                         </h3>
-                        <div className="flex items-center space-x-2"> {/* space-x-1 → space-x-2 */}
+                        <div className="flex items-center space-x-2">
                           {chatRoom.unreadCount > 0 && (
                             <span className="bg-red-500 text-white text-xs font-bold rounded-full px-2 py-1 min-w-[20px] text-center">
                               {chatRoom.unreadCount > 99 ? '99+' : chatRoom.unreadCount}
                             </span>
                           )}
-                          <span className="text-sm text-gray-500 flex items-center"> {/* text-xs → text-sm */}
-                            <Clock className="w-4 h-4 mr-1" /> {/* w-3 h-3 → w-4 h-4 */}
+                          <span className="text-sm text-gray-500 flex items-center">
+                            <Clock className="w-4 h-4 mr-1" />
                             {formatTime(chatRoom.lastMessageTime)}
                           </span>
                         </div>
                       </div>
 
-                                             {/* 책 제목 */}
-                       <p className="text-sm text-gray-500 mb-2 truncate"> {/* text-xs → text-sm, mb-1 → mb-2 */}
-                         {chatRoom.bookTitle}
-                       </p>
+                      {/* 책 제목 */}
+                      <p className="text-sm text-gray-500 mb-2 truncate">
+                        {chatRoom.bookTitle}
+                      </p>
 
                       {/* 마지막 메시지 */}
-                      <p className="text-sm text-gray-600 truncate"> {/* text-xs → text-sm */}
+                      <p className="text-sm text-gray-600 truncate">
                         {chatRoom.lastMessage 
                           ? truncateMessage(chatRoom.lastMessage)
                           : '새로운 채팅방이 생성되었습니다.'
@@ -242,8 +251,8 @@ const MessagePanel: React.FC<MessagePanelProps> = ({ onClose }) => {
         </div>
 
         {/* 하단 */}
-        <div className="p-5 border-t border-gray-200 bg-gray-50"> {/* p-4 → p-5 */}
-          <p className="text-sm text-gray-500 text-center"> {/* text-xs → text-sm */}
+        <div className="p-5 border-t border-gray-200 bg-gray-50">
+          <p className="text-sm text-gray-500 text-center">
             💡 북북톡으로 책을 안전하게 거래하세요
           </p>
         </div>

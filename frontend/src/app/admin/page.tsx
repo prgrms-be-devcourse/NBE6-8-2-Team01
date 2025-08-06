@@ -4,6 +4,11 @@ import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 import { useAuthContext } from "./global/hooks/useAuth";
 
+/*
+* 관리자 기본 페이지
+*
+* 로그인 여부에 따라 로그인 페이지나 대시보드로 이동합니다.
+*/
 export default function AdminIndexPage() {
   const { isAdmin, isLogin, loading } = useAuthContext();
   const router = useRouter();
