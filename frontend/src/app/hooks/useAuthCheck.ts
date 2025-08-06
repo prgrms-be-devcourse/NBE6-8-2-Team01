@@ -38,7 +38,7 @@ export function useAuthCheck(): UseAuthCheckReturn {
 
         // 1. 먼저 인증 상태를 확인하는 API를 호출합니다.
         // 이 API는 JWT가 없어도 401을 반환하지 않고, 단순히 'false'를 반환합니다.
-        const authStatusResponse = await fetch('http://localhost:8080/api/v1/bookbook/users/isAuthenticated', {
+        const authStatusResponse = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/bookbook/users/isAuthenticated`, {
             credentials: 'include',
         });
         

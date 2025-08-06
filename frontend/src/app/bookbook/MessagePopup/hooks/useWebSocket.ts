@@ -39,7 +39,7 @@ export const useWebSocket = (
         const SockJS = (await import('sockjs-client')).default;
         const { Stomp } = await import('@stomp/stompjs');
 
-        const socket = new SockJS('http://localhost:8080/ws/chat');
+        const socket = new SockJS(`${process.env.NEXT_PUBLIC_API_BASE_URL}/ws/chat`);
         const stompClient: StompClient = Stomp.over(socket);
 
         // 디버그 로그 비활성화 (선택사항)

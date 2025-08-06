@@ -55,17 +55,17 @@ const normalizeImageUrl = (imageUrl: string): string => {
   
   // 상대 경로인 경우 절대 경로로 변환
   if (imageUrl.startsWith('/')) {
-    return `http://localhost:8080${imageUrl}`;
+    return `${process.env.NEXT_PUBLIC_API_BASE_URL}${imageUrl}`;
   }
   
   // 그 외의 경우 uploads 경로로 처리
-  return `http://localhost:8080/uploads/${imageUrl}`;
+  return `${process.env.NEXT_PUBLIC_API_BASE_URL}/uploads/${imageUrl}`;
 };
 
 // 메인페이지 API 호출 (인증 불필요)
 const fetchHomeData = async (region?: string): Promise<HomeApiResponse> => {
   try {
-    const url = new URL('http://localhost:8080/api/v1/bookbook/home');
+    const url = new URL(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/bookbook/home`);
     if (region && region !== '전체') {
       url.searchParams.append('region', region);
     }
@@ -95,7 +95,7 @@ const fetchHomeData = async (region?: string): Promise<HomeApiResponse> => {
 // 도서 정보 (ID 포함) API 호출
 const fetchBooksWithId = async (region?: string): Promise<BookInfo[]> => {
   try {
-    const url = new URL('http://localhost:8080/api/v1/bookbook/home/books-with-id');
+    const url = new URL(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/bookbook/home/books-with-id`);
     if (region && region !== '전체') {
       url.searchParams.append('region', region);
     }
@@ -137,7 +137,7 @@ const fetchBooksWithId = async (region?: string): Promise<BookInfo[]> => {
 // 지역 목록 API 호출
 const fetchRegions = async (): Promise<RegionInfo[]> => {
   try {
-    const response = await fetch('http://localhost:8080/api/v1/bookbook/home/regions', {
+    const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/bookbook/home/regions`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
@@ -320,9 +320,9 @@ const BookRegionSection = () => {
     const tryAlternativeUrls = [
       imageUrl.replace('/images/', '/uploads/'),
       imageUrl.replace('/uploads/', '/images/'),
-      imageUrl.replace('http://localhost:8080', ''),
-      imageUrl.includes('/uploads/') ? imageUrl : `http://localhost:8080/uploads/${imageUrl.split('/').pop()}`,
-      imageUrl.includes('/images/') ? imageUrl : `http://localhost:8080/images/${imageUrl.split('/').pop()}`
+      imageUrl.replace(`${process.env.NEXT_PUBLIC_API_BASE_URL}`, ''),
+      imageUrl.includes('/uploads/') ? imageUrl : `${process.env.NEXT_PUBLIC_API_BASE_URL}/uploads/${imageUrl.split('/').pop()}`,
+      imageUrl.includes('/images/') ? imageUrl : `${process.env.NEXT_PUBLIC_API_BASE_URL}/images/${imageUrl.split('/').pop()}`
     ];
     
     // 현재 URL이 아닌 다른 URL 시도

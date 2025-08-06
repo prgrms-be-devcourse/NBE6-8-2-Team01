@@ -56,7 +56,7 @@ const MessagePanel: React.FC<MessagePanelProps> = ({ onClose }) => {
 
       try {
         // 채팅방 목록 조회
-        const response = await fetch('http://localhost:8080/api/v1/bookbook/chat/rooms?page=0&size=20', {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/bookbook/chat/rooms?page=0&size=20`, {
           credentials: 'include',
           headers: {
             'Content-Type': 'application/json',
@@ -77,7 +77,7 @@ const MessagePanel: React.FC<MessagePanelProps> = ({ onClose }) => {
         setChatRooms(result.data?.content || []);
 
         // 읽지 않은 메시지 총 개수 조회
-        const unreadResponse = await fetch('http://localhost:8080/api/v1/bookbook/chat/unread-count', {
+        const unreadResponse = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/bookbook/chat/unread-count`, {
           credentials: 'include',
           headers: {
             'Content-Type': 'application/json',

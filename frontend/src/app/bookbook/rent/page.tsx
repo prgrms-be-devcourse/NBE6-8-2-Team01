@@ -82,7 +82,7 @@ export default function RentPage() {
         ...(filters.searchKeyword && { search: filters.searchKeyword })
       });
 
-      const response = await fetch(`http://localhost:8080/api/v1/bookbook/rent/available?${params}`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/bookbook/rent/available?${params}`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -92,7 +92,7 @@ export default function RentPage() {
         credentials: 'include',
       });
 
-      console.log('대여 가능한 책 목록 조회 API 호출:', `http://localhost:8080/api/v1/bookbook/rent/available?${params}`);
+      console.log('대여 가능한 책 목록 조회 API 호출:', `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/bookbook/rent/available?${params}`);
       console.log('API 응답 상태:', response.status);
 
       if (!response.ok) {

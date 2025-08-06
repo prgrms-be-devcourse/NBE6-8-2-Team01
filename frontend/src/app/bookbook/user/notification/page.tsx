@@ -344,17 +344,17 @@ export default function NotificationPage() {
     }
     // 상대 경로 처리
     else if (trimmedUrl.startsWith('/')) {
-      result = `http://localhost:8080${trimmedUrl}`;
+      result = `${process.env.NEXT_PUBLIC_API_BASE_URL}${trimmedUrl}`;
       console.log('🔧 절대경로 변환:', result);
     }
     // uploads로 시작하는 경우
     else if (trimmedUrl.startsWith('uploads/')) {
-      result = `http://localhost:8080/${trimmedUrl}`;
+      result = `${process.env.NEXT_PUBLIC_API_BASE_URL}/${trimmedUrl}`;
       console.log('🔧 uploads 경로 변환:', result);
     }
     // 파일명만 있는 경우
     else {
-      result = `http://localhost:8080/uploads/${trimmedUrl}`;
+      result = `${process.env.NEXT_PUBLIC_API_BASE_URL}/uploads/${trimmedUrl}`;
       console.log('🔧 파일명만 있음 - uploads 폴더에서 찾기:', result);
     }
     

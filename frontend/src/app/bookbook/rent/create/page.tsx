@@ -112,7 +112,7 @@ export default function BookRentPage() {
         }
 
         // 백엔드 책 검색 API 호출 시 start 파라미터 추가
-        const backendSearchApiUrl = `http://localhost:8080/api/v1/bookbook/searchbook?query=${encodeURIComponent(searchQuery)}&start=${pageNumber}`;
+        const backendSearchApiUrl = `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/bookbook/searchbook?query=${encodeURIComponent(searchQuery)}&start=${pageNumber}`;
 
         try{
             const response = await fetch(backendSearchApiUrl);
@@ -175,7 +175,7 @@ export default function BookRentPage() {
             imageFormData.append('file', bookImage);
 
             try{
-                const imageUploadRes = await fetch("http://localhost:8080/api/v1/bookbook/upload-image", {
+                const imageUploadRes = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/bookbook/upload-image`, {
                     method: "POST",
                     body: imageFormData,
                 });
@@ -212,7 +212,7 @@ export default function BookRentPage() {
 
         // 백엔드 Rent 페이지 생성 POST 요청으로 전송
         try{
-            const res = await fetch("http://localhost:8080/bookbook/rent/create", {
+            const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/bookbook/rent/create`, {
             method: "POST",
                 credentials: "include",
                 headers: {"Content-Type": "application/json"},
