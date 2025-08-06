@@ -36,6 +36,18 @@ interface RentRequestDetail {
   processStatus: string;
 }
 
+interface TokenInfo {
+  jwtTokenFound: boolean;
+  jwtTokenValid: boolean;
+  userId?: number;
+}
+
+interface DebugInfo {
+  serverOnline: boolean;
+  tokenInfo: TokenInfo | null;
+  timestamp: string;
+}
+
 const fetchNotifications = async (): Promise<NotificationApiResponse> => {
   try {
     const response = await fetch('/api/v1/bookbook/user/notifications', {
@@ -191,11 +203,12 @@ const testServerConnection = async (): Promise<boolean> => {
   }
 };
 
-const debugTokenStatus = async (): Promise<any> => {
+const debugTokenStatus = async (): Promise<TokenInfo | null> => {
   try {
     const response = await fetch('/api/v1/public/rentlist/debug-token');
     if (response.ok) {
-      return await response.json();
+      // ✅ as TokenInfo를 사용하여 타입을 명확히 알려줍니다.
+      return await response.json() as TokenInfo;
     }
     return null;
   } catch (error) {
@@ -228,7 +241,7 @@ export default function NotificationPage() {
   const [imageLoadStates, setImageLoadStates] = useState<{[key: number]: 'loading' | 'loaded' | 'error'}>({});
   const [processedNotifications, setProcessedNotifications] = useState<Set<number>>(new Set());
   // 🆕 디버깅 상태 추가
-  const [debugInfo, setDebugInfo] = useState<any>(null);
+  const [debugInfo, setDebugInfo] = useState<DebugInfo | null>(null);
   const [showDebug, setShowDebug] = useState(false);
 
   const loadNotifications = useCallback(async () => {
