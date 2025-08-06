@@ -1,4 +1,4 @@
-// 25.08.04
+// 25.08.06
 // src/app/bookbook/rent/edit/[id]/page.tsx
 // 글 수정을 위한 페이지
 

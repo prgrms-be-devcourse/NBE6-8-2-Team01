@@ -1,6 +1,5 @@
 package com.bookbook.domain.rentList.controller;
 
-import com.bookbook.domain.rentList.dto.RentAlarmRequestDto;
 import com.bookbook.domain.rentList.dto.RentListCreateRequestDto;
 import com.bookbook.domain.rentList.dto.RentListResponseDto;
 import com.bookbook.domain.rentList.dto.RentRequestDecisionDto;
@@ -84,30 +83,6 @@ public class RentListController {
                     .body(RsData.of("500-1", "대여 신청 처리 중 오류가 발생했습니다: " + e.getMessage(), null));
         }
     }
-
-    // 08.05 현준
-    // 대여 신청을 위한 알람을 생성하는 API
-    // /api/v1/user/{borrowerUserId}/rentlist/create/alarm
-    @PostMapping("/create/alarm")
-    @Operation(summary = "Rent_List 알람 등록") // Swagger 에서 API 문서화에 사용되는 설명
-    public ResponseEntity<RsData<String>> createRentListAlarm(
-            @PathVariable Long borrowerUserId,
-            @RequestBody RentAlarmRequestDto request
-            ){
-        try {
-            rentListService.createRentListAlarm(borrowerUserId, request);
-            return ResponseEntity.ok(RsData.of("200-1", "대여 신청이 완료되었습니다.", null));
-        } catch (IllegalArgumentException e) {
-            // 비즈니스 로직 에러 (중복 신청, 자신의 책 신청 등)
-            return ResponseEntity.badRequest()
-                    .body(RsData.of("400-1", e.getMessage(), null));
-        } catch (Exception e) {
-            // 예상치 못한 에러
-            return ResponseEntity.internalServerError()
-                    .body(RsData.of("500-1", "대여 신청 처리 중 오류가 발생했습니다: " + e.getMessage(), null));
-        }
-    }
-
     
     /**
      * 도서 반납하기
@@ -188,6 +163,7 @@ public class RentListController {
                     .body(RsData.of("404-1", "사용자 정보를 찾을 수 없습니다.", null));
         }
 
+        // 대여 신청 처리
         try {
             String result = rentListService.decideRentRequest(rentListId, decision, currentUser);
             return ResponseEntity.ok(RsData.of("200-1", result, null));
