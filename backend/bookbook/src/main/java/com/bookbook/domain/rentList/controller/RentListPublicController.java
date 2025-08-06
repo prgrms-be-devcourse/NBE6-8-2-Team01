@@ -1,5 +1,8 @@
 package com.bookbook.domain.rentList.controller;
+ 
+//08-06 유효상
 
+ 
 import com.bookbook.domain.rentList.dto.RentRequestDecisionDto;
 import com.bookbook.domain.rentList.service.RentListService;
 import com.bookbook.domain.user.entity.User;
