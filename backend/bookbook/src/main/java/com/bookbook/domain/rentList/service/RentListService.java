@@ -38,7 +38,7 @@ public class RentListService {
     private final RentRepository rentRepository;
     private final NotificationService notificationService;
     private final ReviewRepository reviewRepository;
-    
+
     /**
      * 사용자가 대여한 도서 목록 조회
      * 
@@ -220,12 +220,12 @@ public class RentListService {
             // 🆕 같은 책에 대한 다른 모든 PENDING 신청들을 자동으로 거절 처리
             List<RentList> otherPendingRequests = rentListRepository
                     .findByRentIdAndStatus(rent.getId(), RentRequestStatus.PENDING);
-            
+
             for (RentList otherRequest : otherPendingRequests) {
                 if (otherRequest.getId() != rentListId) { // 현재 처리하는 신청은 제외
                     otherRequest.setStatus(RentRequestStatus.REJECTED);
                     rentListRepository.save(otherRequest);
-                    
+
                     // 다른 신청자들에게 거절 알림 발송
                     User otherBorrower = otherRequest.getBorrowerUser();
                     String rejectMessage = String.format("'%s' 대여 요청이 거절되었습니다.", rent.getBookTitle());
@@ -289,13 +289,13 @@ public class RentListService {
             return "대여 신청을 거절했습니다.";
         }
     }
-    
+
     /**
      * 도서 반납하기
-     * 
+     *
      * 대여받은 사람이 도서를 조기 반납하는 기능입니다.
      * 반납 시 해당 대여 기록과 원본 게시글의 상태를 업데이트합니다.
-     * 
+     *
      * @param borrowerUserId 대여받은 사용자 ID
      * @param rentId 대여 게시글 ID
      * @throws IllegalArgumentException 대여 기록을 찾을 수 없거나 이미 반납된 경우
@@ -305,18 +305,18 @@ public class RentListService {
         // 해당 사용자의 대여 기록 조회
         RentList rentList = rentListRepository.findByBorrowerUserIdAndRentId(borrowerUserId, rentId)
                 .orElseThrow(() -> new IllegalArgumentException("대여 기록을 찾을 수 없습니다."));
-        
+
         // 원본 게시글 조회
         Rent rent = rentList.getRent();
-        
+
         // 이미 반납된 상태인지 확인 (게시글 상태가 FINISHED이면 이미 반납됨)
         if (rent.getRentStatus() == RentStatus.FINISHED) {
             throw new IllegalArgumentException("이미 반납된 도서입니다.");
         }
-        
+
         // 원본 게시글 상태를 FINISHED로 변경 (반납 완료)
         rent.setRentStatus(RentStatus.FINISHED);
-        
+
         // 변경사항 저장
         rentRepository.save(rent);
     }
