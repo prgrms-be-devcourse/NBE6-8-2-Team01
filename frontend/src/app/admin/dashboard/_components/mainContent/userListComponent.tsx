@@ -2,12 +2,14 @@
 
 import React, { useCallback, useEffect, useState } from "react";
 import { DataTable, ColumnDefinition } from "../common/Table";
-import { UserBaseResponseDto, UserDetailResponseDto, getStatus, userStatus} from "../../_types/userResponseDto";
+import { UserBaseResponseDto, UserDetailResponseDto, getUserStatus, userStatus } from "../../_types/userResponseDto";
 import { formatDate } from "../common/dateFormatter";
 import UserDetailModal from "../user/manage/userDetailModal";
 import { ContentComponentProps } from "./baseContentComponentProps";
 import { UserFilterContainer, FilterState } from "../user/filter";
 import { useDashBoardContext } from "@/app/admin/dashboard/_hooks/useDashboard";
+import fetchUserInfoFromAdmin from "@/app/admin/dashboard/_components/common/fetchUserInfo";
+import { toast } from "react-toastify";
 
 interface ManagementButtonProps {
   user: UserBaseResponseDto;
@@ -25,7 +27,9 @@ function ManagementButton({ user, onClick }: ManagementButtonProps) {
   );
 }
 
-export function UserListComponent({ data }: ContentComponentProps) {
+export function UserListComponent({ data, onRefresh }: ContentComponentProps) {
+  const statusList : userStatus[] = ["ACTIVE", "INACTIVE", "SUSPENDED"];
+
   const [selectedUser, setSelectedUser] = useState<UserDetailResponseDto>(
       null as unknown as UserDetailResponseDto
   );
@@ -39,7 +43,7 @@ export function UserListComponent({ data }: ContentComponentProps) {
       if (saved) {
         const parsed = JSON.parse(saved);
         return {
-          userStatuses: new Set(parsed.userStatuses || ["ACTIVE", "SUSPENDED", "INACTIVE"]),
+          userStatuses: new Set(parsed.userStatuses || statusList),
           searchTerm: parsed.searchTerm || "",
         };
       }
@@ -48,7 +52,7 @@ export function UserListComponent({ data }: ContentComponentProps) {
     }
     
     return {
-      userStatuses: new Set(["ACTIVE", "SUSPENDED", "INACTIVE"]),
+      userStatuses: new Set(statusList),
       searchTerm: "",
     };
   };
@@ -69,20 +73,14 @@ export function UserListComponent({ data }: ContentComponentProps) {
   }, [filters]);
 
   const handleManageClick = async (user: UserBaseResponseDto) => {
-    console.log(`관리 버튼 클릭: 멤버 ID - ${user.id}, 닉네임 - ${user.nickname}`);
+    try {
+      const userInfo = await fetchUserInfoFromAdmin(user.id);
+      setSelectedUser(userInfo as UserDetailResponseDto);
 
-    await fetch(`/api/v1/admin/users/${user.id}`, {
-      headers: {
-        "Content-Type": "application/json",
-      },
-    })
-      .then((data=> data.json()))
-      .then(data=> {
-        console.log(data);
-        setSelectedUser(data.data as UserDetailResponseDto);
-      });
-
-    setIsModalOpen(true);
+      setIsModalOpen(true);
+    } catch (error) {
+      toast.error(error as string);
+    }
   };
 
   const handleModalClose = () => {
@@ -104,7 +102,7 @@ export function UserListComponent({ data }: ContentComponentProps) {
     }
 
     if (newStatuses.size === 0) {
-      setFilters((prev) => ({ ...prev, userStatuses: new Set(["ACTIVE", "SUSPENDED", "INACTIVE"])}));
+      setFilters((prev) => ({ ...prev, userStatuses: new Set(statusList)}));
     } else {
       setFilters((prev) => ({ ...prev, userStatuses: newStatuses }));
     }
@@ -112,7 +110,7 @@ export function UserListComponent({ data }: ContentComponentProps) {
 
   // 전체 선택/해제
   const handleSelectAll = () => {
-    const allStatuses: userStatus[] = ["ACTIVE", "SUSPENDED", "INACTIVE"];
+    const allStatuses: userStatus[] = statusList;
     const isAllSelected = allStatuses.every((status) =>
       filters.userStatuses.has(status)
     );
@@ -132,12 +130,13 @@ export function UserListComponent({ data }: ContentComponentProps) {
   // 필터 초기화
   const resetFilters = () => {
     const resetState: FilterState = {
-      userStatuses: new Set(["ACTIVE", "SUSPENDED", "INACTIVE"]),
+      userStatuses: new Set(statusList),
       searchTerm: "",
     };
     setFilters(resetState);
   };
 
+  // 필터 값을 기준으로 요청을 보낼 parameter를 생성함
   const searchFromFilter = () => {
     const params = new URLSearchParams();
 
@@ -190,7 +189,7 @@ export function UserListComponent({ data }: ContentComponentProps) {
               : "text-gray-600 bg-gray-50"
           }`}
         >
-          {getStatus(user.userStatus)}
+          {getUserStatus(user.userStatus)}
         </span>
       ),
     },
@@ -242,6 +241,7 @@ export function UserListComponent({ data }: ContentComponentProps) {
           user={selectedUser}
           isOpen={isModalOpen}
           onClose={handleModalClose}
+          onRefresh={onRefresh}
         />
       )}
     </>

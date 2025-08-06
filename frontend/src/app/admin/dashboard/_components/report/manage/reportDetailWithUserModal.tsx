@@ -3,6 +3,8 @@ import ReportDetailModal from "./reportDetailModal";
 import UserDetailModal from "../../user/manage/userDetailModal";
 import { UserDetailResponseDto } from "@/app/admin/dashboard/_types/userResponseDto";
 import { ReportDetailResponseDto } from "@/app/admin/dashboard/_types/report";
+import fetchUserInfoFromAdmin from "@/app/admin/dashboard/_components/common/fetchUserInfo";
+import { toast } from "react-toastify";
 
 interface ReportDetailWithUserModalProps {
   report: ReportDetailResponseDto;
@@ -22,21 +24,16 @@ const ReportDetailWithUserModal: React.FC<ReportDetailWithUserModalProps> = ({
       null as unknown as UserDetailResponseDto
   );
 
-  const handleUserDetailClick = (userId: number) => {
+  const handleUserDetailClick = async (userId : number) => {
     console.log("Fetching user detail for ID:", userId);
 
-    fetch(`/api/v1/admin/users/${userId}`)
-      .then(response => response.json())
-      .then((data) => {
-        console.log(data);
-        setUserDetail(data.data as UserDetailResponseDto);
-        setUserDetailOpen(true);
-      })
-      .catch(error => {
-        console.error("사용자 정보 조회 실패:", error);
-        alert("사용자 정보를 불러오는데 실패했습니다.");
-      }
-    )
+    try {
+      const userInfo = await fetchUserInfoFromAdmin(userId);
+      setUserDetail(userInfo as UserDetailResponseDto);
+      setUserDetailOpen(true);
+    } catch (error) {
+      toast.error(error as string);
+    }
   };
 
   const handleUserDetailClose = () => {

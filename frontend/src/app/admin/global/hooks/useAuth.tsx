@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useRef, useState } from "react";
 import { userRole } from "@/app/admin/dashboard/_types/userResponseDto";
 import "@/app/util/fetchIntercepter";
+import { toast } from "react-toastify";
 
 export interface UserLoginResponseDto {
     id: number;
@@ -68,6 +69,13 @@ export default function useAuth() {
 
     const logout = (onSuccess: () => void) => {
         fetch("/api/v1/admin/logout", { method: "DELETE" })
+            .then((response) => {
+                if (!response.ok) {
+                    return;
+                }
+
+                toast.success("로그아웃이 완료되었습니다.");
+            })
             .catch((error) => {
                 console.error("Logout error:", error);
             })
