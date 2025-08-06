@@ -2,7 +2,7 @@ spring:
   application:
     name: bookbook
   profiles:
-    active: dev
+    active: prod
   output:
     ansi:
       enabled: always
