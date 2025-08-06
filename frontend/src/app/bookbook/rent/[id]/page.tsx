@@ -12,7 +12,6 @@ import UserProfileModal from "@/app/components/UserProfileModal";
 
 // 백엔드에서 받아올 책 상세 정보의 타입을 정의합니다.
 interface BookDetail {
-
     id: number; // 글 ID
     bookCondition: string; // 책 상태
     address: string; // 거래 희망 지역
@@ -38,21 +37,40 @@ interface BookDetail {
     isWishlisted: boolean; // 현재 사용자의 찜 상태
 }
 
-export default function BookDetailPage({ params }: { params: Promise<{ id: string }> }) {
+// 채팅방 응답 타입
+interface ChatRoomResponse {
+    roomId: string;
+    bookTitle: string;
+    otherUserNickname: string;
+}
+
+// API 응답 타입
+interface ApiResponse<T> {
+    data: T;
+    message?: string;
+    success?: boolean;
+}
+
+// Props 타입 정의
+interface BookDetailPageProps {
+    params: Promise<{ id: string }>;
+}
+
+export default function BookDetailPage({ params }: BookDetailPageProps): React.JSX.Element {
     // Next.js 동적 라우팅으로 URL에서 'id' 값을 가져옴
     const { id } = React.use(params);
 
     const [bookDetail, setBookDetail] = useState<BookDetail | null>(null);
-    const [loading, setLoading] = useState(true);
+    const [loading, setLoading] = useState<boolean>(true);
     const [error, setError] = useState<string | null>(null);
-    const [isRentModalOpen, setIsRentModalOpen] = useState(false);
+    const [isRentModalOpen, setIsRentModalOpen] = useState<boolean>(false);
 
-    const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
+    const [isProfileModalOpen, setIsProfileModalOpen] = useState<boolean>(false);
     const [selectedLenderId, setSelectedLenderId] = useState<number | null>(null);
 
     // 찜하기 상태 관리
-    const [isWishlisted, setIsWishlisted] = useState(false);
-    const [wishlistLoading, setWishlistLoading] = useState(false);
+    const [isWishlisted, setIsWishlisted] = useState<boolean>(false);
+    const [wishlistLoading, setWishlistLoading] = useState<boolean>(false);
 
     const router = useRouter(); // 페이지 이동을 위한 useRouter 훅
 
@@ -61,7 +79,7 @@ export default function BookDetailPage({ params }: { params: Promise<{ id: strin
 
     // 컴포넌트가 마운트되거나 ID가 변경될 때 책 상세 정보를 불러옵니다.
     useEffect(() => {
-        const fetchBookDetail = async () => {
+        const fetchBookDetail = async (): Promise<void> => {
             if (!id) return; // ID가 없으면 API 호출하지 않음
 
             setLoading(true);
@@ -69,7 +87,6 @@ export default function BookDetailPage({ params }: { params: Promise<{ id: strin
 
             try {
                 // 백엔드 API (예: GET /bookbook/rent/{id})를 호출하여 책 상세 정보를 가져옵니다.
-                // 실제 백엔드 API 엔드포인트에 맞게 URL을 수정해야 합니다.
                 const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/bookbook/rent/${id}`);
 
                 if (!response.ok) {
@@ -83,9 +100,10 @@ export default function BookDetailPage({ params }: { params: Promise<{ id: strin
 
                 // 찜 상태 초기화
                 setIsWishlisted(data.isWishlisted || false);
-            } catch (err: any) {
+            } catch (err: unknown) {
                 console.error("책 상세 정보 불러오기 실패:", err);
-                setError(`책 정보를 불러오는 데 실패했습니다: ${err.message || '알 수 없는 오류'}`);
+                const errorMessage = err instanceof Error ? err.message : '알 수 없는 오류';
+                setError(`책 정보를 불러오는 데 실패했습니다: ${errorMessage}`);
             } finally {
                 setLoading(false);
             }
@@ -94,20 +112,20 @@ export default function BookDetailPage({ params }: { params: Promise<{ id: strin
         fetchBookDetail();
     }, [id]); // id가 변경될 때마다 useEffect 재실행
 
-    const handleOpenProfileModal = () => {
+    const handleOpenProfileModal = (): void => {
         if (bookDetail?.lenderUserId) {
             setSelectedLenderId(bookDetail.lenderUserId);
             setIsProfileModalOpen(true);
         }
     };
 
-    const handleCloseProfileModal = () => {
+    const handleCloseProfileModal = (): void => {
         setIsProfileModalOpen(false);
         setSelectedLenderId(null);
     };
 
     // 북북톡 버튼 클릭 핸들러 - 채팅방 생성 후 채팅 페이지로 이동
-    const handleChatClick = async () => {
+    const handleChatClick = async (): Promise<void> => {
         if (!bookDetail) return;
 
         try {
@@ -129,27 +147,27 @@ export default function BookDetailPage({ params }: { params: Promise<{ id: strin
                     alert('로그인이 필요합니다.');
                     return;
                 } else if (response.status === 400) {
-                    const errorData = await response.json();
+                    const errorData: ApiResponse<unknown> = await response.json();
                     alert(errorData.message || '채팅방 생성에 실패했습니다.');
                     return;
                 }
                 throw new Error(`채팅방 생성 실패: ${response.status}`);
             }
 
-            const result = await response.json();
+            const result: ApiResponse<ChatRoomResponse> = await response.json();
             const chatRoom = result.data;
 
             // 채팅 페이지로 이동 (ChatWindow 컴포넌트가 있는 경로)
             router.push(`/bookbook/MessagePopup/${chatRoom.roomId}?bookTitle=${encodeURIComponent(bookDetail.bookTitle)}&otherUserNickname=${encodeURIComponent('대여자')}`);
 
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error('채팅방 생성 실패:', error);
             alert('채팅방 생성에 실패했습니다. 다시 시도해주세요.');
         }
     };
 
     // 찜하기 토글 함수
-    const handleWishlistToggle = async () => {
+    const handleWishlistToggle = async (): Promise<void> => {
         if (!user || !userId || !bookDetail) {
             alert('로그인이 필요한 서비스입니다.');
             return;
@@ -195,7 +213,7 @@ export default function BookDetailPage({ params }: { params: Promise<{ id: strin
                         alert('로그인이 필요합니다.');
                         return;
                     }
-                    const errorData = await response.json();
+                    const errorData: ApiResponse<unknown> = await response.json();
                     if (errorData.message && errorData.message.includes('이미 찜한 게시글')) {
                         alert('이미 찜한 게시글입니다.');
                         setIsWishlisted(true); // 상태 동기화
@@ -207,12 +225,19 @@ export default function BookDetailPage({ params }: { params: Promise<{ id: strin
                 setIsWishlisted(true);
                 alert('찜 목록에 추가되었습니다.');
             }
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error('찜하기 처리 실패:', error);
             alert('찜하기 처리에 실패했습니다. 다시 시도해주세요.');
         } finally {
             setWishlistLoading(false);
         }
+    };
+
+    // 이미지 에러 핸들러
+    const handleImageError = (e: React.SyntheticEvent<HTMLImageElement>): void => {
+        const target = e.currentTarget;
+        target.src = 'https://i.postimg.cc/pLC9D2vW/noimg.gif';
+        target.alt = "이미지 로드 실패";
     };
 
     // 로딩 중일 때 표시 (책 정보 로딩만 확인, 사용자 정보는 비동기로 처리)
@@ -273,10 +298,7 @@ export default function BookDetailPage({ params }: { params: Promise<{ id: strin
                         src={displayImageUrl}
                         alt={bookDetail.bookTitle || '책 표지'}
                         className="w-80 h-80 object-cover rounded-lg shadow-md max-w-full"
-                        onError={(e) => {
-                            e.currentTarget.src = defaultCoverImageUrl;
-                            e.currentTarget.alt = "이미지 로드 실패";
-                        }}
+                        onError={handleImageError}
                     />
                 </div>
 

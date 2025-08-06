@@ -2,7 +2,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { X, MessageCircle, Clock, User } from 'lucide-react';
+import { X, MessageCircle, Clock, User, Trash2, MoreVertical } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { ChatRoomResponse, ApiResponse } from './types/chat';
 
@@ -45,67 +45,69 @@ const MessagePanel: React.FC<MessagePanelProps> = ({ onClose }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [showDeleteMenu, setShowDeleteMenu] = useState<string | null>(null);
+  const [deletingRoomId, setDeletingRoomId] = useState<string | null>(null);
   
   const router = useRouter();
 
   // 채팅방 목록 조회
-  useEffect(() => {
-    const fetchChatRooms = async () => {
-      setLoading(true);
-      setError(null);
+  const fetchChatRooms = async () => {
+    setLoading(true);
+    setError(null);
 
-      try {
-        // 채팅방 목록 조회
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/bookbook/chat/rooms?page=0&size=20`, {
-          credentials: 'include',
-          headers: {
-            'Content-Type': 'application/json',
-          }
-        });
-
-        if (!response.ok) {
-          if (response.status === 401) {
-            // 401 에러는 인터셉터에서 처리되므로 여기서는 무시
-            console.log('채팅방 목록 조회 권한 없음 - 인터셉터에서 처리됨');
-            return;
-          }
-          throw new Error(`채팅방 목록 조회 실패: ${response.status}`);
+    try {
+      // 채팅방 목록 조회
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/bookbook/chat/rooms?page=0&size=20`, {
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
         }
+      });
 
-        // 백엔드에서 Page<ChatRoomResponse> 형태로 반환하므로 수정
-        const result: ApiResponse<PageResponse<ChatRoomResponse>> = await response.json();
-        setChatRooms(result.data?.content || []);
-
-        // 읽지 않은 메시지 총 개수 조회
-        const unreadResponse = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/bookbook/chat/unread-count`, {
-          credentials: 'include',
-          headers: {
-            'Content-Type': 'application/json',
-          }
-        });
-
-        if (unreadResponse.ok) {
-          const unreadResult: ApiResponse<number> = await unreadResponse.json();
-          setUnreadCount(unreadResult.data || 0);
+      if (!response.ok) {
+        if (response.status === 401) {
+          // 401 에러는 인터셉터에서 처리되므로 여기서는 무시
+          console.log('채팅방 목록 조회 권한 없음 - 인터셉터에서 처리됨');
+          return;
         }
-
-      } catch (error: unknown) {
-        console.error('채팅방 목록 조회 실패:', error);
-        
-        // error 타입 가드 처리
-        let errorMessage = '채팅방 목록을 불러오는 데 실패했습니다.';
-        if (error instanceof Error) {
-          errorMessage = error.message;
-        } else if (typeof error === 'string') {
-          errorMessage = error;
-        }
-        
-        setError(errorMessage);
-      } finally {
-        setLoading(false);
+        throw new Error(`채팅방 목록 조회 실패: ${response.status}`);
       }
-    };
 
+      // 백엔드에서 Page<ChatRoomResponse> 형태로 반환하므로 수정
+      const result: ApiResponse<PageResponse<ChatRoomResponse>> = await response.json();
+      setChatRooms(result.data?.content || []);
+
+      // 읽지 않은 메시지 총 개수 조회
+      const unreadResponse = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/bookbook/chat/unread-count`, {
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
+
+      if (unreadResponse.ok) {
+        const unreadResult: ApiResponse<number> = await unreadResponse.json();
+        setUnreadCount(unreadResult.data || 0);
+      }
+
+    } catch (error: unknown) {
+      console.error('채팅방 목록 조회 실패:', error);
+      
+      // error 타입 가드 처리
+      let errorMessage = '채팅방 목록을 불러오는 데 실패했습니다.';
+      if (error instanceof Error) {
+        errorMessage = error.message;
+      } else if (typeof error === 'string') {
+        errorMessage = error;
+      }
+      
+      setError(errorMessage);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
     fetchChatRooms();
   }, []);
 
@@ -113,6 +115,74 @@ const MessagePanel: React.FC<MessagePanelProps> = ({ onClose }) => {
   const handleChatRoomClick = (chatRoom: ChatRoomResponse) => {
     onClose(); // 패널 닫기
     router.push(`/bookbook/MessagePopup/${chatRoom.roomId}?bookTitle=${encodeURIComponent(chatRoom.bookTitle)}&otherUserNickname=${encodeURIComponent(chatRoom.otherUserNickname)}`);
+  };
+
+  // 채팅방 삭제 핸들러
+  const handleDeleteChatRoom = async (roomId: string, event: React.MouseEvent) => {
+    event.stopPropagation(); // 채팅방 클릭 이벤트 방지
+    
+    if (!confirm('이 채팅방을 삭제하시겠습니까?\n삭제된 채팅방과 메시지는 복구할 수 없습니다.')) {
+      return;
+    }
+
+    setDeletingRoomId(roomId);
+    
+    try {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/bookbook/chat/rooms/${roomId}`, {
+        method: 'DELETE',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
+
+      if (!response.ok) {
+        if (response.status === 403) {
+          throw new Error('채팅방 삭제 권한이 없습니다.');
+        } else if (response.status === 404) {
+          throw new Error('존재하지 않는 채팅방입니다.');
+        } else {
+          throw new Error(`채팅방 삭제 실패: ${response.status}`);
+        }
+      }
+
+      // 로컬 상태에서 채팅방 제거
+      setChatRooms(prev => prev.filter(room => room.roomId !== roomId));
+      
+      // 읽지 않은 메시지 개수 다시 조회
+      const unreadResponse = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/bookbook/chat/unread-count`, {
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
+
+      if (unreadResponse.ok) {
+        const unreadResult: ApiResponse<number> = await unreadResponse.json();
+        setUnreadCount(unreadResult.data || 0);
+      }
+
+      alert('채팅방이 삭제되었습니다.');
+      
+    } catch (error: unknown) {
+      console.error('채팅방 삭제 실패:', error);
+      
+      let errorMessage = '채팅방 삭제에 실패했습니다.';
+      if (error instanceof Error) {
+        errorMessage = error.message;
+      }
+      
+      alert(errorMessage);
+    } finally {
+      setDeletingRoomId(null);
+      setShowDeleteMenu(null);
+    }
+  };
+
+  // 메뉴 토글 핸들러
+  const toggleDeleteMenu = (roomId: string, event: React.MouseEvent) => {
+    event.stopPropagation(); // 채팅방 클릭 이벤트 방지
+    setShowDeleteMenu(showDeleteMenu === roomId ? null : roomId);
   };
 
   // 시간 포맷팅
@@ -140,6 +210,18 @@ const MessagePanel: React.FC<MessagePanelProps> = ({ onClose }) => {
     if (message.length <= maxLength) return message;
     return message.substring(0, maxLength) + '...';
   };
+
+  // 외부 클릭시 메뉴 닫기
+  useEffect(() => {
+    const handleClickOutside = () => {
+      setShowDeleteMenu(null);
+    };
+
+    if (showDeleteMenu) {
+      document.addEventListener('click', handleClickOutside);
+      return () => document.removeEventListener('click', handleClickOutside);
+    }
+  }, [showDeleteMenu]);
 
   return (
     <div className="fixed inset-0 flex justify-end z-50" style={{ backgroundColor: 'rgba(0, 0, 0, 0.3)' }}>
@@ -201,9 +283,10 @@ const MessagePanel: React.FC<MessagePanelProps> = ({ onClose }) => {
               {chatRooms.map((chatRoom) => (
                 <div
                   key={chatRoom.id}
-                  onClick={() => handleChatRoomClick(chatRoom)}
-                  className="p-5 hover:bg-gray-50 cursor-pointer transition-colors">
-                  <div className="flex items-start space-x-4">
+                  className="relative p-5 hover:bg-gray-50 cursor-pointer transition-colors">
+                  <div 
+                    onClick={() => handleChatRoomClick(chatRoom)}
+                    className="flex items-start space-x-4">
                     {/* 프로필 아이콘 */}
                     <div className="flex-shrink-0">
                       <div className="w-14 h-14 bg-gray-200 rounded-full flex items-center justify-center">
@@ -217,16 +300,13 @@ const MessagePanel: React.FC<MessagePanelProps> = ({ onClose }) => {
                         <h3 className="text-base font-semibold text-gray-900 truncate">
                           {chatRoom.otherUserNickname}
                         </h3>
-                        <div className="flex items-center space-x-2">
+                        {/* 읽지 않은 메시지 개수를 삭제 버튼과 겹치지 않게 왼쪽으로 이동 */}
+                        <div className="flex items-center space-x-2 mr-10">
                           {chatRoom.unreadCount > 0 && (
                             <span className="bg-red-500 text-white text-xs font-bold rounded-full px-2 py-1 min-w-[20px] text-center">
                               {chatRoom.unreadCount > 99 ? '99+' : chatRoom.unreadCount}
                             </span>
                           )}
-                          <span className="text-sm text-gray-500 flex items-center">
-                            <Clock className="w-4 h-4 mr-1" />
-                            {formatTime(chatRoom.lastMessageTime)}
-                          </span>
                         </div>
                       </div>
 
@@ -236,14 +316,55 @@ const MessagePanel: React.FC<MessagePanelProps> = ({ onClose }) => {
                       </p>
 
                       {/* 마지막 메시지 */}
-                      <p className="text-sm text-gray-600 truncate">
+                      <p className="text-sm text-gray-600 mb-2 truncate">
                         {chatRoom.lastMessage 
                           ? truncateMessage(chatRoom.lastMessage)
                           : '새로운 채팅방이 생성되었습니다.'
                         }
                       </p>
+
+                      {/* 시간 - 맨 아래로 이동 */}
+                      <div className="flex justify-end">
+                        <span className="text-xs text-gray-400 flex items-center">
+                          <Clock className="w-3 h-3 mr-1" />
+                          {formatTime(chatRoom.lastMessageTime)}
+                        </span>
+                      </div>
                     </div>
                   </div>
+
+                  {/* 메뉴 버튼 - 항상 보이게 변경 */}
+                  <div className="absolute top-2 right-2">
+                    <button
+                      onClick={(e) => toggleDeleteMenu(chatRoom.roomId, e)}
+                      className="p-2 hover:bg-gray-200 rounded-full transition-colors"
+                      title="채팅방 옵션">
+                      <MoreVertical className="w-4 h-4 text-gray-400 hover:text-gray-600" />
+                    </button>
+
+                    {/* 삭제 메뉴 */}
+                    {showDeleteMenu === chatRoom.roomId && (
+                      <div className="absolute right-0 top-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg py-1 z-10 min-w-[120px]">
+                        <button
+                          onClick={(e) => handleDeleteChatRoom(chatRoom.roomId, e)}
+                          disabled={deletingRoomId === chatRoom.roomId}
+                          className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 transition-colors flex items-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed">
+                          {deletingRoomId === chatRoom.roomId ? (
+                            <>
+                              <div className="w-4 h-4 border-2 border-red-600 border-t-transparent rounded-full animate-spin"></div>
+                              <span>삭제 중...</span>
+                            </>
+                          ) : (
+                            <>
+                              <Trash2 className="w-4 h-4" />
+                              <span>채팅방 삭제</span>
+                            </>
+                          )}
+                        </button>
+                      </div>
+                    )}
+                  </div>
+
                 </div>
               ))}
             </div>
