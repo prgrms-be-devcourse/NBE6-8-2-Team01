@@ -1,5 +1,5 @@
 package com.bookbook.domain.rentList.service;
-
+//08-06 유효상
 import com.bookbook.domain.notification.enums.NotificationType;
 import com.bookbook.domain.notification.service.NotificationService;
 import com.bookbook.domain.rent.entity.Rent;

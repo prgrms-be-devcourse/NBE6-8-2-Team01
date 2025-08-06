@@ -1,5 +1,7 @@
 package com.bookbook.config;
 
+//08-06 유효상
+
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
