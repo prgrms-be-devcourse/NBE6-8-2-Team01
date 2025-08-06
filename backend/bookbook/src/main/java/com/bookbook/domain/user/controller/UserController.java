@@ -1,9 +1,6 @@
 package com.bookbook.domain.user.controller;
 
-import com.bookbook.domain.user.dto.UserCreateRequestDto;
-import com.bookbook.domain.user.dto.UserProfileResponseDto;
-import com.bookbook.domain.user.dto.UserResponseDto;
-import com.bookbook.domain.user.dto.UserUpdateRequestDto;
+import com.bookbook.domain.user.dto.*;
 import com.bookbook.domain.user.service.UserService;
 import com.bookbook.global.exception.ServiceException;
 import com.bookbook.global.rsdata.RsData;
@@ -63,6 +60,18 @@ public class UserController {
 
         UserResponseDto userDetails = userService.getUserDetails(customOAuth2User.getUserId());
         RsData<UserResponseDto> rsData = RsData.of("200-OK", "사용자 정보 조회 성공", userDetails);
+        return ResponseEntity.status(rsData.getStatusCode()).body(rsData);
+    }
+
+    @GetMapping("/status")
+    public ResponseEntity<RsData<UserStatusResponseDto>> getCurrentUserStatus(@AuthenticationPrincipal CustomOAuth2User customOAuth2User) {
+        // ⭐ JWT 필터에서 이미 인증을 처리하므로, Principal이 null일 경우는 JWT가 유효하지 않은 경우
+        if (customOAuth2User == null || customOAuth2User.getUserId() == null) {
+            throw new ServiceException("401-AUTH-INVALID", "로그인된 사용자가 없습니다.");
+        }
+
+        UserStatusResponseDto userDetails = userService.getUserStatus(customOAuth2User.getUserId());
+        RsData<UserStatusResponseDto> rsData = RsData.of("200-OK", "사용자 정보 조회 성공", userDetails);
         return ResponseEntity.status(rsData.getStatusCode()).body(rsData);
     }
 
