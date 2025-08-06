@@ -71,7 +71,7 @@ export default function ReviewModal({ isOpen, onClose, book, target, onSubmit }:
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
       <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-xl font-bold text-gray-900">사용자 리뷰 작성</h2>
@@ -109,7 +109,13 @@ export default function ReviewModal({ isOpen, onClose, book, target, onSubmit }:
           <div className="bg-gray-50 rounded-lg p-3">
             <div className="flex gap-3">
               <img
-                src={book.bookImage || "/book-placeholder.png"}
+                src={
+                  book.bookImage 
+                    ? (book.bookImage.startsWith('http') 
+                        ? book.bookImage 
+                        : `http://localhost:8080${book.bookImage}`)
+                    : "/book-placeholder.png"
+                }
                 alt={book.bookTitle}
                 className="w-10 h-12 object-cover rounded border border-gray-200"
                 onError={(e) => {
