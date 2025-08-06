@@ -234,7 +234,7 @@ export default function BookFilterBar({ onFilterChange, loading = false }: BookF
           )}
           {filters.searchKeyword && (
             <span className="bg-yellow-100 text-yellow-800 px-2 py-1 rounded-full text-xs">
-              검색: "{filters.searchKeyword}"
+              검색: &quot;{filters.searchKeyword}&quot;
             </span>
           )}
         </div>

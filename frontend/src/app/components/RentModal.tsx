@@ -106,16 +106,21 @@ export default function RentModal({ isOpen, onClose, bookTitle, lenderNickname, 
             onClose();
             resetBookRentModal();
             
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error('대여 신청 실패:', error);
             
             // fetchInterceptor에서 이미 인증 에러는 처리하므로 다른 에러만 처리
-            if (error.message.includes('재로그인이 필요합니다')) {
-                // fetchInterceptor에서 이미 로그인 모달을 열었으므로 별도 처리 불필요
-                return;
+            if (error instanceof Error) {
+                if (error.message.includes('재로그인이 필요합니다')) {
+                    // fetchInterceptor에서 이미 로그인 모달을 열었으므로 별도 처리 불필요
+                    return;
+                } else {
+                    // 깔끔한 에러 메시지만 표시
+                    alert(error.message || '알 수 없는 오류가 발생했습니다.');
+                }
             } else {
-                // 👆 깔끔한 에러 메시지만 표시
-                alert(error.message || '알 수 없는 오류가 발생했습니다.');
+                // Error 객체가 아닌 경우를 대비
+                alert('알 수 없는 오류가 발생했습니다.');
             }
         } finally {
             setIsSubmitting(false);

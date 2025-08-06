@@ -217,7 +217,7 @@ export default function RentPage() {
             총 <span className="font-semibold text-blue-600">{pagination.totalElements}권</span>의 책이 있습니다.
             {currentFilters.searchKeyword && (
               <span className="ml-2">
-                "<span className="font-semibold">{currentFilters.searchKeyword}</span>" 검색 결과
+                &quot;<span className="font-semibold">{currentFilters.searchKeyword}</span>&quot; 검색 결과
               </span>
             )}
           </p>
