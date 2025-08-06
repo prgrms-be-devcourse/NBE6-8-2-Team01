@@ -10,7 +10,7 @@
 export interface MenuItem {
   id: string;
   label: string;
-  icon?: React.ComponentType<any>;
+  icon?: React.ComponentType<never>;
   children?: MenuItem[];
   apiPath?: string;
 }

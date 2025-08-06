@@ -25,7 +25,7 @@ export interface ColumnDefinition<T> {
  */
 interface DataTableProps<T> {
   columns: ColumnDefinition<T>[];
-  data: PageResponse<any | null>;
+  data: PageResponse<T>;
   pageFactory?: () => URLSearchParams;
 }
 
