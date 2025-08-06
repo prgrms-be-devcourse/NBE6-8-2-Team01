@@ -20,7 +20,6 @@ export default function AdminPage() {
   };
 
   const handleLogout = () => {
-    console.log("로그아웃 처리");
     _logout(() => {});
   };
 

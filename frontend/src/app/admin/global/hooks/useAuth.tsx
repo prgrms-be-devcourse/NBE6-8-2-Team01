@@ -32,8 +32,6 @@ export default function useAuth() {
         setLoading(true);
         setError("");
 
-        console.log('[useAuth] 사용자 정보 조회 시작...');
-
         fetch('/api/v1/bookbook/users/me', {
             method: "GET",
             headers: {
@@ -41,7 +39,6 @@ export default function useAuth() {
             }
         })
         .then(response => {
-            console.log('[useAuth] 응답 상태:', response.status);
             if (!response.ok) {
                 throw new Error(`HTTP ${response.status}: ${response.statusText}`);
             }
@@ -49,12 +46,10 @@ export default function useAuth() {
         })
         .then(data => {
             if (data.data) {
-                console.log('[useAuth] 사용자 정보 조회 성공:', data.data);
                 setLoginMember(data.data as UserLoginResponseDto);
             }
         })
         .catch(err => {
-            console.error('[useAuth] 사용자 정보 조회 실패:', err);
             setError(err instanceof Error ? err.message : '사용자 정보를 불러오는데 실패했습니다.');
             setLoginMember(null as unknown as UserLoginResponseDto);
         })
@@ -75,9 +70,6 @@ export default function useAuth() {
                 }
 
                 toast.success("로그아웃이 완료되었습니다.");
-            })
-            .catch((error) => {
-                console.error("Logout error:", error);
             })
             .finally(() => {
                 clearLoginMember();

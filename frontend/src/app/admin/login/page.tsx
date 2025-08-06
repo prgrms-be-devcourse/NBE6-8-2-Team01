@@ -65,11 +65,9 @@ export default function AdminLoginPage() {
                 if (message.endsWith("fetch")) {
                     alert("서버와 연결하지 못했습니다.");
                 }
-                console.log(error);
                 throw error;
             })
 
-            console.log(data);
             if (data.statusCode === 404) {
                 toast.error("정보가 일치하지 않습니다.")
                 return

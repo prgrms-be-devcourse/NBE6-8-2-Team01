@@ -119,7 +119,6 @@ export function PostDetailModal({
     } catch (error) {
       const errorMessage = error as string;
 
-      console.error(errorMessage);
       toast.error(errorMessage);
     } finally {
       handleCancelAction();

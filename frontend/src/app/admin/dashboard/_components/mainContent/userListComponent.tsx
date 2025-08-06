@@ -47,9 +47,7 @@ export function UserListComponent({ data, onRefresh }: ContentComponentProps) {
           searchTerm: parsed.searchTerm || "",
         };
       }
-    } catch (error) {
-      console.warn('필터 상태 복원 실패:', error);
-    }
+    } catch (error) {}
     
     return {
       userStatuses: new Set(statusList),
@@ -67,9 +65,7 @@ export function UserListComponent({ data, onRefresh }: ContentComponentProps) {
         searchTerm: filters.searchTerm,
       };
       sessionStorage.setItem('admin-user-list-filters', JSON.stringify(toSave));
-    } catch (error) {
-      console.warn('필터 상태 저장 실패:', error);
-    }
+    } catch (error) {}
   }, [filters]);
 
   const handleManageClick = async (user: UserBaseResponseDto) => {

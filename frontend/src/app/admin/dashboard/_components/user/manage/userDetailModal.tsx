@@ -60,7 +60,6 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
     });
 
     const data = await response.json().catch(error => {
-      console.error("API 요청 실패:", error);
       throw error;
     });
 
@@ -122,7 +121,6 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
     } catch (error) {
       // 에러 발생시 모달을 닫지 않고 사용자가 다시 시도할 수 있도록 함
       toast.error(error as string)
-      console.error("처리 중 오류 발생:", error);
     }
   };
 

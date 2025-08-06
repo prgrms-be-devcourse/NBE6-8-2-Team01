@@ -25,8 +25,6 @@ const ReportDetailWithUserModal: React.FC<ReportDetailWithUserModalProps> = ({
   );
 
   const handleUserDetailClick = async (userId : number) => {
-    console.log("Fetching user detail for ID:", userId);
-
     try {
       const userInfo = await fetchUserInfoFromAdmin(userId);
       setUserDetail(userInfo as UserDetailResponseDto);

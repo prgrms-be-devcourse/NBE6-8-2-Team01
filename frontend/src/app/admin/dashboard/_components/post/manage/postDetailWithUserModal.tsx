@@ -25,7 +25,6 @@ const PostDetailWithUserModal: React.FC<PostDetailWithUserModalProps> = ({
   );
 
   const handleUserDetailClick = async () => {
-    console.log("Fetching user detail for ID:", post.lenderUserId);
 
     try {
       const userInfo = await fetchUserInfoFromAdmin(post.lenderUserId);

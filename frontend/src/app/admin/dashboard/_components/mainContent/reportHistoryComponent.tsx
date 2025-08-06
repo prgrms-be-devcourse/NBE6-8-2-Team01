@@ -53,9 +53,7 @@ export function ReportHistoryComponent({ data, onRefresh }: ContentComponentProp
           searchTerm: parsed.searchTerm || "",
         };
       }
-    } catch (error) {
-      console.warn('필터 상태 복원 실패:', error);
-    }
+    } catch (error) {}
 
     return {
       statuses: new Set(statusList),
@@ -72,9 +70,7 @@ export function ReportHistoryComponent({ data, onRefresh }: ContentComponentProp
         searchTerm: filters.searchTerm,
       };
       sessionStorage.setItem('admin-user-report-list-filters', JSON.stringify(toSave));
-    } catch (error) {
-      console.warn('필터 상태 저장 실패:', error);
-    }
+    } catch (error) {}
   }, [filters]);
 
   const handleManageClick = async (report : ReportSimpleResponseDto) => {
