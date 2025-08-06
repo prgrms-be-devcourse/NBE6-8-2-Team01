@@ -34,12 +34,39 @@ public class ChatController {
                 user.getUserId(), request.getRentId(), request.getLenderId());
         
         try {
+            // 입력 검증
+            if (request.getRentId() == null) {
+                log.warn("채팅방 생성 실패 - rentId가 null");
+                return ResponseEntity.badRequest()
+                        .body(RsData.of("400", "대여 게시글 ID가 필요합니다.", null));
+            }
+            
+            if (request.getLenderId() == null) {
+                log.warn("채팅방 생성 실패 - lenderId가 null");
+                return ResponseEntity.badRequest()
+                        .body(RsData.of("400", "빌려주는 사용자 ID가 필요합니다.", null));
+            }
+            
+            if (user.getUserId() == null) {
+                log.warn("채팅방 생성 실패 - 사용자 인증 정보 없음");
+                return ResponseEntity.status(401)
+                        .body(RsData.of("401", "로그인이 필요합니다.", null));
+            }
+            
             ChatRoomResponse response = chatService.createOrGetChatRoom(request, user.getUserId().intValue());
+            
+            log.info("채팅방 생성/조회 성공 - roomId: {}", response.getRoomId());
             return ResponseEntity.ok(RsData.of("200", "채팅방이 생성되었습니다.", response));
-        } catch (Exception e) {
-            log.error("채팅방 생성 실패", e);
+            
+        } catch (IllegalArgumentException e) {
+            log.error("채팅방 생성 실패 - 잘못된 파라미터: {}", e.getMessage());
             return ResponseEntity.badRequest()
-                    .body(RsData.of("400", e.getMessage(), null));
+                    .body(RsData.of("400", "잘못된 요청입니다: " + e.getMessage(), null));
+        } catch (Exception e) {
+            log.error("채팅방 생성 실패 - 상세 에러: ", e);
+            String errorMessage = e.getMessage() != null ? e.getMessage() : "채팅방 생성 중 오류가 발생했습니다.";
+            return ResponseEntity.badRequest()
+                    .body(RsData.of("400", errorMessage, null));
         }
     }
     
@@ -189,20 +216,20 @@ public class ChatController {
     }
     
     /**
-     * 채팅방 삭제
+     * 채팅방 나가기
      */
-    @DeleteMapping("/rooms/{roomId}")
-    public ResponseEntity<RsData<Void>> deleteChatRoom(
+    @PostMapping("/rooms/{roomId}/leave")
+    public ResponseEntity<RsData<Void>> leaveChatRoom(
             @PathVariable String roomId,
             @AuthenticationPrincipal CustomOAuth2User user) {
         
-        log.info("채팅방 삭제 요청 - roomId: {}, userId: {}", roomId, user.getUserId());
+        log.info("채팅방 나가기 요청 - roomId: {}, userId: {}", roomId, user.getUserId());
         
         try {
-            chatService.deleteChatRoom(roomId, user.getUserId().intValue());
-            return ResponseEntity.ok(RsData.of("200", "채팅방이 삭제되었습니다.", null));
+            chatService.leaveChatRoom(roomId, user.getUserId().intValue());
+            return ResponseEntity.ok(RsData.of("200", "채팅방을 나갔습니다.", null));
         } catch (Exception e) {
-            log.error("채팅방 삭제 실패", e);
+            log.error("채팅방 나가기 실패", e);
             if (e.getMessage().contains("권한이 없습니다")) {
                 return ResponseEntity.status(403)
                         .body(RsData.of("403", e.getMessage(), null));
@@ -211,7 +238,7 @@ public class ChatController {
                         .body(RsData.of("404", e.getMessage(), null));
             }
             return ResponseEntity.internalServerError()
-                    .body(RsData.of("500", "채팅방 삭제에 실패했습니다.", null));
+                    .body(RsData.of("500", "채팅방 나가기에 실패했습니다.", null));
         }
     }
 }
