@@ -1,0 +1,275 @@
+import { useState } from "react";
+import { UserDetailResponseDto } from "../../../_types/userResponseDto";
+import { formatDate } from "../../common/dateFormatter";
+import ConfirmModal from "../../common/confirmModal";
+import UserBasicInfo from "./userBasicInfo";
+import UserStatusInfo from "./userStatusInfo";
+import UserJoinInfo from "./userJoinInfo";
+import SuspendForm from "./suspendForm";
+import { toast } from "react-toastify";
+
+interface UserDetailModalProps {
+  user: UserDetailResponseDto;
+  isOpen: boolean;
+  onClose: () => void;
+  onRefresh?: () => void
+}
+
+const UserDetailModal: React.FC<UserDetailModalProps> = ({
+  user,
+  isOpen,
+  onClose,
+  onRefresh,
+}) => {
+  const [currentUser, setCurrentUser] = useState<UserDetailResponseDto>(user);
+  const [showSuspendForm, setShowSuspendForm] = useState(false);
+  const [suspendPeriod, setSuspendPeriod] = useState<string>("");
+  const [suspendReason, setSuspendReason] = useState<string>("");
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [confirmAction, setConfirmAction] = useState<
+    "suspend" | "unsuspend" | null
+  >(null);
+
+  if (!isOpen || !currentUser) return null;
+
+  const handleSuspendClick = () => {
+    if (currentUser.baseResponseDto.userStatus === "SUSPENDED") {
+      setConfirmAction("unsuspend");
+      setShowConfirmModal(true);
+    } else {
+      setShowSuspendForm(true);
+    }
+  };
+
+  const handleSuspendFormSubmit = () => {
+    if (!suspendPeriod || !suspendReason.trim()) {
+      alert("정지 기간과 사유를 모두 입력해주세요.");
+      return;
+    }
+    setConfirmAction("suspend");
+    setShowConfirmModal(true);
+  };
+
+  const doRequest = async (path: string, requestInit?: RequestInit) => {
+    const response = await fetch(path, {
+      ...requestInit,
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json"
+      }
+    });
+
+    const data = await response.json().catch(error => {
+      throw error;
+    });
+
+    if ([403, 404, 409, 422].includes(data.statusCode)) {
+      resetModalState();
+      onClose();
+      onRefresh?.();
+      throw data.msg;
+    }
+
+    return data;
+  };
+
+  const suspendUser = async () => {
+    try {
+      const requestDto = {
+        userId: currentUser.baseResponseDto.id,
+        reason: suspendReason,
+        period: getPeriodDays(suspendPeriod),
+      };
+
+      const data = await doRequest("/api/v1/admin/users/suspend", {
+        body: JSON.stringify(requestDto),
+      });
+
+      toast.success(`${currentUser.baseResponseDto.nickname}님이 정지되었습니다.`);
+      setCurrentUser(data.data as UserDetailResponseDto);
+
+    } catch (error) {
+      throw error;
+    }
+  };
+
+  const resumeUser = async () => {
+    try {
+      const userId = currentUser.baseResponseDto.id;
+
+      const data = await doRequest(`/api/v1/admin/users/${userId}/resume`);
+
+      toast.success(`${currentUser.baseResponseDto.nickname}님의 정지가 해제되었습니다.`);
+      setCurrentUser(data.data as UserDetailResponseDto);
+
+    } catch (error) {
+      throw error;
+    }
+  };
+
+  const handleConfirmAction = async () => {
+    try {
+      if (confirmAction === "suspend") {
+        await suspendUser();
+      } else if (confirmAction === "unsuspend") {
+        await resumeUser();
+      }
+
+      resetModalState();
+      onRefresh?.();
+
+    } catch (error) {
+      // 에러 발생시 모달을 닫지 않고 사용자가 다시 시도할 수 있도록 함
+      toast.error(error as string)
+    }
+  };
+
+  const handleCancelAction = () => {
+    setShowConfirmModal(false);
+    if (confirmAction === "suspend") {
+      setConfirmAction(null);
+    } else {
+      setConfirmAction(null);
+    }
+  };
+
+  const resetModalState = () => {
+    setShowConfirmModal(false);
+    setShowSuspendForm(false);
+    setSuspendPeriod("");
+    setSuspendReason("");
+    setConfirmAction(null);
+  };
+
+  const getPeriodDays = (period: string): number => {
+    switch (period) {
+      case "3일":
+        return 3;
+      case "7일":
+        return 7;
+      case "30일":
+        return 30;
+      case "영구 정지":
+        return 73000; // 200년
+      default:
+        return 0;
+    }
+  };
+
+  const getPeriodText = (period: string): string => {
+    return period === "영구 정지" ? "영구 정지 (200년)" : period;
+  };
+
+  const getConfirmMessage = (): string => {
+    if (confirmAction === "suspend") {
+      return `정말로 ${
+        currentUser.baseResponseDto.nickname
+      }님을 정지하시겠습니까?\n정지일 수: ${getPeriodText(suspendPeriod)}`;
+    } else if (confirmAction === "unsuspend") {
+      const resumeDate = currentUser.resumedAt
+        ? formatDate(currentUser.resumedAt)
+        : "즉시";
+      return `정말로 ${currentUser.baseResponseDto.nickname}님의 정지를 해제하시겠습니까?\n정지 해제일: ${resumeDate}`;
+    }
+    return "";
+  };
+
+  return (
+    <>
+      <div className="fixed inset-0 z-50 flex items-center justify-center">
+        {/* 배경 오버레이 */}
+        <div
+          className="absolute inset-0 bg-black/30 backdrop-blur-sm"
+          onClick={showSuspendForm ? undefined : onClose}
+        />
+
+        {/* 모달 컨텐츠 */}
+        <div className="relative bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] flex flex-col">
+          {/* 헤더 */}
+          <div className="flex items-center justify-between p-6 border-b">
+            <h2 className="text-xl font-semibold text-gray-900">
+              {showSuspendForm ? "정지하기" : "멤버 상세 정보"}
+            </h2>
+            <button
+              onClick={
+                showSuspendForm ? () => setShowSuspendForm(false) : onClose
+              }
+              className="text-gray-400 hover:text-gray-600 transition-colors"
+            >
+              <svg
+                className="w-6 h-6"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M6 18L18 6M6 6l12 12"
+                />
+              </svg>
+            </button>
+          </div>
+
+          {/* 본문 */}
+          {showSuspendForm ? (
+            <SuspendForm
+              user={currentUser}
+              suspendPeriod={suspendPeriod}
+              setSuspendPeriod={setSuspendPeriod}
+              suspendReason={suspendReason}
+              setSuspendReason={setSuspendReason}
+              onSubmit={handleSuspendFormSubmit}
+            />
+          ) : (
+            <div className="flex-1 p-6 space-y-4 overflow-y-auto">
+              <UserBasicInfo user={currentUser} />
+              <UserStatusInfo user={currentUser} />
+              <UserJoinInfo user={currentUser} />
+            </div>
+          )}
+
+          {/* 푸터 */}
+          <div className="flex items-center justify-end space-x-3 p-4 border-t bg-gray-50">
+            <button
+              onClick={
+                showSuspendForm ? () => setShowSuspendForm(false) : onClose
+              }
+              className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
+            >
+              취소
+            </button>
+            {(!showSuspendForm && currentUser.baseResponseDto.role !== "ADMIN") && (
+              <button
+                onClick={handleSuspendClick}
+                className={`px-4 py-2 text-sm font-medium text-white border border-transparent rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 transition-colors ${
+                  currentUser.baseResponseDto?.userStatus === "SUSPENDED"
+                    ? "bg-green-600 hover:bg-green-700 focus:ring-green-500"
+                    : "bg-red-600 hover:bg-red-700 focus:ring-red-500"
+                }`}
+              >
+                {currentUser.baseResponseDto?.userStatus === "SUSPENDED"
+                  ? "정지 해제"
+                  : "활동 정지"}
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* 확인 모달 */}
+      {showConfirmModal && (
+        <ConfirmModal
+          message={getConfirmMessage()}
+          confirmText={confirmAction === "suspend" ? "정지" : "해제"}
+          cancelText="취소"
+          onConfirm={handleConfirmAction}
+          onCancel={handleCancelAction}
+        />
+      )}
+    </>
+  );
+};
+
+export default UserDetailModal;

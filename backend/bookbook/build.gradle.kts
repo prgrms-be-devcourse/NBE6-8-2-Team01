@@ -20,6 +20,7 @@ repositories {
 dependencies {
     // General
     developmentOnly("org.springframework.boot:spring-boot-devtools")
+    implementation("io.github.cdimascio:java-dotenv:5.2.2")
     implementation("org.springframework.boot:spring-boot-starter-web")
     implementation("org.springframework.boot:spring-boot-starter-security")
     implementation("org.springframework.boot:spring-boot-starter-oauth2-client")
@@ -31,6 +32,7 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-data-jpa")
     runtimeOnly("com.h2database:h2")
     runtimeOnly("com.mysql:mysql-connector-j")
+    implementation("org.postgresql:postgresql")
 
     // Test
     testImplementation("org.springframework.boot:spring-boot-starter-test")
@@ -44,6 +46,11 @@ dependencies {
 
     // Spring Doc
     implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.9")
+    
+    // WebSocket (채팅)
+    implementation("org.springframework.boot:spring-boot-starter-websocket")
+    implementation("org.springframework:spring-messaging")
+    implementation("org.springframework:spring-websocket")
 }
 
 tasks.withType<Test> {
