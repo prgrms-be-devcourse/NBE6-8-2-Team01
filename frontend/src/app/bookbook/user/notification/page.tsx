@@ -36,6 +36,18 @@ interface RentRequestDetail {
   processStatus: string;
 }
 
+interface TokenInfo {
+  jwtTokenFound: boolean;
+  jwtTokenValid: boolean;
+  userId?: number;
+}
+
+interface DebugInfo {
+  serverOnline: boolean;
+  tokenInfo: TokenInfo | null;
+  timestamp: string;
+}
+
 const fetchNotifications = async (): Promise<NotificationApiResponse> => {
   try {
     const response = await fetch('/api/v1/bookbook/user/notifications', {
@@ -161,6 +173,7 @@ const decideRentRequest = async (rentListId: number, approved: boolean, rejectio
   }
 };
 
+
 type Notification = {
   id: number;
   message: string;
@@ -185,6 +198,7 @@ export default function NotificationPage() {
   const [isProcessingDecision, setIsProcessingDecision] = useState(false);
   const [imageLoadStates, setImageLoadStates] = useState<{[key: number]: 'loading' | 'loaded' | 'error'}>({});
   const [processedNotifications, setProcessedNotifications] = useState<Set<number>>(new Set());
+
 
   const loadNotifications = useCallback(async () => {
     try {
