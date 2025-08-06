@@ -18,34 +18,52 @@ export default function RentListCard({ book, onReview, onReturn, formatDate }: R
     ? (book.bookImage.startsWith('http') ? book.bookImage : `${backendBaseUrl}${book.bookImage}`)
     : defaultCoverImageUrl;
 
-  // 실제 대여 상태 계산 (백엔드 상태와 날짜 모두 고려)
+  // 실제 대여 상태 계산 (RentList 상태 기반)
   const calculateRentStatus = () => {
-    // 백엔드에서 이미 FINISHED 상태면 그대로 사용
+    // rentStatus가 없으면 기본값 처리
+    if (!book.rentStatus) {
+      return 'UNKNOWN';
+    }
+    
+    // RentList 상태가 FINISHED면 반납 완료
     if (book.rentStatus === 'FINISHED') {
       return 'FINISHED';
     }
     
-    // 그렇지 않으면 날짜 기준으로 판단
-    const now = new Date();
-    const returnDate = new Date(book.returnDate);
-    
-    if (now <= returnDate) {
-      return 'LOANED'; // 대여중
-    } else {
-      return 'FINISHED'; // 대여완료 (반납일 지남)
+    // APPROVED 상태인 경우, 날짜 기준으로 추가 판단
+    if (book.rentStatus === 'APPROVED') {
+      const now = new Date();
+      const returnDate = new Date(book.returnDate);
+      
+      if (now <= returnDate) {
+        return 'LOANED'; // 대여중
+      } else {
+        return 'OVERDUE'; // 연체 (반납일 지남)
+      }
     }
+    
+    // 기타 상태 (PENDING, REJECTED)
+    return book.rentStatus;
   };
 
   const actualStatus = calculateRentStatus();
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'AVAILABLE':
+      case 'PENDING':
+        return 'bg-yellow-100 text-yellow-800';
+      case 'APPROVED':
         return 'bg-green-100 text-green-800';
       case 'LOANED':
         return 'bg-blue-100 text-blue-800';
       case 'FINISHED':
         return 'bg-gray-100 text-gray-800';
+      case 'OVERDUE':
+        return 'bg-red-100 text-red-800';
+      case 'REJECTED':
+        return 'bg-red-100 text-red-800';
+      case 'UNKNOWN':
+        return 'bg-gray-100 text-gray-500';
       default:
         return 'bg-gray-100 text-gray-800';
     }
@@ -53,12 +71,20 @@ export default function RentListCard({ book, onReview, onReturn, formatDate }: R
 
   const getStatusText = (status: string) => {
     switch (status) {
-      case 'AVAILABLE':
-        return '대여가능';
+      case 'PENDING':
+        return '대기중';
+      case 'APPROVED':
+        return '수락됨';
       case 'LOANED':
         return '대여중';
       case 'FINISHED':
         return '대여완료';
+      case 'OVERDUE':
+        return '연체중';
+      case 'REJECTED':
+        return '거절됨';
+      case 'UNKNOWN':
+        return '상태불명';
       default:
         return status;
     }
@@ -112,7 +138,7 @@ export default function RentListCard({ book, onReview, onReturn, formatDate }: R
             </div>
             <div className="flex items-center gap-1">
               <User className="h-4 w-4" />
-              <span>책방지기: {book.lenderNickname || book.lenderUserId}</span>
+              <span>책방지기: {book.lenderNickname || book.lenderUserId || '알 수 없음'}</span>
             </div>
           </div>
           
@@ -139,8 +165,8 @@ export default function RentListCard({ book, onReview, onReturn, formatDate }: R
             <span className={`px-3 py-1 text-xs font-medium rounded-full ${getStatusColor(actualStatus)}`}>
               {getStatusText(actualStatus)}
             </span>
-            {/* 반납하기 버튼 - 대여중일 때만 표시 */}
-            {actualStatus === 'LOANED' && onReturn && (
+            {/* 반납하기 버튼 - 대여중이거나 연체중일 때만 표시 */}
+            {(actualStatus === 'LOANED' || actualStatus === 'OVERDUE') && onReturn && (
               <button
                 onClick={(e) => {
                   e.stopPropagation();

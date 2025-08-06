@@ -19,6 +19,9 @@ interface UserFilterContainerProps {
   onSearch: () => void;
 }
 
+/*
+* 대여 게시글 필터 컨테이너
+*/
 export function PostFilterContainer({
   filters,
   onStatusToggle,

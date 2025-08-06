@@ -303,9 +303,19 @@ public class RentListService {
      */
     @Transactional
     public void returnBook(Long borrowerUserId, Integer rentId) {
-        // 해당 사용자의 대여 기록 조회
-        RentList rentList = rentListRepository.findByBorrowerUserIdAndRentId(borrowerUserId, rentId)
-                .orElseThrow(() -> new IllegalArgumentException("대여 기록을 찾을 수 없습니다."));
+        // 해당 사용자의 진행 중인 대여 기록 조회 (APPROVED 상태만)
+        List<RentList> rentLists = rentListRepository.findByRentIdAndBorrowerUserIdAndStatus(
+                rentId, borrowerUserId, RentRequestStatus.APPROVED);
+        
+        if (rentLists.isEmpty()) {
+            throw new IllegalArgumentException("진행 중인 대여 기록을 찾을 수 없습니다.");
+        }
+        
+        if (rentLists.size() > 1) {
+            throw new IllegalArgumentException("여러 개의 진행 중인 대여 기록이 발견되었습니다. 관리자에게 문의하세요.");
+        }
+        
+        RentList rentList = rentLists.get(0);
 
         // 원본 게시글 조회
         Rent rent = rentList.getRent();
@@ -315,10 +325,14 @@ public class RentListService {
             throw new IllegalArgumentException("이미 반납된 도서입니다.");
         }
 
+        // 대여 기록 상태를 FINISHED로 변경 (반납 완료)
+        rentList.setStatus(RentRequestStatus.FINISHED);
+        
         // 원본 게시글 상태를 FINISHED로 변경 (반납 완료)
         rent.setRentStatus(RentStatus.FINISHED);
 
         // 변경사항 저장
+        rentListRepository.save(rentList);
         rentRepository.save(rent);
     }
 }

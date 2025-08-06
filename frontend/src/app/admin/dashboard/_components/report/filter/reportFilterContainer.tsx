@@ -19,6 +19,9 @@ interface UserFilterContainerProps {
   onSearch: () => void;
 }
 
+/*
+* 신고 내역 필터 컨테이너
+*/
 export function ReportFilterContainer({
   filters,
   onStatusToggle,

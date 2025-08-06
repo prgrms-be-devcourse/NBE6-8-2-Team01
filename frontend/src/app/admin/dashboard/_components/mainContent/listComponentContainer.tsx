@@ -18,6 +18,11 @@ const componentMap: {
     "reports": ReportHistoryComponent,
 };
 
+/*
+* 리스트를 사용하는 모든 컴포넌트를 위한 컨테이너 컴포넌트
+*
+* 사이드바의 activeItem에 따라 컴포넌트를 선택하여 사용됨
+*/
 export function ListComponentContainer() {
     const {
         activeItem,
@@ -28,10 +33,10 @@ export function ListComponentContainer() {
 
     const ContentComponent = componentMap[activeItem] ?? DashBoardComponent;
 
-    const [data, setData] = useState<PageResponse<unknown>>(null as unknown as PageResponse<unknown>);
+    const [data, setData] = useState<PageResponse<never>>(null as never as PageResponse<never>);
 
     useEffect(() => {
-        const pageData = responseData as PageResponse<unknown>;
+        const pageData = responseData as PageResponse<never>;
         setData(pageData);
     }, [responseData]);
 

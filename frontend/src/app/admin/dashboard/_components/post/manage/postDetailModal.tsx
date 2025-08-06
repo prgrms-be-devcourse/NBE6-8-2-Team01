@@ -4,6 +4,7 @@ import PostBasicInfo from "./postBasicInfo";
 import { PostStatusInfo } from "./postStatusInfo";
 import PostInfo from "./postInfo";
 import { getRentStatus, RentPostDetailResponseDto, rentStatus } from "@/app/admin/dashboard/_types/rentPost";
+import { toast } from "react-toastify";
 
 interface PostDetailModalProps {
   post: RentPostDetailResponseDto;
@@ -52,44 +53,52 @@ export function PostDetailModal({
     setShowConfirmModal(true);
   }
 
-  const handleRestoreRequest = () => {
+  const handleRestoreRequest = async () => {
     const body = {
       "status" : "AVAILABLE"
     }
 
-    handlePostChangeStatus(body);
-    alert("글이 복원되었습니다!");
+    await handleRequest(body);
+    toast.success("글이 복원되었습니다!");
   }
 
-  const handlePostChangeStatus = (body? : unknown) => {
-    const reqBody = body ? body : {
+  const handlePostChangeStatus = async () => {
+    const body = {
       "status" : rentStatusValue
     }
 
-    fetch(`/api/v1/admin/rent/${currentPost.id}`,
+    await handleRequest(body);
+    toast.success("글의 상태가 변경되었습니다.");
+  }
+
+  const handlePostDelete = async () => {
+    const body = {
+      "status" : "DELETED"
+    };
+
+    await handleRequest(body);
+    toast.success("글이 삭제되었습니다!");
+  }
+
+  const handleRequest = async (body : unknown) => {
+    const response = await fetch(`/api/v1/admin/rent/${currentPost.id}`,
       {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(reqBody),
+        body: JSON.stringify(body),
       }
-    ).then(response => response.json())
-     .then(data => {
-       if (!data) return;
-       setCurrentPost(data.data);
-     }).catch(error => {
+    )
+    const data = await response.json().catch(error => {
        throw error;
      });
-  }
 
-  const handlePostDelete =  () => {
-    const body = {
-      "status" : "DELETED"
-    };
+    if ([403, 404, 409, 422].includes(data.statusCode)) {
+      throw data.msg;
+    }
 
-    handlePostChangeStatus(body);
-    alert("글이 삭제되었습니다!");
+    setCurrentPost(data.data);
   }
 
   const onClose = () => {
@@ -97,27 +106,22 @@ export function PostDetailModal({
     onRefresh?.();
   }
 
-  const handleConfirmAction = () => {
+  const handleConfirmAction = async () => {
     try {
       if (confirmAction === "delete") {
-        handlePostDelete();
+        await handlePostDelete();
       } else if (confirmAction === "updateStatus") {
-        handlePostChangeStatus();
+        await handlePostChangeStatus();
       } else if (confirmAction === "restore") {
-        handleRestoreRequest();
+        await handleRestoreRequest();
       }
-
-      handleCancelAction();
 
     } catch (error) {
-      let errorMessage = "처리 중 오류가 발생했습니다.";
+      const errorMessage = error as string;
 
-      if (error instanceof Error) {
-        errorMessage = `${errorMessage}\n${error.message}`;
-      }
-
-      console.error(errorMessage);
-      alert(errorMessage);
+      toast.error(errorMessage);
+    } finally {
+      handleCancelAction();
     }
   };
 
@@ -237,4 +241,4 @@ export function PostDetailModal({
       )}
     </>
   );
-};
+}
