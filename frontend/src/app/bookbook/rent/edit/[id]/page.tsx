@@ -37,61 +37,72 @@ interface BookDetail {
     lenderUserId: number;
 }
 
-export default function EditBookPage({ params }: { params: Promise<{ id: string }> }) {
+// API 응답 타입
+interface ApiResponse {
+    msg?: string;
+    imageUrl?: string;
+}
+
+// Props 타입 정의
+interface EditBookPageProps {
+    params: Promise<{ id: string }>;
+}
+
+export default function EditBookPage({ params }: EditBookPageProps): React.JSX.Element {
     const { id } = React.use(params);
     const router = useRouter();
     
     const [bookDetail, setBookDetail] = useState<BookDetail | null>(null);
-    const [loading, setLoading] = useState(true);
+    const [loading, setLoading] = useState<boolean>(true);
     const [error, setError] = useState<string | null>(null);
 
     // 폼 상태들
-    const [title, setTitle] = useState('');
+    const [title, setTitle] = useState<string>('');
     const [bookImage, setBookImage] = useState<File | null>(null);
-    const [bookCondition, setBookCondition] = useState('');
-    const [address, setAddress] = useState('');
-    const [contents, setContents] = useState('');
-    const [bookTitle, setBookTitle] = useState('');
-    const [author, setAuthor] = useState('');
-    const [publisher, setPublisher] = useState('');
-    const [category, setCategory] = useState('');
-    const [description, setDescription] = useState('');
+    const [bookCondition, setBookCondition] = useState<string>('');
+    const [address, setAddress] = useState<string>('');
+    const [contents, setContents] = useState<string>('');
+    const [bookTitle, setBookTitle] = useState<string>('');
+    const [author, setAuthor] = useState<string>('');
+    const [publisher, setPublisher] = useState<string>('');
+    const [category, setCategory] = useState<string>('');
+    const [description, setDescription] = useState<string>('');
 
     // Toast 메시지 상태 추가
     const [toastMessage, setToastMessage] = useState<string | null>(null);
     const [toastType, setToastType] = useState<'success' | 'error' | null>(null);
 
     // 토스트 메세지를 보여주는 함수
-    const showToast = (message: string, type: 'success' | 'error') => {
+    const showToast = (message: string, type: 'success' | 'error'): void => {
         setToastMessage(message);
         setToastType(type);
         setTimeout(() => {
             setToastMessage(null);
             setToastType(null);
         }, 3000); // 3초 후에 자동으로 사라짐
-    }   
+    };
 
-    const [showPopup, setShowPopup] = useState(false);
+    const [showPopup, setShowPopup] = useState<boolean>(false);
 
-    const [searchQuery, setSearchQuery] = useState('');
-    const [showBookSearchModal, setShowBookSearchModal] = useState(false);
+    const [searchQuery, setSearchQuery] = useState<string>('');
+    const [showBookSearchModal, setShowBookSearchModal] = useState<boolean>(false);
     const [searchResults, setSearchResults] = useState<BookSearchResult[]>([]);
 
     // 페이지네이션 관련 상태 추가 및 수정
-    const [currentPage, setCurrentPage] = useState(1);
+    const [currentPage, setCurrentPage] = useState<number>(1);
     const itemsPerPage = 10; // 백엔드 MaxResults와 동일하게 10으로 설정
-    const [hasMoreResults, setHasMoreResults] = useState(false);
+    const [hasMoreResults, setHasMoreResults] = useState<boolean>(false);
 
     const defaultImageUrl = 'https://i.postimg.cc/pLC9D2vW/noimg.gif';
     const [previewImageUrl, setPreviewImageUrl] = useState<string>(defaultImageUrl);
 
     // 주소 선택 관련 상태 추가
-    const [isAddressPopupOpen, setIsAddressPopupOpen] = useState(false); // 팝업 출력 용
-    const [selectedAddress, setSelectedAddress] = useState(''); // 선택된 주소
+    const [isAddressPopupOpen, setIsAddressPopupOpen] = useState<boolean>(false); // 팝업 출력 용
+    const [selectedAddress, setSelectedAddress] = useState<string>(''); // 선택된 주소
 
     // 기존 데이터 불러오기
     useEffect(() => {
-        const fetchBookDetail = async () => {
+        const fetchBookDetail = async (): Promise<void> => {
             if (!id) return;
 
             setLoading(true);
@@ -120,9 +131,10 @@ export default function EditBookPage({ params }: { params: Promise<{ id: string 
                 setCategory(data.category);
                 setDescription(data.description);
                 setPreviewImageUrl(data.bookImage || defaultImageUrl);
-            } catch (err: any) {
+            } catch (err: unknown) {
                 console.error("책 상세 정보 불러오기 실패:", err);
-                setError(`책 정보를 불러오는 데 실패했습니다: ${err.message || '알 수 없는 오류'}`);
+                const errorMessage = err instanceof Error ? err.message : '알 수 없는 오류';
+                setError(`책 정보를 불러오는 데 실패했습니다: ${errorMessage}`);
             } finally {
                 setLoading(false);
             }
@@ -139,7 +151,6 @@ export default function EditBookPage({ params }: { params: Promise<{ id: string 
         } else {
             // 기존 이미지가 있으면 그대로 유지
             if (bookDetail?.bookImage) {
-                // setPreviewImageUrl(bookDetail.bookImage);
                 // 받아온 이미지가 나오도록 이 부분을 수정합니다.
                 const fullImageUrl = bookDetail.bookImage.startsWith('http') ? bookDetail.bookImage : `http://localhost:8080${bookDetail.bookImage}`;
                 setPreviewImageUrl(fullImageUrl);
@@ -151,7 +162,7 @@ export default function EditBookPage({ params }: { params: Promise<{ id: string 
 
     const conditions = ['최상 (깨끗함)', '상 (사용감 적음)', '중 (사용감 있음)', '하 (손상 있음)'];
 
-    const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>): void => {
         if (e.target.files && e.target.files[0]) {
             setBookImage(e.target.files[0]);
         } else {
@@ -159,11 +170,9 @@ export default function EditBookPage({ params }: { params: Promise<{ id: string 
         }
     };
 
-
-
     // start 파라미터를 받는 handleBookSearch 함수로 변경
-    const handleBookSearch = async (pageNumber: number) => {
-        if(!searchQuery.trim()){
+    const handleBookSearch = async (pageNumber: number): Promise<void> => {
+        if (!searchQuery.trim()) {
             showToast('검색어를 입력해주세요.', 'error');
             return;
         }
@@ -171,9 +180,9 @@ export default function EditBookPage({ params }: { params: Promise<{ id: string 
         // 백엔드 책 검색 API 호출 시 start 파라미터 추가
         const backendSearchApiUrl = `http://localhost:8080/api/v1/bookbook/searchbook?query=${encodeURIComponent(searchQuery)}&start=${pageNumber}`;
 
-        try{
+        try {
             const response = await fetch(backendSearchApiUrl);
-            if(!response.ok){
+            if (!response.ok) {
                 const errorData = await response.text();
                 console.error('백엔드 책 검색 API 요청 실패:', response.status, response.statusText, errorData);
                 showToast(`책 검색 API 요청 실패: ${response.status} ${response.statusText}`, 'error');
@@ -182,7 +191,7 @@ export default function EditBookPage({ params }: { params: Promise<{ id: string 
 
             const data: BookSearchResult[] = await response.json(); 
 
-            if(data && data.length > 0){
+            if (data && data.length > 0) {
                 setSearchResults(data);
                 // 가져온 결과 수가 itemsPerPage와 같으면 다음 페이지가 더 있을 수 있다고 가정
                 setHasMoreResults(data.length === itemsPerPage);
@@ -194,7 +203,7 @@ export default function EditBookPage({ params }: { params: Promise<{ id: string 
                 setHasMoreResults(false);
                 setShowBookSearchModal(false); // 결과 없으면 모달 닫기
             }
-        } catch (error) {
+        } catch (error: unknown) {
             console.error('책 검색 중 오류 발생', error);
             showToast('책 검색 중 오류가 발생했습니다. 잠시 후 다시 시도하세요.', 'error');
             setSearchResults([]);
@@ -204,7 +213,7 @@ export default function EditBookPage({ params }: { params: Promise<{ id: string 
     };
 
     // 책 선택 시 폼 필드 채우는 함수
-    const selectBook = (book: BookSearchResult) => {
+    const selectBook = (book: BookSearchResult): void => {
         setBookTitle(book.bookTitle);
         setAuthor(book.author);
         setPublisher(book.publisher);
@@ -216,7 +225,7 @@ export default function EditBookPage({ params }: { params: Promise<{ id: string 
     // 백엔드 API (PUT /rent)로 데이터 전송.
     // 1. 새로운 이미지가 선택된 경우에만 이미지 업로드 API로 전송하여 URL을 받습니다.
     // 2. 받은 이미지 URL과 폼 데이터를 조합하여 대여글 수정 API로 전송합니다.
-    const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    const handleSubmit = async (e: React.FormEvent<HTMLFormElement>): Promise<void> => {
         e.preventDefault();
 
         let imageUrl = bookDetail?.bookImage || 'https://i.postimg.cc/pLC9D2vW/noimg.gif'; // 기존 이미지 URL
@@ -233,16 +242,16 @@ export default function EditBookPage({ params }: { params: Promise<{ id: string 
                     body: imageFormData,
                 });
 
-                if(imageUploadRes.ok){
-                    const data = await imageUploadRes.json();
-                    imageUrl = data.imageUrl;
+                if (imageUploadRes.ok) {
+                    const data: ApiResponse = await imageUploadRes.json();
+                    imageUrl = data.imageUrl || imageUrl;
                 } else {
                     const errorText = await imageUploadRes.text();
                     console.error('이미지 업로드 실패', errorText);
                     showToast(`이미지 업로드 실패: ${imageUploadRes.statusText || errorText}`, 'error');
                     return;
                 }
-            } catch (error) {
+            } catch (error: unknown) {
                 console.error('이미지 업로드 중 네트워크 오류', error);
                 showToast('이미지 업로드 중 오류가 발생했습니다.', 'error');
                 return;
@@ -262,7 +271,7 @@ export default function EditBookPage({ params }: { params: Promise<{ id: string 
             bookImage: imageUrl,
             address: selectedAddress,
             contents: contents,
-            rentStatus: 'AVAILABLE', // 백엔드의 RentStatus.AVAILABLE과 동일한 문자열
+            rentStatus: 'AVAILABLE' as const, // 백엔드의 RentStatus.AVAILABLE과 동일한 문자열
             bookTitle: bookTitle,
             author: author,
             publisher: publisher,
@@ -271,7 +280,7 @@ export default function EditBookPage({ params }: { params: Promise<{ id: string 
         };
 
         // 백엔드 Rent 페이지 수정 Put 요청으로 전송
-        try{
+        try {
             const res = await fetch(`http://localhost:8080/bookbook/rent/edit/${id}`, {
                 method: "PUT",
                 credentials: "include",
@@ -279,17 +288,24 @@ export default function EditBookPage({ params }: { params: Promise<{ id: string 
                 body: JSON.stringify(formData),
             });
 
-            if(res.ok){
+            if (res.ok) {
                 setShowPopup(true);
             } else {
-                const errorData = await res.json();
+                const errorData: ApiResponse = await res.json();
                 console.error('책 수정 실패', errorData);
                 showToast(`책 수정에 실패했습니다. ${errorData.msg || res.statusText}`, 'error');
             }
-        } catch(error) {
+        } catch (error: unknown) {
             console.error('책 수정 중 네트워크 에러', error);
             showToast('책 수정 중 네트워크 에러가 발생했습니다.', 'error');
         }
+    };
+
+    // 이미지 에러 핸들러
+    const handleImageError = (e: React.SyntheticEvent<HTMLImageElement>): void => {
+        const target = e.currentTarget;
+        target.src = defaultImageUrl;
+        target.alt = "이미지 로드 실패";
     };
 
     if (loading) {
@@ -365,6 +381,7 @@ export default function EditBookPage({ params }: { params: Promise<{ id: string 
                                 src={previewImageUrl}
                                 alt="책 이미지"
                                 className="w-[200px] h-[150px] object-cover rounded-lg"
+                                onError={handleImageError}
                             />                       
                         </div>
                     </div>
@@ -598,6 +615,7 @@ export default function EditBookPage({ params }: { params: Promise<{ id: string 
                                             src={book.coverImageUrl || defaultImageUrl}
                                             alt={book.bookTitle}
                                             className="w-24 h-32 object-cover rounded-md mb-3"
+                                            onError={handleImageError}
                                         />
                                         <h3 className="font-semibold text-gray-800 text-base mb-1 line-clamp-2">
                                             {book.bookTitle}
@@ -693,5 +711,5 @@ export default function EditBookPage({ params }: { params: Promise<{ id: string 
                 }}
             />
         </div>
-    )
-};
+    );
+}
