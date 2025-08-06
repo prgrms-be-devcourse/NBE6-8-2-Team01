@@ -1,4 +1,4 @@
-package com.bookbook.domain.rent.dto;
+package com.bookbook.domain.rent.dto.response;
 
 import com.bookbook.domain.rent.entity.Rent;
 import com.bookbook.domain.rent.entity.RentStatus;

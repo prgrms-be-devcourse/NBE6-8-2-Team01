@@ -56,10 +56,8 @@ public class Report extends BaseEntity {
     }
 
     public void markAsReviewed() {
-        if (status == ReportStatus.PENDING) {
-            this.status = ReportStatus.REVIEWED;
-            this.reviewedDate = LocalDateTime.now();
-        }
+        this.status = ReportStatus.REVIEWED;
+        this.reviewedDate = LocalDateTime.now();
     }
 
     public void markAsProcessed(User closer) {
