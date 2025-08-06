@@ -59,6 +59,8 @@ public interface RentRepository extends JpaRepository<Rent, Integer> { // findBy
                                                                     @Param("searchKeyword") String searchKeyword, 
                                                                     Pageable pageable);
 
+    // 조건에 따른 게시글 내역 검색
+    // 대여 내역 상태 or 대여 게시글 작성자
     @Query("""
         SELECT r FROM Rent r WHERE
         (:userId IS NULL OR :userId = r.lenderUserId) AND
@@ -67,7 +69,7 @@ public interface RentRepository extends JpaRepository<Rent, Integer> { // findBy
     """)
     Page<Rent> findFilteredRentHistory(
             Pageable pageable,
-            @Param("status") List<String> status,
+            @Param("status") List<RentStatus> status,
             @Param("userId") Long userId
     );
 }
