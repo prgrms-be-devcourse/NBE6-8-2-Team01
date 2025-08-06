@@ -2,7 +2,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { X, MessageCircle, Clock, User, Trash2, MoreVertical } from 'lucide-react';
+import { X, MessageCircle, Clock, User, LogOut, MoreVertical } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { ChatRoomResponse, ApiResponse } from './types/chat';
 
@@ -45,8 +45,8 @@ const MessagePanel: React.FC<MessagePanelProps> = ({ onClose }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [unreadCount, setUnreadCount] = useState(0);
-  const [showDeleteMenu, setShowDeleteMenu] = useState<string | null>(null);
-  const [deletingRoomId, setDeletingRoomId] = useState<string | null>(null);
+  const [showMenu, setShowMenu] = useState<string | null>(null);
+  const [leavingRoomId, setLeavingRoomId] = useState<string | null>(null);
   
   const router = useRouter();
 
@@ -75,6 +75,8 @@ const MessagePanel: React.FC<MessagePanelProps> = ({ onClose }) => {
 
       // 백엔드에서 Page<ChatRoomResponse> 형태로 반환하므로 수정
       const result: ApiResponse<PageResponse<ChatRoomResponse>> = await response.json();
+      
+      // 백엔드에서 이미 필터링된 결과만 반환하므로 추가 필터링 불필요
       setChatRooms(result.data?.content || []);
 
       // 읽지 않은 메시지 총 개수 조회
@@ -117,19 +119,19 @@ const MessagePanel: React.FC<MessagePanelProps> = ({ onClose }) => {
     router.push(`/bookbook/MessagePopup/${chatRoom.roomId}?bookTitle=${encodeURIComponent(chatRoom.bookTitle)}&otherUserNickname=${encodeURIComponent(chatRoom.otherUserNickname)}`);
   };
 
-  // 채팅방 삭제 핸들러
-  const handleDeleteChatRoom = async (roomId: string, event: React.MouseEvent) => {
+  // 채팅방 나가기 핸들러
+  const handleLeaveChatRoom = async (roomId: string, event: React.MouseEvent) => {
     event.stopPropagation(); // 채팅방 클릭 이벤트 방지
     
-    if (!confirm('이 채팅방을 삭제하시겠습니까?\n삭제된 채팅방과 메시지는 복구할 수 없습니다.')) {
+    if (!confirm('이 채팅방을 나가시겠습니까?\n나간 후에는 이전 대화 내용을 볼 수 없습니다.')) {
       return;
     }
 
-    setDeletingRoomId(roomId);
+    setLeavingRoomId(roomId);
     
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/bookbook/chat/rooms/${roomId}`, {
-        method: 'DELETE',
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/bookbook/chat/rooms/${roomId}/leave`, {
+        method: 'POST',
         credentials: 'include',
         headers: {
           'Content-Type': 'application/json',
@@ -138,11 +140,11 @@ const MessagePanel: React.FC<MessagePanelProps> = ({ onClose }) => {
 
       if (!response.ok) {
         if (response.status === 403) {
-          throw new Error('채팅방 삭제 권한이 없습니다.');
+          throw new Error('채팅방 나가기 권한이 없습니다.');
         } else if (response.status === 404) {
           throw new Error('존재하지 않는 채팅방입니다.');
         } else {
-          throw new Error(`채팅방 삭제 실패: ${response.status}`);
+          throw new Error(`채팅방 나가기 실패: ${response.status}`);
         }
       }
 
@@ -162,27 +164,27 @@ const MessagePanel: React.FC<MessagePanelProps> = ({ onClose }) => {
         setUnreadCount(unreadResult.data || 0);
       }
 
-      alert('채팅방이 삭제되었습니다.');
+      alert('채팅방을 나갔습니다.');
       
     } catch (error: unknown) {
-      console.error('채팅방 삭제 실패:', error);
+      console.error('채팅방 나가기 실패:', error);
       
-      let errorMessage = '채팅방 삭제에 실패했습니다.';
+      let errorMessage = '채팅방 나가기에 실패했습니다.';
       if (error instanceof Error) {
         errorMessage = error.message;
       }
       
       alert(errorMessage);
     } finally {
-      setDeletingRoomId(null);
-      setShowDeleteMenu(null);
+      setLeavingRoomId(null);
+      setShowMenu(null);
     }
   };
 
   // 메뉴 토글 핸들러
-  const toggleDeleteMenu = (roomId: string, event: React.MouseEvent) => {
+  const toggleMenu = (roomId: string, event: React.MouseEvent) => {
     event.stopPropagation(); // 채팅방 클릭 이벤트 방지
-    setShowDeleteMenu(showDeleteMenu === roomId ? null : roomId);
+    setShowMenu(showMenu === roomId ? null : roomId);
   };
 
   // 시간 포맷팅
@@ -214,14 +216,14 @@ const MessagePanel: React.FC<MessagePanelProps> = ({ onClose }) => {
   // 외부 클릭시 메뉴 닫기
   useEffect(() => {
     const handleClickOutside = () => {
-      setShowDeleteMenu(null);
+      setShowMenu(null);
     };
 
-    if (showDeleteMenu) {
+    if (showMenu) {
       document.addEventListener('click', handleClickOutside);
       return () => document.removeEventListener('click', handleClickOutside);
     }
-  }, [showDeleteMenu]);
+  }, [showMenu]);
 
   return (
     <div className="fixed inset-0 flex justify-end z-50" style={{ backgroundColor: 'rgba(0, 0, 0, 0.3)' }}>
@@ -300,7 +302,7 @@ const MessagePanel: React.FC<MessagePanelProps> = ({ onClose }) => {
                         <h3 className="text-base font-semibold text-gray-900 truncate">
                           {chatRoom.otherUserNickname}
                         </h3>
-                        {/* 읽지 않은 메시지 개수를 삭제 버튼과 겹치지 않게 왼쪽으로 이동 */}
+                        {/* 읽지 않은 메시지 개수를 메뉴 버튼과 겹치지 않게 왼쪽으로 이동 */}
                         <div className="flex items-center space-x-2 mr-10">
                           {chatRoom.unreadCount > 0 && (
                             <span className="bg-red-500 text-white text-xs font-bold rounded-full px-2 py-1 min-w-[20px] text-center">
@@ -336,28 +338,28 @@ const MessagePanel: React.FC<MessagePanelProps> = ({ onClose }) => {
                   {/* 메뉴 버튼 - 항상 보이게 변경 */}
                   <div className="absolute top-2 right-2">
                     <button
-                      onClick={(e) => toggleDeleteMenu(chatRoom.roomId, e)}
+                      onClick={(e) => toggleMenu(chatRoom.roomId, e)}
                       className="p-2 hover:bg-gray-200 rounded-full transition-colors"
                       title="채팅방 옵션">
                       <MoreVertical className="w-4 h-4 text-gray-400 hover:text-gray-600" />
                     </button>
 
-                    {/* 삭제 메뉴 */}
-                    {showDeleteMenu === chatRoom.roomId && (
+                    {/* 나가기 메뉴 */}
+                    {showMenu === chatRoom.roomId && (
                       <div className="absolute right-0 top-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg py-1 z-10 min-w-[120px]">
                         <button
-                          onClick={(e) => handleDeleteChatRoom(chatRoom.roomId, e)}
-                          disabled={deletingRoomId === chatRoom.roomId}
-                          className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 transition-colors flex items-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed">
-                          {deletingRoomId === chatRoom.roomId ? (
+                          onClick={(e) => handleLeaveChatRoom(chatRoom.roomId, e)}
+                          disabled={leavingRoomId === chatRoom.roomId}
+                          className="w-full px-4 py-2 text-left text-sm text-orange-600 hover:bg-orange-50 transition-colors flex items-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed">
+                          {leavingRoomId === chatRoom.roomId ? (
                             <>
-                              <div className="w-4 h-4 border-2 border-red-600 border-t-transparent rounded-full animate-spin"></div>
-                              <span>삭제 중...</span>
+                              <div className="w-4 h-4 border-2 border-orange-600 border-t-transparent rounded-full animate-spin"></div>
+                              <span>나가는 중...</span>
                             </>
                           ) : (
                             <>
-                              <Trash2 className="w-4 h-4" />
-                              <span>채팅방 삭제</span>
+                              <LogOut className="w-4 h-4" />
+                              <span>채팅방 나가기</span>
                             </>
                           )}
                         </button>
