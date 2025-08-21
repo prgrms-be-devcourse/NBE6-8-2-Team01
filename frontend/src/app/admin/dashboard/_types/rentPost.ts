@@ -1,8 +1,8 @@
-export type rentStatus = "AVAILABLE" | "LOANED" | "FINISHED" | "DELETED" | "UNKNOWN";
+export type RentStatus = "AVAILABLE" | "LOANED" | "FINISHED" | "DELETED" | "UNKNOWN";
 // export type rentStatus = "대여 가능" | "대여 중" | "대여 완료";
 
-export const getRentStatus = (status: rentStatus): string => {
-  const map: Record<rentStatus, string> = {
+export const getRentStatus = (status: RentStatus): string => {
+  const map: Record<RentStatus, string> = {
     AVAILABLE: "대여 가능",
     LOANED: "대여 중",
     FINISHED: "대여 종료",
@@ -19,7 +19,7 @@ export interface RentPostDetailResponseDto {
   bookImage: string;
   address: string;
   contents: string;
-  rentStatus : rentStatus;
+  rentStatus : RentStatus;
   name: string;
   title: string;
   author: string;
@@ -32,7 +32,7 @@ export interface RentPostDetailResponseDto {
 export interface RentPostSimpleResponseDto {
   id: number;
   lenderUserId: number;
-  status: rentStatus;
+  status: RentStatus;
   bookCondition: string;
   bookTitle: string;
   author: string;
