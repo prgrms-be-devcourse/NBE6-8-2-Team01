@@ -1,15 +1,17 @@
 "use client";
 
-import React, { useCallback, useEffect, useState } from "react";
-import { DataTable, ColumnDefinition } from "../common/Table";
+import React, { useState } from "react";
+import UserDetailModal from "../user/manage/userDetailModal";
+import fetchUserInfoFromAdmin from "../common/fetchUserInfo";
+import { ColumnDefinition } from "../common/Table";
 import { UserBaseResponseDto, UserDetailResponseDto, getUserStatus, userStatus } from "../../_types/userResponseDto";
 import { formatDate } from "../common/dateFormatter";
-import UserDetailModal from "../user/manage/userDetailModal";
 import { ContentComponentProps } from "./baseContentComponentProps";
-import { UserFilterContainer, FilterState } from "../user/filter";
-import { useDashBoardContext } from "@/app/admin/dashboard/_hooks/useDashboard";
-import fetchUserInfoFromAdmin from "@/app/admin/dashboard/_components/common/fetchUserInfo";
 import { toast } from "react-toastify";
+import { useFilter } from "../../_hooks/useFilter";
+import { FilterContainer } from "../common/filter/FilterContainer";
+import { SearchParamFromFilter } from "@/app/admin/dashboard/_components/common/filter/searchParamFromFilter";
+
 
 interface ManagementButtonProps {
   user: UserBaseResponseDto;
@@ -27,6 +29,9 @@ function ManagementButton({ user, onClick }: ManagementButtonProps) {
   );
 }
 
+/*
+* 유저 목록 컴포넌트
+*/
 export function UserListComponent({ data, onRefresh }: ContentComponentProps) {
   const statusList : userStatus[] = ["ACTIVE", "INACTIVE", "SUSPENDED"];
 
@@ -34,39 +39,8 @@ export function UserListComponent({ data, onRefresh }: ContentComponentProps) {
       null as unknown as UserDetailResponseDto
   );
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const { currentItem, fetchData } = useDashBoardContext();
 
-  // sessionStorage에서 필터 상태 복원하는 함수
-  const getInitialFilters = (): FilterState => {
-    try {
-      const saved = sessionStorage.getItem('admin-user-list-filters');
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        return {
-          userStatuses: new Set(parsed.userStatuses || statusList),
-          searchTerm: parsed.searchTerm || "",
-        };
-      }
-    } catch (error) {}
-    
-    return {
-      userStatuses: new Set(statusList),
-      searchTerm: "",
-    };
-  };
-
-  const [filters, setFilters] = useState<FilterState>(getInitialFilters);
-
-  // 필터 상태를 sessionStorage에 저장하는 함수
-  const saveFilters = useCallback(() => {
-    try {
-      const toSave = {
-        userStatuses: Array.from(filters.userStatuses),
-        searchTerm: filters.searchTerm,
-      };
-      sessionStorage.setItem('admin-user-list-filters', JSON.stringify(toSave));
-    } catch (error) {}
-  }, [filters]);
+  const filterProps = useFilter("admin-user-list-filters", statusList);
 
   const handleManageClick = async (user: UserBaseResponseDto) => {
     try {
@@ -84,76 +58,10 @@ export function UserListComponent({ data, onRefresh }: ContentComponentProps) {
     setSelectedUser(null as unknown as UserDetailResponseDto);
   };
 
-  useEffect(() => {
-    saveFilters();
-  }, [saveFilters]);
-
-  // 상태 체크박스 핸들러
-  const handleStatusToggle = (status: userStatus) => {
-    const newStatuses = new Set(filters.userStatuses);
-    if (newStatuses.has(status)) {
-      newStatuses.delete(status);
-    } else {
-      newStatuses.add(status);
-    }
-
-    if (newStatuses.size === 0) {
-      setFilters((prev) => ({ ...prev, userStatuses: new Set(statusList)}));
-    } else {
-      setFilters((prev) => ({ ...prev, userStatuses: newStatuses }));
-    }
-  };
-
-  // 전체 선택/해제
-  const handleSelectAll = () => {
-    const allStatuses: userStatus[] = statusList;
-    const isAllSelected = allStatuses.every((status) =>
-      filters.userStatuses.has(status)
-    );
-
-    if (isAllSelected) {
-      setFilters((prev) => ({ ...prev, userStatuses: new Set() }));
-    } else {
-      setFilters((prev) => ({ ...prev, userStatuses: new Set(allStatuses) }));
-    }
-  };
-
-  // 검색 핸들러
-  const handleSearchChange = (value: string) => {
-    setFilters((prev) => ({ ...prev, searchTerm: value }));
-  };
-
-  // 필터 초기화
-  const resetFilters = () => {
-    const resetState: FilterState = {
-      userStatuses: new Set(statusList),
-      searchTerm: "",
-    };
-    setFilters(resetState);
-  };
 
   // 필터 값을 기준으로 요청을 보낼 parameter를 생성함
   const searchFromFilter = () => {
-    const params = new URLSearchParams();
-
-    filters.userStatuses.forEach(status => params.append("status", status));
-
-    if (filters.searchTerm) {
-      const number = Number(filters.searchTerm.trim());
-      params.append("userId", `${number}`);
-    }
-
-    return params
-  }
-
-  const doSearch = () => {
-    if (!currentItem || !currentItem?.apiPath || !currentItem.apiPath.trim()) {
-      return;
-    }
-
-    const params = searchFromFilter();
-    const requestPath = `${currentItem.apiPath}?${params.toString()}`;
-    fetchData(requestPath);
+    return SearchParamFromFilter(filterProps, "userId");
   }
 
   const columns: ColumnDefinition<UserBaseResponseDto>[] = [
@@ -198,6 +106,19 @@ export function UserListComponent({ data, onRefresh }: ContentComponentProps) {
     },
   ];
 
+  const getStyle = (status : userStatus)=> {
+    switch (status) {
+      case "ACTIVE":
+        return "ml-2 text-sm text-emerald-700 font-medium"
+      case "SUSPENDED":
+        return "ml-2 text-sm text-red-700 font-medium";
+      case "INACTIVE":
+        return "ml-2 text-sm text-yellow-700 font-medium";
+      default:
+        return "ml-2 text-sm text-slate-700 font-medium";
+    }
+  }
+
   return (
     <>
       <div className="space-y-4">
@@ -212,23 +133,15 @@ export function UserListComponent({ data, onRefresh }: ContentComponentProps) {
         </div>
 
         {/* 필터 및 검색 영역 */}
-        <UserFilterContainer
-          filters={filters}
-          onStatusToggle={handleStatusToggle}
-          onSelectAll={handleSelectAll}
-          onSearchTermChange={handleSearchChange}
-          onReset={resetFilters}
-          onSearch={doSearch}
+        <FilterContainer
+          title="회원 상태"
+          filterProps={filterProps}
+          columns={columns}
+          data={data}
+          pageFactory={searchFromFilter}
+          getStatus={getUserStatus}
+          getFontStyle={getStyle}
         />
-
-        {/* 테이블 */}
-        <div className="bg-white rounded-lg border border-gray-200">
-          <DataTable
-              columns={columns}
-              data={data}
-              pageFactory={searchFromFilter}
-          />
-        </div>
       </div>
 
       {/* 멤버 상세 정보 모달 */}

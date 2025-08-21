@@ -1,19 +1,21 @@
 'use client';
 
-import React, { useCallback, useEffect, useState } from "react";
-import { DataTable, ColumnDefinition } from "../common/Table";
-import { ContentComponentProps } from "./baseContentComponentProps";
-import { FilterState, PostFilterContainer } from "@/app/admin/dashboard/_components/post/filter";
-import { useDashBoardContext } from "@/app/admin/dashboard/_hooks/useDashboard";
+import React, { useState } from "react";
 import Link from "next/link";
-import { formatDate } from "@/app/admin/dashboard/_components/common/dateFormatter";
 import PostDetailWithUserModal from "../post/manage/postDetailWithUserModal";
+import { ColumnDefinition } from "../common/Table";
+import { ContentComponentProps } from "./baseContentComponentProps";
+import { formatDate } from "@/app/admin/dashboard/_components/common/dateFormatter";
+import { useFilter } from "@/app/admin/dashboard/_hooks/useFilter";
+import { FilterContainer } from "@/app/admin/dashboard/_components/common/filter/FilterContainer";
+import { SearchParamFromFilter } from "@/app/admin/dashboard/_components/common/filter/searchParamFromFilter";
 import {
     getRentStatus,
     RentPostDetailResponseDto,
     RentPostSimpleResponseDto,
-    rentStatus
+    RentStatus
 } from "../../_types/rentPost";
+
 
 interface ManagementButtonProps {
     rentPost: RentPostSimpleResponseDto;
@@ -32,7 +34,7 @@ function ManagementButton({ rentPost, onClick }: ManagementButtonProps) {
 }
 
 /*
-* 유저의 게시글을 나타내는 컴포넌트
+* 유저의 게시글 목록을 나타내는 컴포넌트
 */
 export function UserRentPostComponent({ data, onRefresh }: ContentComponentProps) {
     // data가 없거나 잘못된 형태일 때 기본값 설정
@@ -40,38 +42,9 @@ export function UserRentPostComponent({ data, onRefresh }: ContentComponentProps
         null as unknown as RentPostDetailResponseDto
     );
     const [isModalOpen, setIsModalOpen] = useState(false);
-    const { currentItem, fetchData } = useDashBoardContext();
-    const statusList : rentStatus[] = ["AVAILABLE", "LOANED", "FINISHED", "DELETED"];
+    const statusList : RentStatus[] = ["AVAILABLE", "LOANED", "FINISHED", "DELETED"];
 
-    const getInitialFilters = (): FilterState => {
-        try {
-            const saved = sessionStorage.getItem('admin-post-list-filters');
-            if (saved) {
-                const parsed = JSON.parse(saved);
-                return {
-                    statuses: new Set(parsed.statuses || statusList),
-                    searchTerm: parsed.searchTerm || "",
-                };
-            }
-        } catch (error) {}
-
-        return {
-            statuses: new Set(statusList),
-            searchTerm: "",
-        };
-    };
-
-    const [filters, setFilters] = useState<FilterState>(getInitialFilters);
-
-    const saveFilters = useCallback(() => {
-        try {
-            const toSave = {
-                statuses: Array.from(filters.statuses),
-                searchTerm: filters.searchTerm,
-            };
-            sessionStorage.setItem('admin-post-list-filters', JSON.stringify(toSave));
-        } catch (error) {}
-    }, [filters]);
+    const filterProps = useFilter('admin-post-list-filters', statusList)
 
     const handleManageClick = async (post : RentPostSimpleResponseDto) => {
         const response = await fetch(`/api/v1/admin/rent/${post.id}`, {
@@ -94,71 +67,8 @@ export function UserRentPostComponent({ data, onRefresh }: ContentComponentProps
         setSelectedRentPost(null as unknown as RentPostDetailResponseDto);
     };
 
-    useEffect(() => {
-        saveFilters();
-    }, [saveFilters]);
-
-    const handleStatusToggle = (status: rentStatus) => {
-        const newStatuses = new Set(filters.statuses);
-        if (newStatuses.has(status)) {
-            newStatuses.delete(status);
-        } else {
-            newStatuses.add(status);
-        }
-
-        if (newStatuses.size === 0) {
-            setFilters((prev) => ({ ...prev, statuses: new Set(statusList)}));
-        } else {
-            setFilters((prev) => ({ ...prev, statuses: newStatuses }));
-        }
-    };
-
-    const handleSelectAll = () => {
-        const allStatuses: rentStatus[] = statusList;
-        const isAllSelected = allStatuses.every((status) =>
-            filters.statuses.has(status)
-        );
-
-        if (isAllSelected) {
-            setFilters((prev) => ({ ...prev, statuses: new Set() }));
-        } else {
-            setFilters((prev) => ({ ...prev, statuses: new Set(allStatuses) }));
-        }
-    };
-
-    const handleSearchChange = (value: string) => {
-        setFilters((prev) => ({ ...prev, searchTerm: value }));
-    };
-
-    const resetFilters = () => {
-        const resetState: FilterState = {
-            statuses: new Set(statusList),
-            searchTerm: "",
-        };
-        setFilters(resetState);
-    };
-
     const searchFromFilter = () => {
-        const params = new URLSearchParams();
-
-        filters.statuses.forEach(status => params.append("status", status));
-
-        if (filters.searchTerm) {
-            const userId = Number(filters.searchTerm.trim());
-            if (userId) params.append("userId", `${userId}`);
-        }
-
-        return params
-    }
-
-    const doSearch = () => {
-        if (!currentItem || !currentItem.apiPath || currentItem.apiPath.trim().length === 0) {
-            return;
-        }
-
-        const params = searchFromFilter();
-        const requestPath = `${currentItem.apiPath}?${params.toString()}`;
-        fetchData(requestPath);
+        return SearchParamFromFilter(filterProps, "userId");
     }
 
     const columns: ColumnDefinition<RentPostSimpleResponseDto>[] = [
@@ -222,6 +132,21 @@ export function UserRentPostComponent({ data, onRefresh }: ContentComponentProps
         }
     ];
 
+    const getStyle = (status : RentStatus)=> {
+        switch (status) {
+            case "AVAILABLE":
+                return "ml-2 text-sm text-emerald-700 font-medium"
+            case "LOANED":
+                return "ml-2 text-sm text-yellow-700 font-medium";
+            case "FINISHED":
+                return "ml-2 text-sm text-blue-700 font-medium"
+            case "DELETED":
+                return "ml-2 text-sm text-red-700 font-medium";
+            default:
+                return "ml-2 text-sm text-slate-700 font-medium";
+        }
+    }
+
     return (
         <div className="space-y-4">
             {/* 헤더 */}
@@ -230,28 +155,20 @@ export function UserRentPostComponent({ data, onRefresh }: ContentComponentProps
                     대여 글 목록
                 </h3>
                 <div className="text-sm text-gray-500">
-                    {(data?.data?.length ?? 0) > 0 ? `총 ${data.data.length}건 검색 완료` : "검색 결과 없음"}
+                    {(data?.pageInfo?.totalElements ?? 0) > 0 ? `총 ${data.pageInfo.totalElements}건 검색 완료` : "검색 결과 없음"}
                 </div>
             </div>
 
                 {/* 필터 및 검색 영역 */}
-            <PostFilterContainer
-                filters={filters}
-                onStatusToggle={handleStatusToggle}
-                onSelectAll={handleSelectAll}
-                onSearchTermChange={handleSearchChange}
-                onReset={resetFilters}
-                onSearch={doSearch}
+            <FilterContainer
+                title="글 상태"
+                filterProps={filterProps}
+                columns={columns}
+                data={data}
+                pageFactory={searchFromFilter}
+                getStatus={getRentStatus}
+                getFontStyle={getStyle}
             />
-
-                {/* 테이블 */}
-            <div className="bg-white rounded-lg border border-gray-200">
-                <DataTable
-                    columns={columns}
-                    data={data}
-                    pageFactory={searchFromFilter}
-                />
-            </div>
 
             {/* 멤버 상세 정보 모달 */}
             {selectedRentPost && (

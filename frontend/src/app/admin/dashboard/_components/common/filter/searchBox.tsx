@@ -1,10 +1,12 @@
 "use client";
 
-import React, { ChangeEvent, useState } from "react";
+import React, {ChangeEvent, useState} from "react";
 import { toast } from "react-toastify";
+import { FilterState } from "@/app/admin/dashboard/_types/filter";
 
-interface SearchBoxProps {
-  searchTerm: string;
+interface SearchBoxProps<T> {
+  isListExists: boolean;
+  filterState: FilterState<T>;
   onSearchTermChange: (value: string) => void;
   onReset: () => void;
   onSearch?: () => void;
@@ -15,26 +17,38 @@ interface SearchBoxProps {
 *
 * 입력된 정보에 따라 초기화 / 검색을 실시하며 성공 시 토스트 알림을 띄웁니다.
 */
-export function SearchBox({
-  searchTerm,
+export function SearchBox<T>({
+  isListExists,
+  filterState,
   onSearchTermChange,
   onReset,
   onSearch : _onSearch,
-}: SearchBoxProps) {
-
-  const [enableButton, setEnableButton] = useState(true);
+}: SearchBoxProps<T>) {
+  const searchTerm = filterState.searchTerm;
+  const isFilterChecked = filterState.statuses.size !== 0;
 
   // 유저 ID 기반으로 검색하기 때문에 숫자가 아니면 검색을 진행할 수 없음
+  const checkInput = (input?: string) => {
+    if (!input) return true
+    if (input.length === 0) return true;
+
+    return /^\d*$/.test(input);
+  }
+
+  const [validInput, setValidInput] = useState(checkInput(searchTerm));
+  const isFilterAvailable = !isListExists || isFilterChecked;
+  const enableButton = validInput && isFilterAvailable;
+
   const checkNumber = (e : ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value.trim();
-    const canSubmit = /^\d*$/.test(e.target.value) || !value || value.length == 0;
-    setEnableButton(canSubmit);
+    const canSubmit = checkInput(e.target.value)
+
+    setValidInput(canSubmit);
     onSearchTermChange(value);
   }
 
   // 리셋
   const reset = () => {
-    setEnableButton(true);
     onReset();
 
     toast.success("필터가 초기화되었습니다");
@@ -90,9 +104,15 @@ export function SearchBox({
           검색
         </button>
       </div>
-      {!enableButton && (
-          <span className="text-xs text-red-500">숫자만 입력 가능합니다!</span>
-      )}
+      <div className="flex mt-1 gap-1">
+        {!validInput && (
+            <span className="text-xs text-red-500">숫자만 입력 가능합니다!</span>
+        )}
+
+        {isListExists && !isFilterChecked && (
+            <span className="text-xs text-red-500">적어도 하나의 필터를 적용해야 합니다!</span>
+        )}
+      </div>
     </div>
   );
 }

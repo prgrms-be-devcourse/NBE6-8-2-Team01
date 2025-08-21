@@ -3,7 +3,7 @@ import ConfirmModal from "../../common/confirmModal";
 import PostBasicInfo from "./postBasicInfo";
 import { PostStatusInfo } from "./postStatusInfo";
 import PostInfo from "./postInfo";
-import { getRentStatus, RentPostDetailResponseDto, rentStatus } from "@/app/admin/dashboard/_types/rentPost";
+import { getRentStatus, RentPostDetailResponseDto, RentStatus } from "@/app/admin/dashboard/_types/rentPost";
 import { toast } from "react-toastify";
 
 interface PostDetailModalProps {
@@ -25,7 +25,7 @@ export function PostDetailModal({
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [confirmAction, setConfirmAction] = useState<"delete" | "updateStatus" | "restore" | null>(null);
   const initialRentStatus = currentPost?.rentStatus ? currentPost.rentStatus : "UNKNOWN";
-  const [rentStatusValue, setRentStatusValue] = useState<rentStatus>(initialRentStatus);
+  const [rentStatusValue, setRentStatusValue] = useState<RentStatus>(initialRentStatus);
   const isSameStatus = post.rentStatus == rentStatusValue;
   const isDeleted = initialRentStatus === "DELETED";
 

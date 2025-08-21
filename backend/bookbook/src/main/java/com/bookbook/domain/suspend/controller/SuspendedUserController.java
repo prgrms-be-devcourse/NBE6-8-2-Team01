@@ -38,11 +38,12 @@ public class SuspendedUserController {
     @Operation(summary = "유저 정지 이력 조회")
     public ResponseEntity<RsData<PageResponse<UserSuspendResponseDto>>> getAllSuspendedHistory(
             @RequestParam(defaultValue = "1") Integer page,
-            @RequestParam(defaultValue = "10") Integer size
+            @RequestParam(defaultValue = "10") Integer size,
+            @RequestParam(required = false) Long userId
     ) {
         Pageable pageable = PageRequest.of(page - 1, size);
 
-        Page<UserSuspendResponseDto> historyPage = suspendedUserService.getSuspendedHistoryPage(pageable);
+        Page<UserSuspendResponseDto> historyPage = suspendedUserService.getSuspendedHistoryPage(pageable, userId);
         PageResponse<UserSuspendResponseDto> response = PageResponse.from(historyPage, page, size);
 
         return ResponseEntity.ok(
