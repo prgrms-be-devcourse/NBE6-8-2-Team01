@@ -5,6 +5,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { ChevronLeft, Send } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { MessageResponse, ApiResponse } from '../types/chat';
+import { useWebSocket } from '../hooks/useWebSocket';
 
 // 페이지 응답 타입
 interface PageResponse<T> {
@@ -72,6 +73,36 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ roomId, bookTitle, otherUserNic
   const inputRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
 
+  // 🚀 WebSocket 훅 사용
+  const { 
+    isConnected, 
+    sendMessage: sendWebSocketMessage, 
+    markAsRead, 
+    error: websocketError,
+    connectionStatus 
+  } = useWebSocket(roomId, (newMessage) => {
+    // 실시간으로 새 메시지 수신
+    console.log('🎉 실시간 메시지 수신:', newMessage);
+    
+    setMessages(prev => {
+      // 중복 메시지 방지
+      const exists = prev.some(msg => msg.id === newMessage.id);
+      if (exists) {
+        console.log('⚠️ 중복 메시지 무시:', newMessage.id);
+        return prev;
+      }
+      return [...prev, newMessage];
+    });
+  });
+
+  // WebSocket 에러 처리
+  useEffect(() => {
+    if (websocketError) {
+      console.error('WebSocket 에러:', websocketError);
+      // 심각한 에러가 아니라면 사용자에게 직접 보여주지 않음
+    }
+  }, [websocketError]);
+
   // 긴 텍스트 생략 함수
   const truncateText = (text: string, maxLength: number = 25): string => {
     if (text.length <= maxLength) return text;
@@ -109,7 +140,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ roomId, bookTitle, otherUserNic
     }
   };
 
-  // 컴포넌트 마운트 시 채팅방 정보와 메시지 목록 로드
+  // 컴포넌트 마운트 시 채팅방 정보와 메시지 목록 로드 (REST API - 초기 로딩용)
   useEffect(() => {
     const fetchChatData = async (): Promise<void> => {
       if (!roomId) return;
@@ -134,7 +165,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ roomId, bookTitle, otherUserNic
           setChatRoomInfo(roomResult.data || null);
         }
 
-        // 메시지 목록 조회
+        // 메시지 목록 조회 (기존 메시지들)
         const messagesResponse = await fetch(
           `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/bookbook/chat/rooms/${roomId}/messages?page=0&size=50`,
           {
@@ -161,9 +192,8 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ roomId, bookTitle, otherUserNic
         if (messagesResult.data?.content) {
           const sortedMessages = [...messagesResult.data.content].reverse();
           setMessages(sortedMessages);
+          console.log('📚 기존 메시지 로드 완료:', sortedMessages.length);
         }
-
-        await markMessagesAsRead();
 
       } catch (error: unknown) {
         console.error('채팅 데이터 로드 실패:', error);
@@ -185,29 +215,19 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ roomId, bookTitle, otherUserNic
     fetchChatData();
   }, [roomId]);
 
-  // 메시지 로드 후 스크롤 이동
+  // 메시지 목록 변경 시 스크롤 이동 + 읽음 처리
   useEffect(() => {
     if (messages.length > 0) {
       setTimeout(scrollToBottom, 100);
+      
+      // WebSocket 연결되어 있으면 읽음 처리
+      if (isConnected) {
+        markAsRead();
+      }
     }
-  }, [messages]);
+  }, [messages, isConnected, markAsRead]);
 
-  // 메시지 읽음 처리
-  const markMessagesAsRead = async (): Promise<void> => {
-    try {
-      await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/bookbook/chat/rooms/${roomId}/read`, {
-        method: 'PATCH',
-        credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json',
-        }
-      });
-    } catch (error) {
-      console.error('메시지 읽음 처리 실패:', error);
-    }
-  };
-
-  // 메시지 전송
+  // 메시지 전송 (WebSocket + REST API 하이브리드)
   const handleSendMessage = async (e: React.FormEvent): Promise<void> => {
     e.preventDefault();
     
@@ -218,34 +238,47 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ roomId, bookTitle, otherUserNic
     setNewMessage('');
 
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/bookbook/chat/messages`, {
-        method: 'POST',
-        credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          roomId: roomId,
-          content: messageToSend,
-          messageType: 'TEXT'
-        })
-      });
+      if (isConnected) {
+        // 🚀 WebSocket으로 전송 (우선)
+        console.log('📤 WebSocket으로 메시지 전송');
+        sendWebSocketMessage(messageToSend);
+        
+        // WebSocket으로 전송했으면 REST API 호출 안함
+        // (WebSocket에서 브로드캐스트로 자신의 메시지도 다시 받게 됨)
+        
+      } else {
+        // 🔄 WebSocket 연결이 안되어 있으면 REST API 사용 (백업)
+        console.log('📡 REST API로 메시지 전송 (WebSocket 연결 없음)');
+        
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/bookbook/chat/messages`, {
+          method: 'POST',
+          credentials: 'include',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            roomId: roomId,
+            content: messageToSend,
+            messageType: 'TEXT'
+          })
+        });
 
-      if (!response.ok) {
-        if (response.status === 401) {
-          console.log('메시지 전송 권한 없음 - 인터셉터에서 처리됨');
-          return;
-        } else if (response.status === 403) {
-          throw new Error('메시지를 보낼 권한이 없습니다.');
+        if (!response.ok) {
+          if (response.status === 401) {
+            console.log('메시지 전송 권한 없음 - 인터셉터에서 처리됨');
+            return;
+          } else if (response.status === 403) {
+            throw new Error('메시지를 보낼 권한이 없습니다.');
+          }
+          throw new Error(`메시지 전송 실패: ${response.status}`);
         }
-        throw new Error(`메시지 전송 실패: ${response.status}`);
-      }
 
-      const result: ApiResponse<MessageResponse> = await response.json();
-      const sentMessage = result.data;
+        const result: ApiResponse<MessageResponse> = await response.json();
+        const sentMessage = result.data;
 
-      if (sentMessage) {
-        setMessages(prev => [...prev, sentMessage]);
+        if (sentMessage) {
+          setMessages(prev => [...prev, sentMessage]);
+        }
       }
 
     } catch (error: unknown) {
@@ -260,7 +293,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ roomId, bookTitle, otherUserNic
       }
       
       alert(errorMessage);
-      setNewMessage(messageToSend);
+      setNewMessage(messageToSend); // 실패한 메시지 복원
     } finally {
       setSending(false);
       inputRef.current?.focus();
@@ -367,7 +400,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ roomId, bookTitle, otherUserNic
 
   return (
     <div className="flex flex-col h-full bg-white max-w-lg mx-auto">
-      {/* 헤더 - 카카오톡 스타일 */}
+      {/* 헤더 - 카카오톡 스타일 + 연결 상태 표시 */}
       <div className="flex items-center px-4 py-3 border-b border-gray-200 bg-white">
         <button onClick={onBack} className="mr-3">
           <ChevronLeft className="w-6 h-6 text-gray-700" />
@@ -376,6 +409,20 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ roomId, bookTitle, otherUserNic
           <h3 className="font-medium text-lg text-gray-900" title={displayOtherUserNickname}>
             {truncateText(displayOtherUserNickname || '채팅', 20)}
           </h3>
+          
+          {/* 🔥 실시간 연결 상태 표시 */}
+          <div className="flex items-center mt-1">
+            <div className={`w-2 h-2 rounded-full mr-2 ${
+              connectionStatus === 'connected' ? 'bg-green-400' : 
+              connectionStatus === 'connecting' ? 'bg-yellow-400' : 
+              connectionStatus === 'error' ? 'bg-red-400' : 'bg-gray-400'
+            }`}></div>
+            <span className="text-xs text-gray-500">
+              {connectionStatus === 'connected' ? '실시간 연결됨' : 
+               connectionStatus === 'connecting' ? '연결 중...' : 
+               connectionStatus === 'error' ? '연결 오류' : '연결 끊김'}
+            </span>
+          </div>
         </div>
       </div>
 
@@ -418,6 +465,12 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ roomId, bookTitle, otherUserNic
                 <span className="text-2xl">💬</span>
               </div>
               <p className="text-gray-500 text-sm">대화를 시작해보세요</p>
+              {/* 연결 상태에 따른 추가 안내 */}
+              {connectionStatus !== 'connected' && (
+                <p className="text-orange-500 text-xs mt-2">
+                  실시간 연결을 준비하고 있습니다...
+                </p>
+              )}
             </div>
           </div>
         ) : (
@@ -474,8 +527,17 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ roomId, bookTitle, otherUserNic
         )}
       </div>
 
-      {/* 메시지 입력창 - 카카오톡 스타일 */}
+      {/* 메시지 입력창 - 카카오톡 스타일 + 연결 상태 표시 */}
       <div className="border-t border-gray-200 bg-white p-3">
+        {/* WebSocket 연결 상태에 따른 알림 (연결이 안 될 때만 표시) */}
+        {connectionStatus !== 'connected' && (
+          <div className="mb-2 px-3 py-1 bg-orange-50 border border-orange-200 rounded text-xs text-orange-600">
+            {connectionStatus === 'connecting' ? '실시간 연결 중...' : 
+             connectionStatus === 'error' ? '실시간 연결 오류 (메시지는 전송 가능)' : 
+             '실시간 연결 끊김 (메시지는 전송 가능)'}
+          </div>
+        )}
+        
         <form onSubmit={handleSendMessage} className="flex items-center space-x-2">
           <div className="flex-1 relative">
             <input
@@ -497,6 +559,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ roomId, bookTitle, otherUserNic
                 ? 'bg-gray-300 text-gray-500'
                 : 'bg-blue-500 text-white hover:bg-blue-600'
             }`}
+            title={isConnected ? '실시간 전송' : 'REST API 전송'}
           >
             {sending ? (
               <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
