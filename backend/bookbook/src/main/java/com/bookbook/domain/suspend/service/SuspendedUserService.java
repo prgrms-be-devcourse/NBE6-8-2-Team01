@@ -49,8 +49,8 @@ public class SuspendedUserService {
      * @return 유저 정지 히스토리 페이지
      */
     @Transactional(readOnly = true)
-    public Page<UserSuspendResponseDto> getSuspendedHistoryPage(Pageable pageable) {
-        return suspendedUserRepository.findAllByOrderBySuspendedAtDesc(pageable)
+    public Page<UserSuspendResponseDto> getSuspendedHistoryPage(Pageable pageable, Long userId) {
+        return suspendedUserRepository.findAllFilteredUser(pageable, userId)
                 .map(UserSuspendResponseDto::from);
     }
 
