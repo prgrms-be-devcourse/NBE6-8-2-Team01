@@ -1,19 +1,19 @@
 import {
   RentPostDetailResponseDto,
   getRentStatus,
-  rentStatus,
+  RentStatus,
 } from "../../../_types/rentPost";
 
 interface PostStatusInfoProps {
-  initialRentStatus: rentStatus
-  setRentStatusValue: (value: rentStatus) => void;
+  initialRentStatus: RentStatus
+  setRentStatusValue: (value: RentStatus) => void;
   post: RentPostDetailResponseDto;
 }
 
 export function PostStatusInfo({ initialRentStatus, setRentStatusValue, post } : PostStatusInfoProps){
   const isDeleted = initialRentStatus === "DELETED";
 
-  const getStatusColor = (status: rentStatus) => {
+  const getStatusColor = (status: RentStatus) => {
     switch (status) {
       case "AVAILABLE":
         return "text-green-600 bg-green-50";
@@ -38,7 +38,7 @@ export function PostStatusInfo({ initialRentStatus, setRentStatusValue, post } :
             {!isDeleted && (
                 <select
                     defaultValue=""
-                    onChange={(e) => setRentStatusValue(e.target.value as rentStatus)}
+                    onChange={(e) => setRentStatusValue(e.target.value as RentStatus)}
                     className="p-3 border border-gray-300 rounded-md bg-white text-gray-900 appearance-none cursor-pointer"
                     disabled={isDeleted}
                 >

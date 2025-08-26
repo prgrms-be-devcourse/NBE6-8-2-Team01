@@ -1,10 +1,14 @@
 "use client";
 
 import React from "react";
-import { DataTable, ColumnDefinition } from "../common/Table";
+import { ColumnDefinition } from "../common/Table";
 import { SuspendedUser } from "../../_types/suspendedUser";
 import { ContentComponentProps } from "./baseContentComponentProps";
 import { formatDate } from "@/app/admin/dashboard/_components/common/dateFormatter";
+import { FilterContainer } from "@/app/admin/dashboard/_components/common/filter/FilterContainer";
+import { SearchParamFromFilter } from "@/app/admin/dashboard/_components/common/filter/searchParamFromFilter";
+import { useFilter } from "@/app/admin/dashboard/_hooks/useFilter";
+
 
 /*
 * 정지 유저 이력을 나타내는 컴포넌트
@@ -27,12 +31,22 @@ export function SuspendedUserListComponent({ data }: ContentComponentProps) {
     { key: "reason", label: "사유" },
   ];
 
+  const filterProps = useFilter('admin-suspended-history-list', []);
+  const searchFromFilter = () => {
+    return SearchParamFromFilter(filterProps, "userId");
+  }
+
   return (
     <>
       <h3 className="text-lg font-semibold text-gray-900 mb-4">
         정지 멤버 목록
       </h3>
-      <DataTable columns={columns} data={data} />
+      <FilterContainer
+          filterProps={filterProps}
+          columns={columns}
+          data={data}
+          pageFactory={searchFromFilter}
+      />
     </>
   );
 }

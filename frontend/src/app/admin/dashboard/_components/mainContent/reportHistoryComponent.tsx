@@ -1,12 +1,13 @@
 'use client';
 
-import React, { useCallback, useEffect, useState } from "react";
-import { DataTable, ColumnDefinition } from "../common/Table";
-import { ContentComponentProps } from "./baseContentComponentProps";
-import { useDashBoardContext } from "@/app/admin/dashboard/_hooks/useDashboard";
-import { FilterState, ReportFilterContainer } from "@/app/admin/dashboard/_components/report/filter";
-import { formatDate } from "@/app/admin/dashboard/_components/common/dateFormatter";
+import React, { useState } from "react";
 import ReportDetailWithUserModal from "@/app/admin/dashboard/_components/report/manage/reportDetailWithUserModal";
+import { ColumnDefinition } from "../common/Table";
+import { ContentComponentProps } from "./baseContentComponentProps";
+import { formatDate } from "@/app/admin/dashboard/_components/common/dateFormatter";
+import { useFilter } from "../../_hooks/useFilter";
+import { FilterContainer } from "@/app/admin/dashboard/_components/common/filter/FilterContainer";
+import { SearchParamFromFilter } from "@/app/admin/dashboard/_components/common/filter/searchParamFromFilter";
 import {
   getReportStatus,
   ReportDetailResponseDto,
@@ -41,37 +42,8 @@ export function ReportHistoryComponent({ data, onRefresh }: ContentComponentProp
       null as unknown as ReportDetailResponseDto
   );
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const { currentItem, fetchData } = useDashBoardContext();
 
-  const getInitialFilters = (): FilterState => {
-    try {
-      const saved = sessionStorage.getItem('admin-user-report-list-filters');
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        return {
-          statuses: new Set(parsed.statuses || statusList),
-          searchTerm: parsed.searchTerm || "",
-        };
-      }
-    } catch (error) {}
-
-    return {
-      statuses: new Set(statusList),
-      searchTerm: "",
-    };
-  };
-
-  const [filters, setFilters] = useState<FilterState>(getInitialFilters);
-
-  const saveFilters = useCallback(() => {
-    try {
-      const toSave = {
-        statuses: Array.from(filters.statuses),
-        searchTerm: filters.searchTerm,
-      };
-      sessionStorage.setItem('admin-user-report-list-filters', JSON.stringify(toSave));
-    } catch (error) {}
-  }, [filters]);
+  const filterProps = useFilter('admin-user-report-list-filters', statusList)
 
   const handleManageClick = async (report : ReportSimpleResponseDto) => {
     const response = await fetch(
@@ -103,71 +75,8 @@ export function ReportHistoryComponent({ data, onRefresh }: ContentComponentProp
     setSelectedReport(null as unknown as ReportDetailResponseDto);
   };
 
-  useEffect(() => {
-    saveFilters();
-  }, [saveFilters]);
-
-  const handleStatusToggle = (status: ReportStatus) => {
-    const newStatuses = new Set(filters.statuses);
-    if (newStatuses.has(status)) {
-      newStatuses.delete(status);
-    } else {
-      newStatuses.add(status);
-    }
-
-    if (newStatuses.size === 0) {
-      setFilters((prev) => ({ ...prev, statuses: new Set(statusList)}));
-    } else {
-      setFilters((prev) => ({ ...prev, statuses: newStatuses }));
-    }
-  };
-
-  const handleSelectAll = () => {
-    const allStatuses: ReportStatus[] = statusList;
-    const isAllSelected = allStatuses.every((status) =>
-        filters.statuses.has(status)
-    );
-
-    if (isAllSelected) {
-      setFilters((prev) => ({ ...prev, statuses: new Set() }));
-    } else {
-      setFilters((prev) => ({ ...prev, statuses: new Set(allStatuses) }));
-    }
-  };
-
-  const handleSearchChange = (value: string) => {
-    setFilters((prev) => ({ ...prev, searchTerm: value }));
-  };
-
-  const resetFilters = () => {
-    const resetState: FilterState = {
-      statuses: new Set(statusList),
-      searchTerm: "",
-    };
-    setFilters(resetState);
-  };
-
   const searchFromFilter = () => {
-    const params = new URLSearchParams();
-
-    filters.statuses.forEach(status => params.append("status", status));
-
-    if (filters.searchTerm) {
-      const userId = Number(filters.searchTerm.trim());
-      if (userId) params.append("targetUserId", `${userId}`);
-    }
-
-    return params
-  }
-
-  const doSearch = () => {
-    if (!currentItem || !currentItem.apiPath || currentItem.apiPath.trim().length === 0) {
-      return;
-    }
-
-    const params = searchFromFilter();
-    const requestPath = `${currentItem.apiPath}?${params.toString()}`;
-    fetchData(requestPath);
+    return SearchParamFromFilter(filterProps, "targetUserId");
   }
 
   const columns: ColumnDefinition<ReportSimpleResponseDto>[] = [
@@ -195,6 +104,19 @@ export function ReportHistoryComponent({ data, onRefresh }: ContentComponentProp
     },
   ];
 
+  const getStyle = (status : ReportStatus)=> {
+    switch (status) {
+      case "PENDING":
+        return "ml-2 text-sm text-emerald-700 font-medium"
+      case "REVIEWED":
+        return "ml-2 text-sm text-yellow-700 font-medium";
+      case "PROCESSED":
+        return "ml-2 text-sm text-red-700 font-medium";
+      default:
+        return "ml-2 text-sm text-slate-700 font-medium";
+    }
+  }
+
   return (
       <div className="space-y-4">
         {/* 헤더 */}
@@ -208,23 +130,15 @@ export function ReportHistoryComponent({ data, onRefresh }: ContentComponentProp
         </div>
 
         {/* 필터 및 검색 영역 */}
-        <ReportFilterContainer
-            filters={filters}
-            onStatusToggle={handleStatusToggle}
-            onSelectAll={handleSelectAll}
-            onSearchTermChange={handleSearchChange}
-            onReset={resetFilters}
-            onSearch={doSearch}
+        <FilterContainer
+            title="회원 상태"
+            filterProps={filterProps}
+            columns={columns}
+            data={data}
+            pageFactory={searchFromFilter}
+            getStatus={getReportStatus}
+            getFontStyle={getStyle}
         />
-
-        {/* 테이블 */}
-        <div className="bg-white rounded-lg border border-gray-200">
-          <DataTable
-              columns={columns}
-              data={data}
-              pageFactory={searchFromFilter}
-          />
-        </div>
 
         {/* 멤버 상세 정보 모달 */}
         {selectedReport && (

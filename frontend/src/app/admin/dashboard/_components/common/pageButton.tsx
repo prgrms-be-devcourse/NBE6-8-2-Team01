@@ -2,7 +2,7 @@ import { PageInfo } from "@/app/admin/dashboard/_types/page";
 
 interface PageButtonContainerProps {
     page: number;
-    setPage: (page: number) => void;
+    getPageData: (page: number) => void;
     pageInfo: PageInfo;
 }
 
@@ -11,17 +11,17 @@ interface PageButtonContainerProps {
 * 페이지 현황에 따라 자동으로 비활성화 됩니다.
 */
 export function PageButtonContainer(
-    { page, setPage, pageInfo } : PageButtonContainerProps
+    { page, getPageData, pageInfo } : PageButtonContainerProps
 ) {
     const totalPages = pageInfo.totalPages;
 
     const handlePrevious = () => {
         const newPage = page - 1;
-        setPage(newPage);
+        getPageData(newPage);
     }
     const handleNext = () => {
         const newPage = page + 1;
-        setPage(newPage);
+        getPageData(newPage);
     }
 
     return (
