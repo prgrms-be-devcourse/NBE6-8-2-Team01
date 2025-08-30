@@ -23,7 +23,7 @@ interface UserResponseDto {
     createAt: string;
 }
 
-export default function MyPage() {
+export default function MyPage(): React.JSX.Element | null {
     const router = useRouter();
 
     const [userData, setUserData] = useState<UserResponseDto | null>(null);
@@ -43,9 +43,20 @@ export default function MyPage() {
 
     // 회원 탈퇴 모달 상태를 위한 state 추가
     const [isWithdrawalModalOpen, setIsWithdrawalModalOpen] = useState(false);
-
+    const [mounted, setMounted] = useState(false);
 
     useEffect(() => {
+        // 약간의 지연을 두어 하이드레이션이 완료된 후 렌더링
+        const timer = setTimeout(() => {
+            setMounted(true);
+        }, 100);
+
+        return () => clearTimeout(timer);
+    }, []);
+
+    useEffect(() => {
+        if (!mounted) return;
+        
         const fetchUserData = async () => {
             try {
                 const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/bookbook/users/me`);
@@ -86,7 +97,12 @@ export default function MyPage() {
         };
 
         fetchUserData();
-    }, []);
+    }, [mounted]);
+
+    // 서버 사이드 렌더링 중에는 아무것도 렌더링하지 않음
+    if (!mounted) {
+        return null;
+    }
 
     const handleNicknameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const value = e.target.value;

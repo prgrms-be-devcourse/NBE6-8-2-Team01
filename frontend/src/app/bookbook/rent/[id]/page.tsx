@@ -62,7 +62,7 @@ interface CurrentUserDto {
     userStatus: 'ACTIVE' | 'INACTIVE' | 'SUSPENDED';
 }
 
-export default function BookDetailPage({ params }: BookDetailPageProps): React.JSX.Element {
+export default function BookDetailPage({ params }: BookDetailPageProps): React.JSX.Element | null {
     // Next.js 동적 라우팅으로 URL에서 'id' 값을 가져옴
     const { id } = React.use(params);
 
@@ -77,16 +77,25 @@ export default function BookDetailPage({ params }: BookDetailPageProps): React.J
     // 찜하기 상태 관리
     const [isWishlisted, setIsWishlisted] = useState<boolean>(false);
     const [wishlistLoading, setWishlistLoading] = useState<boolean>(false);
+    const [mounted, setMounted] = useState(false);
 
     const router = useRouter(); // 페이지 이동을 위한 useRouter 훅
 
     // 현재 로그인한 사용자 정보를 가져옵니다 (자동 로그인 없음)
     const { user, loading: userLoading, userId, isAuthenticated } = useAuthCheck();
 
-    
+    useEffect(() => {
+        // 약간의 지연을 두어 하이드레이션이 완료된 후 렌더링
+        const timer = setTimeout(() => {
+            setMounted(true);
+        }, 100);
+
+        return () => clearTimeout(timer);
+    }, []);
 
     // 컴포넌트가 마운트되거나 ID가 변경될 때 책 상세 정보를 불러옵니다.
     useEffect(() => {
+        if (!mounted) return;
         
         // userStatus를 확인하는 별도의 비동기 함수
         const checkUserStatus = async () => {
@@ -148,7 +157,12 @@ export default function BookDetailPage({ params }: BookDetailPageProps): React.J
         };
 
         fetchBookDetail();
-    }, [id, router]); // id가 변경될 때마다 useEffect 재실행
+    }, [id, router, mounted]); // mounted 의존성 추가
+
+    // 서버 사이드 렌더링 중에는 아무것도 렌더링하지 않음
+    if (!mounted) {
+        return null;
+    }
 
     const handleOpenProfileModal = (): void => {
         if (bookDetail?.lenderUserId) {

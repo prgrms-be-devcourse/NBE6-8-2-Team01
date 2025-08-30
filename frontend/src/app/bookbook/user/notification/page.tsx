@@ -198,9 +198,20 @@ export default function NotificationPage() {
   const [isProcessingDecision, setIsProcessingDecision] = useState(false);
   const [imageLoadStates, setImageLoadStates] = useState<{[key: number]: 'loading' | 'loaded' | 'error'}>({});
   const [processedNotifications, setProcessedNotifications] = useState<Set<number>>(new Set());
+  const [mounted, setMounted] = useState(false);
 
+  useEffect(() => {
+    // 약간의 지연을 두어 하이드레이션이 완료된 후 렌더링
+    const timer = setTimeout(() => {
+      setMounted(true);
+    }, 100);
+
+    return () => clearTimeout(timer);
+  }, []);
 
   const loadNotifications = useCallback(async () => {
+    if (!mounted) return;
+    
     try {
       setLoading(true);
       setError(null);
@@ -237,11 +248,16 @@ export default function NotificationPage() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [mounted]);
 
   useEffect(() => {
     loadNotifications();
   }, [loadNotifications]);
+
+  // 서버 사이드 렌더링 중에는 아무것도 렌더링하지 않음
+  if (!mounted) {
+    return null;
+  }
 
   const handleNotificationClick = async (notificationId: number) => {
     const isCurrentlySelected = selectedId === notificationId;
