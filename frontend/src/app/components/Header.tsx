@@ -7,16 +7,24 @@ import Link from 'next/link';
 import MessagePanel from '@/app/bookbook/MessagePopup/MessagePanel';
 import { authFetch, logoutUser } from '../util/authFetch';
 import { useLoginModal } from '../context/LoginModalContext';
-import { toast } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
 
 const Header = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [showMessagePanel, setShowMessagePanel] = useState(false);
   const [unreadNotificationCount, setUnreadNotificationCount] = useState(0);
   const [unreadMessageCount, setUnreadMessageCount] = useState(0);
+  const [mounted, setMounted] = useState(false);
   const { openLoginModal } = useLoginModal();
   const toggleMessagePanel = () => setShowMessagePanel((prev) => !prev);
+
+  useEffect(() => {
+    // 약간의 지연을 두어 하이드레이션이 완료된 후 렌더링
+    const timer = setTimeout(() => {
+      setMounted(true);
+    }, 100);
+
+    return () => clearTimeout(timer);
+  }, []);
 
   const fetchUnreadNotificationCount = async () => {
     if (!isLoggedIn) {
@@ -139,20 +147,13 @@ const Header = () => {
   const handleLendBookClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
     if (!isLoggedIn) {
       e.preventDefault();
-
-      toast.info('로그인 후 이용해주세요.', {
-        position: 'top-center',
-        autoClose: 2000,
-        hideProgressBar: false,
-        closeOnClick: true,
-        pauseOnHover: false,
-        draggable: true,
-        progress: undefined,
-      });
-
+      
+      // toast 대신 간단한 alert 사용
+      alert('로그인 후 이용해주세요.');
+      
       setTimeout(() => {
         openLoginModal();
-      }, 2000);
+      }, 100);
     }
   };
 
@@ -165,6 +166,11 @@ const Header = () => {
       fetchUnreadMessageCount();
     }, 500);
   };
+
+  // 서버 사이드 렌더링 중에는 아무것도 렌더링하지 않음
+  if (!mounted) {
+    return null;
+  }
 
   return (
       <>

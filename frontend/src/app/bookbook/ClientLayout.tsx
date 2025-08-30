@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { usePathname } from 'next/navigation';
 import UserSidebar from '../components/UserSidebar';
 import Header from '../components/Header';
@@ -27,7 +27,29 @@ function LoginModalContainer() {
 
 export default function ClientLayout({ children }: { children: React.ReactNode }) {
     const pathname = usePathname();
-    const isUserPage = pathname.startsWith('/bookbook/user') && pathname !== '/bookbook/user/signup';
+    const [mounted, setMounted] = useState(false);
+    const [isUserPage, setIsUserPage] = useState(false);
+
+    useEffect(() => {
+        setMounted(true);
+        // pathname이 변경될 때마다 isUserPage 상태 업데이트
+        if (pathname) {
+            setIsUserPage(pathname.startsWith('/bookbook/user') && pathname !== '/bookbook/user/signup');
+        }
+    }, [pathname]);
+
+    // 서버 사이드 렌더링 중에는 기본 레이아웃만 표시
+    if (!mounted) {
+        return (
+            <LoginModalProvider>
+                <ModalSetup />
+                <InterceptorSetup />
+                <Header />
+                <main className="flex-grow">{children}</main>
+                <LoginModalContainer />
+            </LoginModalProvider>
+        );
+    }
 
     return (
         <LoginModalProvider>

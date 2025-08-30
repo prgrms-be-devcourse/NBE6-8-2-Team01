@@ -188,12 +188,24 @@ const BookRegionSection = () => {
   const [regions, setRegions] = useState<RegionInfo[]>([]);
   const [showRegionSelector, setShowRegionSelector] = useState(false);
   const [failedImages, setFailedImages] = useState<Set<string>>(new Set());
+  const [mounted, setMounted] = useState(false);
   
   // 자동 지역 선택이 이미 한 번 실행되었는지 추적하는 ref
   const hasAutoSelectedRegion = useRef(false);
 
+  useEffect(() => {
+    // 약간의 지연을 두어 하이드레이션이 완료된 후 렌더링
+    const timer = setTimeout(() => {
+      setMounted(true);
+    }, 100);
+
+    return () => clearTimeout(timer);
+  }, []);
+
   // 지역 목록 로드
   useEffect(() => {
+    if (!mounted) return;
+
     const loadRegions = async () => {
       try {
         const regionData = await fetchRegions();
@@ -209,10 +221,12 @@ const BookRegionSection = () => {
     };
 
     loadRegions();
-  }, []);
+  }, [mounted]);
 
   // 메인 데이터 로드
   useEffect(() => {
+    if (!mounted) return;
+
     const loadData = async () => {
       try {
         setLoading(true);
@@ -287,7 +301,7 @@ const BookRegionSection = () => {
     };
 
     loadData();
-  }, [selectedRegion]);
+  }, [selectedRegion, mounted]);
 
   const handleRegionChange = (region: string) => {
     // 사용자가 수동으로 지역을 변경하는 경우
@@ -363,6 +377,11 @@ const BookRegionSection = () => {
     img.style.width = '100%';
     img.style.height = '100%';
   };
+
+  // 서버 사이드 렌더링 중에는 아무것도 렌더링하지 않음
+  if (!mounted) {
+    return null;
+  }
 
   if (loading) {
     return (
